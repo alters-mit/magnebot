@@ -1,6 +1,10 @@
 from magnebot import Magnebot
 from magnebot.action_status import ActionStatus
 
+"""
+Test Magnebot moving and turning.
+"""
+
 
 def assert_status(status: ActionStatus):
     assert status == ActionStatus.success, status
