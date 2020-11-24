@@ -31,9 +31,9 @@ class Transform:
         self.forward = forward
 
 
-class PhysicsTransform(Transform):
-    def __init__(self, position: np.array, forward: np.array, rotation: np.array, velocity: np.array,
-                 angular_velocity: np.array):
+class JointState(Transform):
+    def __init__(self, position: np.array, forward: np.array, rotation: np.array, angles: np.array,
+                 targets: np.array):
         super().__init__(position=position, forward=forward, rotation=rotation)
-        self.velocity = velocity
-        self.angular_velocity = angular_velocity
+        self.angles = angles
+        self.targets = targets

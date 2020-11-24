@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Dict, Optional, Union, Tuple
+from typing import List, Dict, Optional, Union
 from tdw.floorplan_controller import FloorplanController
 from tdw.output_data import Version, StaticRobot
 from tdw.tdw_utils import TDWUtils
@@ -113,23 +113,25 @@ class Magnebot(FloorplanController):
         resp = self.communicate(self._get_scene_init_commands(scene=scene, layout=layout, room=room))
         # Cache the static robot data.
         static_robot = get_data(resp=resp, d_type=StaticRobot)
-        for i in range(static_robot.get_num_body_parts()):
-            body_part_id = static_robot.get_body_part_id(i)
+        for i in range(static_robot.get_num_joints()):
+            body_part_id = static_robot.get_joint_id(i)
             self.static_robot_info[body_part_id] = BodyPartStatic(sr=static_robot, index=i)
             # Cache the wheels.
-            body_part_name = static_robot.get_body_part_name(i)
+            body_part_name = static_robot.get_joint_name(i)
             if "wheel" in body_part_name:
                 self.__wheels[body_part_name] = body_part_id
                 self.__wheels_targets[body_part_name] = 0
         self._set_state()
 
-    def move_by(self, distance: float, speed: float = 5, not_turning_at: float = 0.05, overshot_at: float = 0.1,
-                num_attempts: int = 50) -> ActionStatus:
+    def move_by(self, distance: float, speed: float = 5, not_turning_at: float = 0.05,
+                overshot_at: float = 0.1) -> ActionStatus:
         # The initial position of the robot.
         p0 = self.state.robot.position
 
         # Go until we've traversed the distance.
         d = 0
+        # The approximately number of iterations required, given the distance and speed.
+        num_attempts = int(distance + 1) * speed * 50
         attempts = 0
         while d < distance and attempts < num_attempts:
             commands = []
@@ -210,8 +212,9 @@ class Magnebot(FloorplanController):
 
         state = SceneState(resp=resp)
         for wheel in self.__wheels:
-            if np.linalg.norm(state.robot_body_parts[self.__wheels[wheel]].angular_velocity) > not_turning_at:
-                print(np.linalg.norm(state.robot_body_parts[self.__wheels[wheel]].angular_velocity), not_turning_at)
+            wheel_angle = float(np.rad2deg(state.robot_joints[self.__wheels[wheel]].angles[0]))
+            if (0 < self.__wheels_targets[wheel] <= wheel_angle) or (0 > self.__wheels_targets[wheel] >= wheel_angle):
+                print(wheel_angle, self.__wheels_targets[wheel], wheel)
                 return True
         return False
 
@@ -235,4 +238,4 @@ class Magnebot(FloorplanController):
 if __name__ == "__main__":
     c = Magnebot(launch_build=False)
     c.init_scene()
-    print(c.move_by(2))
+    c.turn_by(45)
