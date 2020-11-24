@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, Tuple
 from tdw.floorplan_controller import FloorplanController
 from tdw.output_data import Version, StaticRobot
 from tdw.tdw_utils import TDWUtils
@@ -13,6 +13,11 @@ from magnebot.action_status import ActionStatus
 
 
 class Magnebot(FloorplanController):
+    class __Wheel:
+        def __init__(self, object_id: int, angle: float):
+            self.object_id = object_id
+            self.angle = angle
+
     # Global forward directional vector.
     _FORWARD = np.array([0, 0, 1])
 
@@ -20,16 +25,16 @@ class Magnebot(FloorplanController):
     __OBJECT_AUDIO = PyImpact.get_object_info()
 
     def __init__(self, port: int = 1071, launch_build: bool = True, id_pass: bool = True,
-                 screen_width: int = 256, screen_height: int = 256):
+                 screen_width: int = 256, screen_height: int = 256, debug: bool = False):
         super().__init__(port=port, launch_build=launch_build)
 
         self._id_pass = id_pass
+        self._debug = debug
 
         # Create an empty occupancy map.
         self.occupancy_map: Optional[np.array] = None
         self._scene_bounds: Optional[dict] = None
-        self.__wheels_targets: Dict[str, float] = dict()
-        self.__wheels: Dict[str, int] = dict()
+        self.__wheels: Dict[str, Magnebot.__Wheel] = dict()
         self.static_robot_info: Dict[int, BodyPartStatic] = dict()
         self.state: Optional[SceneState] = None
 
@@ -100,15 +105,7 @@ class Magnebot(FloorplanController):
         self._object_init_commands[object_id] = object_commands
 
     def init_scene(self, scene: str = None, layout: int = None, room: int = -1) -> None:
-        self.__wheels_targets: Dict[str, float] = dict()
-        self.__wheels: Dict[str, int] = dict()
-
-        self._add_object("basket_18inx18inx12iin",
-                         scale={"x": 0.6, "y": 0.4, "z": 0.6},
-                         position={"x": -1.195, "y": 0, "z": 0.641},
-                         mass=1)
-        self._add_object("jug05",
-                         position={"x": 0.215, "y": 0, "z": 3.16})
+        self.__wheels: Dict[str, Magnebot.__Wheel] = dict()
 
         resp = self.communicate(self._get_scene_init_commands(scene=scene, layout=layout, room=room))
         # Cache the static robot data.
@@ -119,104 +116,231 @@ class Magnebot(FloorplanController):
             # Cache the wheels.
             body_part_name = static_robot.get_joint_name(i)
             if "wheel" in body_part_name:
-                self.__wheels[body_part_name] = body_part_id
-                self.__wheels_targets[body_part_name] = 0
+                self.__wheels[body_part_name] = Magnebot.__Wheel(object_id=body_part_id, angle=0)
         self._set_state()
 
-    def move_by(self, distance: float, speed: float = 5, not_turning_at: float = 0.05,
-                overshot_at: float = 0.1) -> ActionStatus:
-        # The initial position of the robot.
-        p0 = self.state.robot.position
+    def turn_by(self, angle: float, speed: float = 15, aligned_at: float = 3) -> ActionStatus:
+        """
+        Turn the Magnebot by an angle.
+        The Magnebot will turn by small increments to align with the target angle.
 
-        # Go until we've traversed the distance.
-        d = 0
+        Possible [return values](action_status.md):
+
+        - `success`
+        - `too_many_attempts`
+        - `unaligned`
+
+        :param angle: The target angle in degrees. Positive value = clockwise turn.
+        :param aligned_at: If the different between the current angle and the target angle is less than this value,
+                            then the action is successful.
+        :param speed: The wheels will turn this many degrees per attempt to turn.
+
+        :return: An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
+        """
+
+        def _get_angle_1() -> float:
+            """
+            :return: The current angle.
+            """
+
+            a = TDWUtils.get_angle_between(wheel_state.robot.forward, f0)
+            if angle_0 < 0:
+                a *= -1
+            elif a > 180:
+                a = 360 - a
+            return a
+
+        # The initial forward vector.
+        f0 = self.state.robot.forward
         # The approximately number of iterations required, given the distance and speed.
-        num_attempts = int(distance + 1) * speed * 50
+        num_attempts = int(np.abs(angle) + 1) * speed * 50
         attempts = 0
-        while d < distance and attempts < num_attempts:
-            commands = []
-            for wheel in ["wheel_left_front", "wheel_left_back", "wheel_right_front", "wheel_right_back"]:
-                self.__wheels_targets[wheel] += speed
-                commands.append({"$type": "set_revolute_target",
-                                 "target": self.__wheels_targets[wheel],
-                                 "joint_id": self.__wheels[wheel]})
-            resp = self.communicate(commands)
-            while self._wheels_are_turning(resp=resp, not_turning_at=not_turning_at):
-                resp = self.communicate([])
-            p1 = SceneState(resp=resp).robot.position
-            d = np.linalg.norm(p1 - p0)
+        angle_0 = angle
+        while attempts < num_attempts:
             attempts += 1
+            # Set the direction of the wheels for the turn and send commands.
+            commands = []
+            for wheel in self.__wheels:
+                if "left" in wheel:
+                    self.__wheels[wheel].angle += speed if angle > 0 else -speed
+                else:
+                    self.__wheels[wheel].angle -= speed if angle > 0 else -speed
+                commands.append({"$type": "set_revolute_target",
+                                 "target": self.__wheels[wheel].angle,
+                                 "joint_id": self.__wheels[wheel].object_id})
+            resp = self.communicate(commands)
+
+            # Wait until the wheels are done turning.
+            wheels_done = False
+            wheel_state = SceneState(resp=resp)
+            while not wheels_done:
+                wheels_done, wheel_state = self._wheels_are_done(state_0=wheel_state)
+            # Get the new angle.
+            angle_1 = _get_angle_1()
+            # If the difference between the target angle and the current angle is very small, we're done.
+            if np.abs(angle_1 - angle_0) < aligned_at:
+                self._set_state()
+                return ActionStatus.success
         self._set_state()
-        if np.abs(distance - d) > overshot_at:
-            return ActionStatus.overshot_move
+        angle_1 = _get_angle_1()
+        if np.abs(angle_1 - angle_0) < aligned_at:
+            return ActionStatus.success
         elif attempts >= num_attempts:
             return ActionStatus.too_many_attempts
         else:
-            return ActionStatus.success
+            return ActionStatus.unaligned
 
-    def turn_by(self, angle: float, speed: float = 5, not_turning_at: float = 0.05,
-                num_attempts: int = 50) -> ActionStatus:
-        f0 = self.state.robot.forward
-        attempts = 0
-        while attempts < num_attempts:
-            commands = []
-            for wheel in self.__wheels:
-                if angle > 1:
-                    if "left" in wheel:
-                        wheel_direction = 1
-                    else:
-                        wheel_direction = -1
-                else:
-                    if "left" in wheel:
-                        wheel_direction = -1
-                    else:
-                        wheel_direction = 1
-                self.__wheels_targets[wheel] += speed * wheel_direction
-                commands.append({"$type": "set_revolute_target",
-                                 "target": self.__wheels_targets[wheel],
-                                 "joint_id": self.__wheels[wheel]})
-            resp = self.communicate(commands)
-            while self._wheels_are_turning(resp=resp, not_turning_at=not_turning_at):
-                resp = self.communicate([])
-            state = SceneState(resp=resp)
-            angle_1 = TDWUtils.get_angle_between(f0, state.robot.forward)
-            if angle_1 >= angle:
-                self._set_state()
-                return ActionStatus.success
-            attempts += 1
-        self._set_state()
-        return ActionStatus.too_many_attempts
+    def turn_to(self, target: Union[int, Dict[str, float]], speed: float = 15, aligned_at: float = 3) -> ActionStatus:
+        """
+        Turn the Magnebot to face a target object or position.
+        The Magnebot will turn by small increments to align with the target angle.
 
-    def turn_to(self, target: Union[int, Dict[str, float]], speed: float = 5, not_turning_at: float = 0.05,
-                num_attempts: int = 50) -> ActionStatus:
+        Possible [return values](action_status.md):
+
+        - `success`
+        - `too_many_attempts`
+        - `unaligned`
+
+        :param target: Either the ID of an object or a Vector3 position.
+        :param aligned_at: If the different between the current angle and the target angle is less than this value,
+                            then the action is successful.
+        :param speed: The wheels will turn this many degrees per attempt to turn.
+
+        :return: An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
+        """
+
         if isinstance(target, int):
             target = self.state.objects[target].position
         elif isinstance(target, dict):
             target = TDWUtils.vector3_to_array(target)
         else:
             raise Exception(f"Invalid target: {target}")
+
         angle = TDWUtils.get_angle(forward=self.state.robot.forward, origin=self.state.robot.position,
                                    position=target)
-        return self.turn_by(angle=angle, speed=speed, not_turning_at=not_turning_at, num_attempts=num_attempts)
+        return self.turn_by(angle=angle, speed=speed, aligned_at=aligned_at)
+
+    def move_by(self, distance: float, speed: float = 15, arrived_at: float = 0.1) -> ActionStatus:
+        """
+        Move the Magnebot forward or backward by a given distance.
+
+        Possible [return values](action_status.md):
+
+        - `success`
+        - `overshot_move`
+        - `too_many_attempts`
+
+        :param distance: The target distance. If less than zero, the Magnebot will move backwards.
+        :param speed: The Magnebot's wheels will rotate by this many degrees per iteration.
+        :param arrived_at: If at any point during the action the difference between the target distance and distance
+                           traversed is less than this, then the action is successful.
+
+        :return: An `ActionStatus` indicating if the Magnebot moved by `distance` and if not, why.
+        """
+
+        # The initial position of the robot.
+        p0 = self.state.robot.position
+
+        # Go until we've traversed the distance.
+        d = 0
+        # The approximately number of iterations required, given the distance and speed.
+        num_attempts = int(np.abs(distance) + 1) * speed * 50
+        attempts = 0
+        while d < np.abs(distance) and attempts < num_attempts:
+            # Move forward a bit and see if we've arrived.
+            commands = []
+            for wheel in ["wheel_left_front", "wheel_left_back", "wheel_right_front", "wheel_right_back"]:
+                self.__wheels[wheel].angle += speed if distance > 0 else -speed
+                commands.append({"$type": "set_revolute_target",
+                                 "target": self.__wheels[wheel].angle,
+                                 "joint_id": self.__wheels[wheel].object_id})
+            resp = self.communicate(commands)
+            # Wait for the wheels to stop turning.
+            wheel_state = SceneState(resp=resp)
+            wheels_turning = True
+            while wheels_turning:
+                wheels_turning, wheel_state = self._wheels_are_done(state_0=wheel_state)
+                resp = self.communicate([])
+            # Check if we're at the destination.
+            p1 = SceneState(resp=resp).robot.position
+            d = np.linalg.norm(p1 - p0)
+            attempts += 1
+        self._set_state()
+        if np.abs(np.abs(distance) - d) < arrived_at:
+            return ActionStatus.success
+        elif attempts >= num_attempts:
+            return ActionStatus.too_many_attempts
+        else:
+            return ActionStatus.overshot_move
+
+    def move_to(self, target: Union[int, Dict[str, float]], move_speed: float = 15, arrived_at: float = 0.1,
+                turn_speed: float = 15, aligned_at: float = 3,
+                move_on_turn_fail: bool = False) -> ActionStatus:
+        """
+        Move the Magnebot to a target object or position.
+        The Magnebot will first try to turn to face the target by internally calling a `turn_to()` action.
+
+        - `success`
+        - `overshot_move`
+        - `too_many_attempts` (when moving, and also when turning if `move_on_turn_fail == False`)
+        - `unaligned` (when turning if `move_on_turn_fail == False`)
+
+        :param target: Either the ID of an object or a Vector3 position.
+        :param move_speed: The Magnebot's wheels will rotate by this many degrees per iteration when moving.
+        :param arrived_at: While moving, if at any point during the action the difference between the target distance
+                           and distance traversed is less than this, then the action is successful.
+        :param turn_speed: The Magnebot's wheels will rotate by this many degrees per iteration when turning.
+        :param aligned_at: While turning, if the different between the current angle and the target angle is less than
+                           this value, then the action is successful.
+        :param move_on_turn_fail: If True, the Magnebot will move forward even if the internal `turn_to()` action
+                                  didn't return `success`.
+
+        :return: An `ActionStatus` indicating if the Magnebot moved to the target and if not, why.
+        """
+
+        # Turn to face the target.
+        status = self.turn_to(target=target, speed=turn_speed, aligned_at=aligned_at)
+        # Move to the target unless the turn failed (and if we care about the turn failing).
+        if status == ActionStatus.success or move_on_turn_fail:
+            if isinstance(target, int):
+                target = self.state.objects[target].position
+            elif isinstance(target, dict):
+                target = TDWUtils.vector3_to_array(target)
+            else:
+                raise Exception(f"Invalid target: {target}")
+
+            return self.move_by(distance=np.linalg.norm(self.state.robot.position - target), speed=move_speed,
+                                arrived_at=arrived_at)
+        else:
+            self._set_state()
+            return status
+
+    def end(self) -> None:
+        """
+        End the simulation. Terminate the build process.
+        """
+
+        self.communicate({"$type": "terminate"})
 
     def _set_state(self):
         self.state = SceneState(resp=self.communicate([]))
 
-    def _wheels_are_turning(self, resp: List[bytes], not_turning_at: float) -> bool:
+    def _wheels_are_done(self, state_0: SceneState) -> Tuple[bool, SceneState]:
         """
-        :param resp: The response from the build.
-        :param not_turning_at: If the angular velocity of any wheel is over this, the wheels are still turning.
+        Advances one frame and then determines if the wheels are still turning.
 
-        :return: True if any of the robot's wheels are still turning.
+        :param state_0: The scene state from the previous frame.
+
+        :return: True if none of the wheels are tunring.
         """
 
-        state = SceneState(resp=resp)
+        resp = self.communicate([])
+        state_1 = SceneState(resp=resp)
         for wheel in self.__wheels:
-            wheel_angle = float(np.rad2deg(state.robot_joints[self.__wheels[wheel]].angles[0]))
-            if (0 < self.__wheels_targets[wheel] <= wheel_angle) or (0 > self.__wheels_targets[wheel] >= wheel_angle):
-                print(wheel_angle, self.__wheels_targets[wheel], wheel)
-                return True
-        return False
+            w_id = self.__wheels[wheel].object_id
+            if np.linalg.norm(state_0.robot_joints[w_id].angles[0] - state_1.robot_joints[w_id].angles[0]) > 0.001:
+                return False, state_1
+        return True, state_1
 
     def _get_scene_init_commands(self, scene: str = None, layout: int = None, room: int = -1) -> List[dict]:
         commands = [{"$type": "load_scene",
@@ -233,9 +357,3 @@ class Magnebot(FloorplanController):
         for object_id in self._object_init_commands:
             commands.extend(self._object_init_commands[object_id])
         return commands
-
-
-if __name__ == "__main__":
-    c = Magnebot(launch_build=False)
-    c.init_scene()
-    c.turn_by(45)
