@@ -1,6 +1,6 @@
 from typing import Dict, Type, TypeVar, List, Optional
 from tdw.output_data import OutputData, Transforms, Rigidbodies, Bounds, Images, SegmentationColors, Volumes, Raycast, \
-    CompositeObjects, CameraMatrices, Environments, Overlap, Version, StaticRobot, Robot
+    CompositeObjects, CameraMatrices, Environments, Overlap, Version, StaticRobot, Robot, Magnebot
 
 
 T = TypeVar("T", bound=OutputData)
@@ -18,7 +18,8 @@ __OUTPUT_IDS: Dict[Type[OutputData], str] = {Transforms: "tran",
                                              Overlap: "over",
                                              Version: "vers",
                                              StaticRobot: "srob",
-                                             Robot: "robo"}
+                                             Robot: "robo",
+                                             Magnebot: "magn"}
 
 
 def get_data(resp: List[bytes], d_type: Type[T]) -> Optional[T]:

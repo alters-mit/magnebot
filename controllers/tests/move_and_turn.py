@@ -1,5 +1,4 @@
-from magnebot import Magnebot
-from magnebot.action_status import ActionStatus
+from magnebot import Magnebot, ActionStatus
 
 """
 Test Magnebot moving and turning.
@@ -12,7 +11,7 @@ def assert_status(status: ActionStatus):
 
 if __name__ == "__main__":
     c = Magnebot(launch_build=False, debug=True)
-    c.init_scene()
+    c.init_test_scene()
     assert_status(c.turn_by(45))
     assert_status(c.turn_by(-30))
     assert_status(c.move_by(0.8))

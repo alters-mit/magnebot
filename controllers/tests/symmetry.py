@@ -4,15 +4,15 @@ from magnebot import Magnebot
 
 if __name__ == "__main__":
     c = Magnebot(launch_build=False, debug=True)
-    c.init_scene()
+    c.init_test_scene()
     expected_names = ["shoulder_left", "elbow_left", "magnet_left", "magnet_link_left",
                       "shoulder_right", "elbow_right", "magnet_right", "magnet_link_right",
                       "wheel_left_front", "wheel_left_back", "wheel_right_front", "wheel_right_back"]
     shoulders = []
     elbows = []
     magnets = []
-    for j_id in c.static_robot_info:
-        j = c.static_robot_info[j_id]
+    for j_id in c.robot_static:
+        j = c.robot_static[j_id]
         assert j.name in expected_names, f"Unexpected name: {j.name}"
         if "shoulder" in j.name:
             shoulders.append(j.id)
