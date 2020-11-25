@@ -2,6 +2,7 @@ import random
 from json import loads
 import numpy as np
 from typing import List, Dict, Optional, Union, Tuple
+from ikpy.chain import Chain
 from tdw.floorplan_controller import FloorplanController
 from tdw.output_data import Version, StaticRobot, SegmentationColors, Bounds, Rigidbodies
 from tdw.tdw_utils import TDWUtils
@@ -14,6 +15,7 @@ from magnebot.object_static import ObjectStatic
 from magnebot.scene_state import SceneState
 from magnebot.action_status import ActionStatus
 from magnebot.paths import SPAWN_POSITIONS_PATH
+from magnebot.arm import Arm
 
 
 class Magnebot(FloorplanController):
@@ -41,6 +43,7 @@ class Magnebot(FloorplanController):
         self._hold_limit = hold_limit
 
         self.__wheels: Dict[str, Magnebot.__Wheel] = dict()
+        self.__joint_angles: Dict[Arm, List[float]] = dict()
 
         self.state: Optional[SceneState] = None
 
@@ -88,8 +91,7 @@ class Magnebot(FloorplanController):
 
         **Always call this function before any other API calls.**
 
-        Set the `scene` and `layout` parameters in `init_scene()` to load an interior scene with furniture and props.
-        Set the `room` to spawn the avatar in the center of a room.
+        Set the `scene` and `layout` parameters in `init_scene()` to load an interior scene with furniture and props. Set the `room` to spawn the avatar in the center of a room.
 
         ```python
         from magnebot import Magnebot
@@ -113,13 +115,9 @@ class Magnebot(FloorplanController):
 
         You can safely call `init_scene()` more than once to reset the simulation.
 
-        :param scene: The name of an interior floorplan scene.
-                      Each number (1, 2, etc.) has a different shape, different rooms, etc.
-                      Each letter (a, b, c) is a cosmetically distinct variant with the same floorplan.
-        :param layout: The furniture layout of the floorplan. Each number (0, 1, 2) will populate the floorplan with
-                       different furniture in different positions.
-        :param room: The index of the room that the Magnebot will spawn in the center of.
-                     If `room == -1` the room will be chosen randomly.
+        :param scene: The name of an interior floorplan scene. Each number (1, 2, etc.) has a different shape, different rooms, etc. Each letter (a, b, c) is a cosmetically distinct variant with the same floorplan.
+        :param layout: The furniture layout of the floorplan. Each number (0, 1, 2) will populate the floorplan with different furniture in different positions.
+        :param room: The index of the room that the Magnebot will spawn in the center of. If `room == -1` the room will be chosen randomly.
         """
 
         commands = self.get_scene_init_commands(scene=scene, layout=layout, audio=True)
@@ -135,8 +133,7 @@ class Magnebot(FloorplanController):
         """
         Initialize an empty test room with a Magnebot.
 
-        This function can be called instead of `init_scene()` for testing purposes.
-        If so, it must be called before any other API calls.
+        This function can be called instead of `init_scene()` for testing purposes. If so, it must be called before any other API calls.
 
         ```python
         from magnebot import Magnebot
@@ -160,9 +157,10 @@ class Magnebot(FloorplanController):
     def turn_by(self, angle: float, speed: float = 15, aligned_at: float = 3) -> ActionStatus:
         """
         Turn the Magnebot by an angle.
+
         The Magnebot will turn by small increments to align with the target angle.
-        When turning, the left wheels will turn one way and the right wheels in the opposite way,
-        allowing the Magnebot to turn in place.
+
+        When turning, the left wheels will turn one way and the right wheels in the opposite way, allowing the Magnebot to turn in place.
 
         Possible [return values](action_status.md):
 
@@ -171,8 +169,7 @@ class Magnebot(FloorplanController):
         - `unaligned`
 
         :param angle: The target angle in degrees. Positive value = clockwise turn.
-        :param aligned_at: If the different between the current angle and the target angle is less than this value,
-                            then the action is successful.
+        :param aligned_at: If the different between the current angle and the target angle is less than this value, then the action is successful.
         :param speed: The wheels will turn this many degrees per attempt to turn.
 
         :return: An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
@@ -234,9 +231,10 @@ class Magnebot(FloorplanController):
     def turn_to(self, target: Union[int, Dict[str, float]], speed: float = 15, aligned_at: float = 3) -> ActionStatus:
         """
         Turn the Magnebot to face a target object or position.
+
         The Magnebot will turn by small increments to align with the target angle.
-        When turning, the left wheels will turn one way and the right wheels in the opposite way,
-        allowing the Magnebot to turn in place.
+
+        When turning, the left wheels will turn one way and the right wheels in the opposite way, allowing the Magnebot to turn in place.
 
         Possible [return values](action_status.md):
 
@@ -245,8 +243,7 @@ class Magnebot(FloorplanController):
         - `unaligned`
 
         :param target: Either the ID of an object or a Vector3 position.
-        :param aligned_at: If the different between the current angle and the target angle is less than this value,
-                            then the action is successful.
+        :param aligned_at: If the different between the current angle and the target angle is less than this value, then the action is successful.
         :param speed: The wheels will turn this many degrees per attempt to turn.
 
         :return: An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
@@ -276,8 +273,7 @@ class Magnebot(FloorplanController):
 
         :param distance: The target distance. If less than zero, the Magnebot will move backwards.
         :param speed: The Magnebot's wheels will rotate by this many degrees per iteration.
-        :param arrived_at: If at any point during the action the difference between the target distance and distance
-                           traversed is less than this, then the action is successful.
+        :param arrived_at: If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
 
         :return: An `ActionStatus` indicating if the Magnebot moved by `distance` and if not, why.
         """
@@ -322,6 +318,7 @@ class Magnebot(FloorplanController):
                 move_on_turn_fail: bool = False) -> ActionStatus:
         """
         Move the Magnebot to a target object or position.
+
         The Magnebot will first try to turn to face the target by internally calling a `turn_to()` action.
 
         - `success`
@@ -331,13 +328,10 @@ class Magnebot(FloorplanController):
 
         :param target: Either the ID of an object or a Vector3 position.
         :param move_speed: The Magnebot's wheels will rotate by this many degrees per iteration when moving.
-        :param arrived_at: While moving, if at any point during the action the difference between the target distance
-                           and distance traversed is less than this, then the action is successful.
+        :param arrived_at: While moving, if at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
         :param turn_speed: The Magnebot's wheels will rotate by this many degrees per iteration when turning.
-        :param aligned_at: While turning, if the different between the current angle and the target angle is less than
-                           this value, then the action is successful.
-        :param move_on_turn_fail: If True, the Magnebot will move forward even if the internal `turn_to()` action
-                                  didn't return `success`.
+        :param aligned_at: While turning, if the different between the current angle and the target angle is less than this value, then the action is successful.
+        :param move_on_turn_fail: If True, the Magnebot will move forward even if the internal `turn_to()` action didn't return `success`.
 
         :return: An `ActionStatus` indicating if the Magnebot moved to the target and if not, why.
         """
@@ -399,8 +393,7 @@ class Magnebot(FloorplanController):
         :param model_name: The name of the model.
         :param position: The position of the model.
         :param rotation: The starting rotation of the model. Can be Euler angles or a quaternion.
-        :param library: The path to the records file. If left empty, the default library will be selected.
-                        See `ModelLibrarian.get_library_filenames()` and `ModelLibrarian.get_default_library()`.
+        :param library: The path to the records file. If left empty, the default library will be selected. See `ModelLibrarian.get_library_filenames()` and `ModelLibrarian.get_default_library()`.
         :param scale: The scale factor of the object. If None, the scale factor is (1, 1, 1)
         :param audio: Audio values for the object. If None, use default values.
         :param mass: If not None, use this mass instead of the default.
@@ -509,6 +502,25 @@ class Magnebot(FloorplanController):
         self._next_frame_commands.append({"$type": "enable_image_sensor",
                                           "enable": False})
 
+    def __get_ik(self, target_position: np.array, arm: Arm, chain: Chain) -> List[float]:
+        """
+        :param target_position: The target position as a numpy array: `[x, y, z]`
+        :param arm: The arm of the chain.
+        :param chain: The IK chain.
+
+        :return: A list of angles in degrees to turn to.
+        """
+        
+        # Get the IK solution.
+        frame_target = np.eye(4)
+        frame_target[:3, 3] = target_position
+        ik = chain.inverse_kinematics_frame(target=frame_target, initial_position=self.__joint_angles[arm],
+                                            no_position=False)
+        ik = [float(np.rad2deg(i)) for i in ik[1:-1]]
+        # Record the IK solution.
+        self.__joint_angles[arm] = ik[:]
+        return ik
+
     def __cache_static_data(self, resp: List[bytes]) -> None:
         """
         Cache static data after initializing the scene.
@@ -524,6 +536,10 @@ class Magnebot(FloorplanController):
         self.segmentation_color_to_id.clear()
         self._next_frame_commands.clear()
         SceneState.FRAME_COUNT = 0
+
+        # Set the default joint angles.
+        self.__joint_angles = {Arm.left: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                               Arm.right: [0, 0, 0, 0, 0, 0, 0, 0, 0]}
 
         # Get segmentation color data.
         segmentation_colors = get_data(resp=resp, d_type=SegmentationColors)
