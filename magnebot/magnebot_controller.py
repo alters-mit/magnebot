@@ -33,11 +33,12 @@ class Magnebot(FloorplanController):
     __OBJECT_AUDIO = PyImpact.get_object_info()
 
     def __init__(self, port: int = 1071, launch_build: bool = True, id_pass: bool = True,
-                 screen_width: int = 256, screen_height: int = 256, debug: bool = False):
+                 screen_width: int = 256, screen_height: int = 256, debug: bool = False, hold_limit: int = 1):
         super().__init__(port=port, launch_build=launch_build)
 
         self._id_pass = id_pass
         self._debug = debug
+        self._hold_limit = hold_limit
 
         self.__wheels: Dict[str, Magnebot.__Wheel] = dict()
 
@@ -160,6 +161,8 @@ class Magnebot(FloorplanController):
         """
         Turn the Magnebot by an angle.
         The Magnebot will turn by small increments to align with the target angle.
+        When turning, the left wheels will turn one way and the right wheels in the opposite way,
+        allowing the Magnebot to turn in place.
 
         Possible [return values](action_status.md):
 
@@ -232,6 +235,8 @@ class Magnebot(FloorplanController):
         """
         Turn the Magnebot to face a target object or position.
         The Magnebot will turn by small increments to align with the target angle.
+        When turning, the left wheels will turn one way and the right wheels in the opposite way,
+        allowing the Magnebot to turn in place.
 
         Possible [return values](action_status.md):
 
@@ -447,12 +452,20 @@ class Magnebot(FloorplanController):
         """
 
         # Add the Magnebot.
+        # Set the maximum number of held objects per magnet.
+        # Set the number of objects that the Magnebot can hold.
         # Add the avatar (camera).
         # Parent the avatar to the Magnebot.
         # Set pass masks.
         # Disable the image sensor.
         commands = [{"$type": "add_magnebot",
                      "position": magnebot_position},
+                    {"$type": "set_magnebot_magnet_hold_limit",
+                     "Arm": "left",
+                     "limit": self._hold_limit},
+                    {"$type": "set_magnebot_magnet_hold_limit",
+                     "Arm": "right",
+                     "limit": self._hold_limit},
                     {"$type": "create_avatar",
                      "type": "A_Img_Caps_Kinematic"},
                     {"$type": "parent_avatar_to_robot",
