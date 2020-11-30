@@ -1,0 +1,17 @@
+{
+  "MagnebotController(FloorplanController)":
+  {
+    "Constructor": {
+      "description": "",
+      "functions": ["__init__"]
+    },
+    "Documentation Generation": {
+      "description": "Use these functions to generate your documentation.",
+      "functions": ["get_docs", "get_doc"]
+    },
+    "Helper Functions": {
+      "description": "These functions are used in `get_docs()`. You generally won't need to call these yourself.",
+      "functions": ["get_class_description", "get_function_documentation", "get_enum_values", "get_fields"]
+    }
+  }
+}

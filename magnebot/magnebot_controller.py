@@ -21,6 +21,61 @@ from magnebot.arm import Arm
 
 
 class Magnebot(FloorplanController):
+    """
+    [TDW controller](https://github.com/threedworld-mit/tdw) for Magnebots.
+
+    ```python
+    from magnebot import Magnebot
+
+    m = Magnebot()
+    # Initializes the scene.
+    m.init_scene(scene="2a", layout=1)
+    ```
+
+    ***
+
+    ## Parameter types
+
+    #### Dict[str, float]
+
+    All parameters of type `Dict[str, float]` are Vector3 dictionaries formatted like this:
+
+    ```json
+    {"x": -0.2, "y": 0.21, "z": 0.385}
+    ```
+
+    `y` is the up direction.
+
+    To convert from or to a numpy array:
+
+    ```python
+    from tdw.tdw_utils import TDWUtils
+
+    target = {"x": 1, "y": 0, "z": 0}
+    target = TDWUtils.vector3_to_array(target)
+    print(target) # [1 0 0]
+    target = TDWUtils.array_to_vector3(target)
+    print(target) # {'x': 1.0, 'y': 0.0, 'z': 0.0}
+    ```
+
+    A parameter of type `Union[Dict[str, float], int]]` can be either a Vector3 or an integer (an object ID).
+
+    The types `Dict`, `Union`, and `List` are in the [`typing` module](https://docs.python.org/3/library/typing.html).
+
+    #### Arm
+
+    All parameters of type `Arm` require you to import the [Arm enum class](arm.md):
+
+    ```python
+    from sticky_mitten_avatar import Arm
+
+    print(Arm.left)
+    ```
+
+    ***
+
+    """
+
     # Global forward directional vector.
     _FORWARD = np.array([0, 0, 1])
 
@@ -28,25 +83,80 @@ class Magnebot(FloorplanController):
     __OBJECT_AUDIO = PyImpact.get_object_info()
 
     def __init__(self, port: int = 1071, launch_build: bool = True, id_pass: bool = True,
-                 screen_width: int = 256, screen_height: int = 256, debug: bool = False, hold_limit: int = 1):
+                 screen_width: int = 256, screen_height: int = 256, debug: bool = False):
+        """
+        :param port: The socket port. [Read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md#command-line-arguments) for more information.
+        :param launch_build: If True, the build will launch automatically on the default port (1071). If False, you will need to launch the build yourself (for example, from a Docker container).
+        :param id_pass: If True, the Magnebot will capture a segmentation colors image pass.
+        :param screen_width: The width of the screen in pixels.
+        :param screen_height: The height of the screen in pixels.
+        :param debug: If True, enable debug mode and output debug messages to the console.
+        """
+
         super().__init__(port=port, launch_build=launch_build)
 
         self._id_pass = id_pass
         self._debug = debug
-        self._hold_limit = hold_limit
 
         # Set the expected IK chains.
         self.__ik_chains: Dict[Arm, Chain] = {Arm.left: Magnebot.__get_arm(Arm.left),
                                               Arm.right: Magnebot.__get_arm(Arm.right)}
 
+        """:field
+        Dynamic data for all of the most recent frame (i.e. the frame after doing an action such as `move_to()`). [Read this](scene_state.md) for a full API.
+        """
         self.state: Optional[SceneState] = None
 
         # Commands to initialize objects.
         self._object_init_commands: Dict[int, List[dict]] = dict()
 
         # Cache static data.
+        """
+        Data for all objects in the scene that is static (won't change between frames), such as object IDs, mass, etc. Key = the ID of the object. [Read the full API here](object_static.md).
+        
+        ```python
+        from magnebot import Magnebot
+        
+        m = Magnebot()
+        m.init_scene(scene="2a", layout=1)
+        
+        # Print each object ID and segmentation color.     
+        for object_id in m.objects_static:
+            o = m.objects_static[object_id]
+            print(object_id, o.segmentation_color)
+        ```
+        """
         self.objects_static: Dict[int, ObjectStatic] = dict()
+
+        """:field
+        A dictionary. Key = a hashable representation of the object's segmentation color. Value = The object ID. See `static_object_info` for a dictionary mapped to object ID with additional data.
+
+        ```python
+        from tdw.tdw_utils import TDWUtils
+        from sticky_mitten_avatar import StickyMittenAvatarController
+
+        c = StickyMittenAvatarController()
+        c.init_scene(scene="2a", layout=1)
+
+        for hashable_color in c.segmentation_color_to_id:
+            object_id = c.segmentation_color_to_id[hashable_color]
+            # Convert the hashable color back to an [r, g, b] array.
+            color = TDWUtils.hashable_to_color(hashable_color)
+        ```
+        """
         self.segmentation_color_to_id: Dict[int, int] = dict()
+
+        """:field
+        Static data for the Magnebot that doesn't change between frames. [Read this for a full API](magnebot_static.md)
+        
+        ```python
+        from magnebot import Magnebot
+
+        m = Magnebot()
+        m.init_scene(scene="2a", layout=1)
+        print(m.magnebot_static.magnets)
+        ```
+        """
         self.magnebot_static: Optional[MagnebotStatic] = None
 
         # Commands that will be sent on the next frame.

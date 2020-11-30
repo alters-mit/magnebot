@@ -30,110 +30,47 @@ class SceneState:
 
     m.end()
     ```
-
-    ***
-
-    ## Fields
-
-    ### Visual
-
-    - `images` The images rendered by the robot as dictionary.
-      Key = the name of the pass. Value = the pass as a numpy array.
-      When a `SceneState` is created during an action, this is often empty.
-      `Magnebot.state.images` always contains images.
-      Expected keys: `img`, `id`, `depth`
-
-      `img` is the rendered image.
-
-      ![](images/pass_masks/img_0.jpg)
-
-      `id` is the object color segmentation pass. If `id_pass == False` in the `Magnebot` constructor, this will be None.
-      See `Magnebot.segmentation_color_to_id` and `Magnebot.objects_static` to map segmentation colors to object IDs.
-
-      ![](images/pass_masks/id_0.png)
-
-      `depth` is the depth values per pixel as a numpy array.
-      Depth values are encoded into the RGB image; see `get_depth_values()`. Use the camera matrices to interpret this data.
-
-      ![](images/pass_masks/depth_0.png)
-
-    ```python
-    from magnebot import Magnebot
-
-    m = Magnebot(id_pass=True)
-    m.init_scene(scene="2a", layout=1, room=1)
-
-    # Get the ID pass.
-    id_pass = m.state.images["id"]
-    ```
-
-    - `third_person_images` Images rendered by third-person cameras as dictionary. Key = The camera ID.
-      Value: A dictionary of image passes, structured exactly like `images` (see above).
-    - `projection_matrix` The [camera projection matrix](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/output_data.md#cameramatrices) of the avatar's camera as a numpy array.
-    - `camera_matrix` The [camera matrix](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/output_data.md#cameramatrices) of the avatar's camera as a numpy array.
-
-    ### Objects
-
-    - `object_transforms` The dictionary of object [transform data](transform.md). Key = the object ID.
-
-    ```python
-    from magnebot import Magnebot
-
-    m = Magnebot()
-    m.init_scene(scene="2a", layout=1, room=1)
-
-    for object_id in m.state.object_transforms:
-        print(c.state.object_transforms[object_id].position)
-    ```
-
-    ### Magnebot
-
-    - `magnebot_transform` The [transform data](transform.md) of the Magnebot.
-
-    ```python
-    from magnebot import Magnebot
-
-    m = Magnebot()
-    m.init_scene(scene="2a", layout=1, room=1)
-    print(m.state.magnebot_transform.position)
-    ```
-
-    - `joint_transforms` The [transform data](transform.md) of the Magnebot's joints. Key = The ID of the joint.
-
-    ```python
-    from magnebot import Magnebot
-
-    m = Magnebot()
-    m.init_scene(scene="2a", layout=1, room=1)
-    for j_id in m.state.joint_transforms:
-        print(m.state.joint_transforms[j_id].position)
-    ```
-
-    - `joint_angles` The [joint angles](joint_angles.md) of the Magnebot's joints. Key = the ID of the joint.
-      This is mainly useful for the backend code.
-
-    - `held` A dictionary of object IDs currently held by the Magnebot.
-      Key = The arm. Value = a numpy array of object IDs.
-
-    ```python
-    from magnebot import Magnebot, Arm
-
-    m = Magnebot()
-    m.init_scene(scene="2a", layout=1, room=1)
-    print(m.state.held[Arm.left]) # []
-    ```
-
-    ***
-
-    ## Functions
-
     """
 
     FRAME_COUNT = 0
 
     def __init__(self, resp: List[bytes]):
+        """
+        :param resp: The response from the build.
+        """
+
         r = get_data(resp=resp, d_type=Robot)
+        # Get data for the robot.
+        """:field
+        The [transform data](transform.md) of the Magnebot.
+
+        ```python
+        from magnebot import Magnebot
+
+        m = Magnebot()
+        m.init_scene(scene="2a", layout=1, room=1)
+        print(m.state.magnebot_transform.position)
+        ```
+        """
+        self.magnebot_transform: Transform = Transform(position=np.array(r.get_position()),
+                                                       rotation=np.array(r.get_rotation()),
+                                                       forward=np.array(r.get_forward()))
+        """:field
+        The [transform data](transform.md) of the Magnebot's joints. Key = The ID of the joint.
+
+        ```python
+        from magnebot import Magnebot
+    
+        m = Magnebot()
+        m.init_scene(scene="2a", layout=1, room=1)
+        for j_id in m.state.joint_transforms:
+            print(m.state.joint_transforms[j_id].position)
+        ```
+        """
         self.joint_transforms: Dict[int, Transform] = dict()
+        """:field
+        The [joint angles](joint_angles.md) of the Magnebot's joints. Key = the ID of the joint. This is mainly useful for the backend code.
+        """
         self.joint_angles: Dict[int, JointAngles] = dict()
         # Get data for the robot body parts.
         for i in range(r.get_num_joints()):
@@ -144,16 +81,38 @@ class SceneState:
                 forward=np.array(r.get_joint_forward(i)))
             self.joint_angles[j_id] = JointAngles(angles=np.array([np.rad2deg(a) for a in r.get_joint_positions(i)]),
                                                   targets=np.array(r.get_joint_targets(i)))
-        # Get data for the robot.
-        self.magnebot_transform: Transform = Transform(position=np.array(r.get_position()),
-                                                       rotation=np.array(r.get_rotation()),
-                                                       forward=np.array(r.get_forward()))
+
         m = get_data(resp=resp, d_type=Magnebot)
+        """:field
+        A dictionary of object IDs currently held by the Magnebot. Key = The arm. Value = a numpy array of object IDs.
+
+        ```python
+        from magnebot import Magnebot, Arm
+    
+        m = Magnebot()
+        m.init_scene(scene="2a", layout=1, room=1)
+        print(m.state.held[Arm.left]) # []
+        ```
+        """
         self.held: Dict[Arm, np.array] = {Arm.left: m.get_held_left(),
                                           Arm.right: m.get_held_right()}
 
         # Get object data.
         transforms = get_data(resp=resp, d_type=Transforms)
+        """:field
+        A dictionary of object [transform data](transform.md). Key = the object ID.
+
+        ```python
+        from magnebot import Magnebot
+
+        m = Magnebot()
+        m.init_scene(scene="2a", layout=1, room=1)
+        
+        # Print the position of each object.
+        for object_id in m.state.object_transforms:
+            print(m.state.object_transforms[object_id].position)
+        ```
+        """
         self.object_transforms: Dict[int, Transform] = dict()
         for i in range(transforms.get_num()):
             self.object_transforms[i] = Transform(position=np.array(transforms.get_position(i)),
@@ -162,14 +121,46 @@ class SceneState:
 
         # Get camera matrix data.
         matrices = get_data(resp=resp, d_type=CameraMatrices)
+        """:field
+        The [camera projection matrix](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/output_data.md#cameramatrices) of the Magnebot's camera as a numpy array.
+        """
         self.projection_matrix: Optional[np.array] = None
+        """:field
+        The [camera matrix](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/output_data.md#cameramatrices) of the Magnebot's camera as a numpy array.
+        """
         self.camera_matrix: Optional[np.array] = None
         if matrices is not None:
             self.projection_matrix = matrices.get_projection_matrix()
             self.camera_matrix = matrices.get_camera_matrix()
 
         # Get the image data.
+        """:field
+        The images rendered by the robot as dictionary. Key = the name of the pass. Value = the pass as a numpy array.
+        
+        When a `SceneState` is created during an action, this is often empty. `Magnebot.state.images` always contains images.
+        
+        ```python
+        from magnebot import Magnebot
+
+        m = Magnebot(id_pass=True)
+        m.init_scene(scene="2a", layout=1, room=1)
+
+        # Get the ID pass.
+        id_pass = m.state.images["id"]
+        ```
+        
+        | Pass | Image | Description |
+        | --- | --- | --- |
+        | `"img"` | ![](images/pass_masks/img_0.jpg) | The rendered image. |
+        | `"id"` | ![](images/pass_masks/id_0.png) | The object color segmentation pass. If `id_pass == False` in the `Magnebot` constructor, this will be None. See `Magnebot.segmentation_color_to_id` and `Magnebot.objects_static` to map segmentation colors to object IDs. |
+        | `"depth"` | ![](images/pass_masks/depth_0.png) | The depth values per pixel as a numpy array. Depth values are encoded into the RGB image; see `SceneState.get_depth_values()`. Use the camera matrices to interpret this data. 
+
+        """
         self.images: Dict[str, np.array] = dict()
+
+        """:field
+        Images rendered by third-person cameras as dictionary. Key = The camera ID. Value: A dictionary of image passes, structured exactly like `images` (see above).
+        """
         self.third_person_images: Dict[str: Dict[str, np.array]] = dict()
         for i in range(0, len(resp) - 1):
             if OutputData.get_data_type_id(resp[i]) == "imag":

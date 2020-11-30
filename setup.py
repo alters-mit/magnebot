@@ -20,5 +20,5 @@ setup(
     ],
     keywords='unity simulation tdw',
     packages=find_packages(),
-    install_requires=['tdw', 'numpy', 'ikpy', 'matplotlib', 'pillow'],
+    install_requires=['tdw', 'numpy', 'ikpy', 'matplotlib', 'pillow', "py_md_doc"],
 )

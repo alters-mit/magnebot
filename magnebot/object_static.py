@@ -18,23 +18,6 @@ class ObjectStatic:
         o = m.objects_static[object_id]
         print(object_id, o.segmentation_color)
     ```
-
-    ***
-
-    ## Fields
-
-    - `object_id`: The unique ID of the object.
-    - `mass`: The mass of the object.
-    - `segmentation_color`: The RGB segmentation color for the object as a numpy array: `[r, g, b]`
-    - `name`: [The name of the model.](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/librarian/model_librarian.md)
-    - `category`: The semantic category of the object.
-    - `kinematic`: If True, this object is kinematic, and won't respond to physics. Example: a painting hung on a wall.
-    - `size`: The size of the object as a numpy array: `[width, height, length]`
-
-    ***
-
-    ## Functions
-
     """
 
     # Objects that we can assume are kinematic.
@@ -59,10 +42,31 @@ class ObjectStatic:
         :param size: The size of the object.
         """
 
+        """:field
+        The unique ID of the object.
+        """
         self.object_id = object_id
+        """:field
+        [The name of the model.](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/librarian/model_librarian.md)
+        """
         self.name = name.lower()
-        self.kinematic = self.name in ObjectStatic.__KINEMATIC
-        self.segmentation_color = segmentation_color
-        self.mass = mass
-        self.size = size
+        """:field
+        The semantic category of the object.
+        """
         self.category = ObjectStatic.__CATEGORIES[self.name]
+        """:field
+        If True, this object is kinematic, and won't respond to physics. Example: a painting hung on a wall.
+        """
+        self.kinematic = self.name in ObjectStatic.__KINEMATIC
+        """:field
+        The RGB segmentation color for the object as a numpy array: `[r, g, b]`
+        """
+        self.segmentation_color = segmentation_color
+        """:field
+        The mass of the object.
+        """
+        self.mass = mass
+        """:field
+        The size of the object as a numpy array: `[width, height, length]`
+        """
+        self.size = size
