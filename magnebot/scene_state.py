@@ -151,7 +151,7 @@ class SceneState:
         | --- | --- | --- |
         | `"img"` | ![](images/pass_masks/img_0.jpg) | The rendered image. |
         | `"id"` | ![](images/pass_masks/id_0.png) | The object color segmentation pass. If `id_pass == False` in the `Magnebot` constructor, this will be None. See `Magnebot.segmentation_color_to_id` and `Magnebot.objects_static` to map segmentation colors to object IDs. |
-        | `"depth"` | ![](images/pass_masks/depth_0.png) | The depth values per pixel as a numpy array. Depth values are encoded into the RGB image; see `SceneState.get_depth_values()`. Use the camera matrices to interpret this data. 
+        | `"depth"` | ![](images/pass_masks/depth_0.png) | The depth values per pixel as a numpy array. Depth values are encoded into the RGB image; see `SceneState.get_depth_values()`. Use the camera matrices to interpret this data. |
 
         """
         self.images: Dict[str, np.array] = dict()
