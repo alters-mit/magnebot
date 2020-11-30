@@ -102,6 +102,12 @@ print(m.magnebot_static.magnets)
 | screen_height | The height of the screen in pixels. |
 | debug | If True, enable debug mode and output debug messages to the console. |
 
+***
+
+### Scene Setup
+
+_These functions should be sent at the start of the simulation. They advance the simulation by 1 frame and `Magnebot.state` will reflect the state of that frame._
+
 #### init_scene
 
 **`def init_scene(self, scene: str, layout: int, room: int = -1) -> None`**
@@ -158,6 +164,12 @@ m.init_test_scene()
 ```
 
 You can safely call `init_test_scene()` more than once to reset the simulation.
+
+***
+
+### Movement
+
+_These functions move or turn the Magnebot. These functions advance the simulation by many frames, depending on the nature of the action. `Magnebot.state` will reflect the simulation state at the final frame._
 
 #### turn_by
 
@@ -238,6 +250,8 @@ Move the Magnebot to a target object or position.
 
 The Magnebot will first try to turn to face the target by internally calling a `turn_to()` action.
 
+Possible [return values](action_status.md):
+
 - `success`
 - `overshot_move`
 - `too_many_attempts` (when moving, and also when turning if `move_on_turn_fail == False`)
@@ -255,17 +269,55 @@ The Magnebot will first try to turn to face the target by internally calling a `
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot moved to the target and if not, why.
 
+***
+
+### Arm Articulation
+
+_These functions move and bend the joints of the Magnebots's arms. These functions advance the simulation by many frames, depending on the nature of the action. `Magnebot.state` will reflect the simulation state at the final frame._
+
 #### reach_for
 
-**`def reach_for(self, target: Dict[str, float], arm: Arm, check_if_possible: bool = True, absolute: bool = False, arrived_at: float = 0.125) -> ActionStatus`**
+**`def reach_for(self, target: Dict[str, float], arm: Arm, check_if_possible: bool = True, absolute: bool = False, arrived_at: float = 0.125, num_attempts: int = 200) -> ActionStatus`**
 
-End the simulation. Terminate the build process.
+Reach for a target position.
+
+The action ends when the Magnebot's magnet reaches the target or the arm stops moving. The arm might stop moving if the motion is impossible, there's an obstacle in the way, if the arm is holding something heavy, and so on.
+
+Possible [return values](action_status.md):
+
+- `success`
+- `too_far_to_reach`
+- `failed_to_bend`
+
+
+| Parameter | Description |
+| --- | --- |
+| target | The target position for the magnet at the arm to reach. |
+| arm | The arm that will reach for the target. |
+| check_if_possible | If True, check if the motion is possible before doing it and if not, end the action immediately. |
+| absolute | If True, `target` is in absolute world coordiates. If `False`, `target` is relative to the position and rotation of the Magnebot. |
+| arrived_at | If the magnet is this distance or less from `target`, then the action is successful. |
+| num_attempts | Try this many frames to rotate the arm joints before giving up and ending the action. |
+
+_Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` is at the `target` and if not, why.
+
+***
+
+### Misc.
+
+_These are utility functions that won't advance the simulation by any frames._
 
 #### end
 
 **`def end(self) -> None`**
 
 End the simulation. Terminate the build process.
+
+***
+
+### Low-level
+
+_These are low-level functions that you are unlikely to ever need to use._
 
 #### communicate
 
@@ -281,4 +333,6 @@ You shouldn't ever need to use this function, but you might see it in some of th
 | commands | Commands to send to the build. See: [Command API](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md). |
 
 _Returns:_  The response from the build as a list of byte arrays. See: [Output Data](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/output_data.md).
+
+***
 

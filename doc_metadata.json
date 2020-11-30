@@ -1,17 +1,29 @@
 {
-  "MagnebotController(FloorplanController)":
+  "Magnebot(FloorplanController)":
   {
     "Constructor": {
       "description": "",
       "functions": ["__init__"]
     },
-    "Documentation Generation": {
-      "description": "Use these functions to generate your documentation.",
-      "functions": ["get_docs", "get_doc"]
+    "Scene Setup": {
+      "description": "These functions should be sent at the start of the simulation. They advance the simulation by 1 frame and `Magnebot.state` will reflect the state of that frame.",
+      "functions": ["init_scene", "init_test_scene"]
     },
-    "Helper Functions": {
-      "description": "These functions are used in `get_docs()`. You generally won't need to call these yourself.",
-      "functions": ["get_class_description", "get_function_documentation", "get_enum_values", "get_fields"]
+    "Movement": {
+      "description": "These functions move or turn the Magnebot. These functions advance the simulation by many frames, depending on the nature of the action. `Magnebot.state` will reflect the simulation state at the final frame.",
+      "functions": ["turn_by", "turn_to", "move_by", "move_to"]
+    },
+    "Arm Articulation": {
+      "description": "These functions move and bend the joints of the Magnebots's arms. These functions advance the simulation by many frames, depending on the nature of the action. `Magnebot.state` will reflect the simulation state at the final frame.",
+      "functions": ["reach_for"]
+    },
+    "Misc.": {
+      "description": "These are utility functions that won't advance the simulation by any frames.",
+      "functions": ["end"]
+    },
+    "Low-level": {
+      "description": "These are low-level functions that you are unlikely to ever need to use.",
+      "functions": ["communicate"]
     }
   }
 }

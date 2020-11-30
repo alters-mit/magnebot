@@ -17,6 +17,7 @@ print(status) # ActionStatus.success
 
 | Value | Description |
 | --- | --- |
+| `ongoing` | The action is ongoing. |
 | `success` | The action was successful. |
 | `overshot_move` | The Magnebot tried to move somewhere but overshot the target distance or position. |
 | `too_many_attempts` | The Magnebot tried to move or turn too many times and gave up. |

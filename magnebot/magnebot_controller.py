@@ -1,3 +1,4 @@
+from enum import Enum
 import random
 from json import loads
 import numpy as np
@@ -76,6 +77,29 @@ class Magnebot(FloorplanController):
 
     """
 
+    class __ArmJoint(Enum):
+        """
+        The expected name of an arm joint.
+        """
+
+        spine = 0
+        shoulder_left = 1
+        elbow_left = 2
+        wrist_left = 3
+        shoulder_right = 4
+        elbow_right = 5
+        wrist_right = 6
+
+    class __JointType(Enum):
+        """
+        Types of joint articulation.
+        """
+
+        revolute = 0
+        prismatic = 1
+        spherical = 2
+        fixed = 3
+
     # Global forward directional vector.
     _FORWARD = np.array([0, 0, 1])
 
@@ -83,8 +107,22 @@ class Magnebot(FloorplanController):
     __OBJECT_AUDIO = PyImpact.get_object_info()
 
     # The order in which joint angles will be set.
-    __JOINT_ORDER = {Arm.left: ["spine", "shoulder_left", "elbow_left", "wrist_left"],
-                     Arm.right: ["spine", "shoulder_right", "elbow_right", "wrist_right"]}
+    __JOINT_ORDER: Dict[Arm, List[__ArmJoint]] = {Arm.left: [__ArmJoint.spine,
+                                                             __ArmJoint.shoulder_left,
+                                                             __ArmJoint.elbow_left,
+                                                             __ArmJoint.wrist_left],
+                                                  Arm.right: [__ArmJoint.spine,
+                                                              __ArmJoint.shoulder_right,
+                                                              __ArmJoint.elbow_right,
+                                                              __ArmJoint.wrist_right]}
+    # The expected joint articulation per joint
+    __JOINT_AXES: Dict[__ArmJoint, __JointType] = {__ArmJoint.spine: __JointType.revolute,
+                                                   __ArmJoint.shoulder_left: __JointType.spherical,
+                                                   __ArmJoint.elbow_left: __JointType.revolute,
+                                                   __ArmJoint.wrist_left: __JointType.spherical,
+                                                   __ArmJoint.shoulder_right: __JointType.spherical,
+                                                   __ArmJoint.elbow_right: __JointType.revolute,
+                                                   __ArmJoint.wrist_right: __JointType.spherical}
 
     def __init__(self, port: int = 1071, launch_build: bool = True, id_pass: bool = True,
                  screen_width: int = 256, screen_height: int = 256, debug: bool = False):
@@ -327,9 +365,9 @@ class Magnebot(FloorplanController):
             angle_1 = _get_angle_1()
             # If the difference between the target angle and the current angle is very small, we're done.
             if np.abs(angle_1 - angle_0) < aligned_at:
-                self._set_state()
+                self._end_action()
                 return ActionStatus.success
-        self._set_state()
+        self._end_action()
         angle_1 = _get_angle_1()
         if np.abs(angle_1 - angle_0) < aligned_at:
             return ActionStatus.success
@@ -418,7 +456,7 @@ class Magnebot(FloorplanController):
             p1 = wheel_state.magnebot_transform.position
             d = np.linalg.norm(p1 - p0)
             attempts += 1
-        self._set_state()
+        self._end_action()
         if np.abs(np.abs(distance) - d) < arrived_at:
             return ActionStatus.success
         elif attempts >= num_attempts:
@@ -433,6 +471,8 @@ class Magnebot(FloorplanController):
         Move the Magnebot to a target object or position.
 
         The Magnebot will first try to turn to face the target by internally calling a `turn_to()` action.
+
+        Possible [return values](action_status.md):
 
         - `success`
         - `overshot_move`
@@ -461,57 +501,57 @@ class Magnebot(FloorplanController):
             else:
                 raise Exception(f"Invalid target: {target}")
 
-            return self.move_by(distance=np.linalg.norm(self.state.magnebot_transform.position - target), speed=move_speed,
-                                arrived_at=arrived_at)
+            return self.move_by(distance=np.linalg.norm(self.state.magnebot_transform.position - target),
+                                speed=move_speed, arrived_at=arrived_at)
         else:
-            self._set_state()
+            self._end_action()
             return status
 
     def reach_for(self, target: Dict[str, float], arm: Arm, check_if_possible: bool = True,
-                  absolute: bool = False, arrived_at: float = 0.125) -> ActionStatus:
-        target = TDWUtils.vector3_to_array(target)
-        # Convert to relative coordinates.
-        if absolute:
-            target = self.__absolute_to_relative(position=target, state=self.state)
+                  absolute: bool = False, arrived_at: float = 0.125, num_attempts: int = 200) -> ActionStatus:
+        """
+        Reach for a target position.
 
-        angles = self.__get_ik(target_position=target, arm=arm)
-        # Check if the IK solution reaches the target.
-        chain = self.__ik_chains[arm]
-        transformation_matrices = chain.forward_kinematics(angles, full_kinematics=True)
-        nodes = []
-        for (index, link) in enumerate(chain.links):
-            (node, orientation) = geometry.from_transformation_matrix(transformation_matrices[index])
-            nodes.append(node)
-        # The expected destination.
-        destination = np.array(nodes[-1][:-1])
+        The action ends when the Magnebot's magnet reaches the target or the arm stops moving. The arm might stop moving if the motion is impossible, there's an obstacle in the way, if the arm is holding something heavy, and so on.
 
-        if check_if_possible:
-            d = np.linalg.norm(destination - target)
-            if d > arrived_at:
-                if self._debug:
-                    print(f"Target {target} is too far away from {arm}: {d}")
-                return ActionStatus.too_far_to_reach
-        angles = [float(np.rad2deg(a)) for a in angles[1:-1]]
+        Possible [return values](action_status.md):
 
-        raise Exception("TODO: send command and then wait for everything to stop turning.")
+        - `success`
+        - `too_far_to_reach`
+        - `failed_to_bend`
 
-        resp = self.communicate([])  # TODO remove this
-        state = SceneState(resp=resp)
-        angles = []  # TODO Record the IK solution.
-        # Record the IK solution.
-        self.__joint_angles[arm] = angles
-        self._set_state()
+        :param target: The target position for the magnet at the arm to reach.
+        :param arm: The arm that will reach for the target.
+        :param check_if_possible: If True, check if the motion is possible before doing it and if not, end the action immediately.
+        :param absolute: If True, `target` is in absolute world coordiates. If `False`, `target` is relative to the position and rotation of the Magnebot.
+        :param arrived_at: If the magnet is this distance or less from `target`, then the action is successful.
+        :param num_attempts: Try this many frames to rotate the arm joints before giving up and ending the action.
 
-        # Check how close the magnet is to the expected relative position.
-        magnet_position = self.__absolute_to_relative(position=self.state.robot_joints[self.magnebot_static.magnets[arm]].position,
-                                                      state=self.state)
-        d = np.linalg.norm(destination - magnet_position)
-        if d < arrived_at:
-            return ActionStatus.success
-        else:
-            if self._debug:
-                print(f"Tried and failed to reach for {target}: {d}")
+        :return: An `ActionStatus` indicating if the magnet at the end of the `arm` is at the `target` and if not, why.
+        """
+
+        self._start_action()
+        # Start the IK action.
+        status = self._start_ik(target=target, arm=arm, check_if_possible=check_if_possible, absolute=absolute,
+                                arrived_at=arrived_at)
+        if status != ActionStatus.success:
+            self._end_action()
+            return status
+
+        # Begin to bend.
+        state_0, status = self._continue_ik(arm=arm, target=target, absolute=absolute, arrived_at=arrived_at,
+                                            state_0=SceneState(self.communicate([])))
+        # Continue the IK action. Per frame, check if the movement is done.
+        attempts = 0
+        while status == ActionStatus.ongoing and attempts < num_attempts:
+            state_0, status = self._continue_ik(arm=arm, target=target, absolute=absolute, arrived_at=arrived_at,
+                                                state_0=state_0)
+            attempts += 1
+        self._end_action()
+        if status == ActionStatus.ongoing:
             return ActionStatus.failed_to_reach
+        else:
+            return status
 
     def end(self) -> None:
         """
@@ -569,7 +609,7 @@ class Magnebot(FloorplanController):
         object_id, object_commands = init_data.get_commands()
         self._object_init_commands[object_id] = object_commands
 
-    def _set_state(self) -> None:
+    def _end_action(self) -> None:
         """
         Set the scene state at the end of an action.
         """
@@ -655,6 +695,126 @@ class Magnebot(FloorplanController):
         self._next_frame_commands.append({"$type": "enable_image_sensor",
                                           "enable": False})
 
+    def _start_ik(self, target: Dict[str, float], arm: Arm, check_if_possible: bool = True,
+                  absolute: bool = False, arrived_at: float = 0.125, state: SceneState = None) -> ActionStatus:
+        """
+        Start an IK action.
+
+        :param target: The target position.
+        :param arm: The arm that will be bending.
+        :param check_if_possible: If True, check if the motion is possible and fail immediately if it's impossible.
+        :param absolute: If True, `target` is in absolute world coordinates. If False, `target` is relative to the position and rotation of the Magnebot.
+        :param arrived_at: If the magnet is this distance or less from `target`, then the action is successful.
+        :param state: The scene state. If None, this uses `self.state`
+
+        :return: An `ActionStatus` describing whether the IK action began.
+        """
+
+        if state is None:
+            state = self.state
+        target = TDWUtils.vector3_to_array(target)
+        # Convert to relative coordinates.
+        if absolute:
+            target = self.__absolute_to_relative(position=target, state=state)
+
+        # Get the IK solution using the current angles.
+        frame_target = np.eye(4)
+        frame_target[:3, 3] = target
+
+        angles: List[float] = list()
+        for joint_name in Magnebot.__JOINT_ORDER[arm]:
+            j_id = self.magnebot_static.arm_joints[joint_name.name]
+            angles.extend(state.joint_angles[j_id])
+        for b_id in state.joint_angles:
+            angles.extend(state.joint_angles[b_id])
+        angles = self.__ik_chains[arm].inverse_kinematics_frame(target=frame_target,
+                                                                initial_position=angles,
+                                                                no_position=False)
+        # Check if the IK solution reaches the target.
+        chain = self.__ik_chains[arm]
+        transformation_matrices = chain.forward_kinematics(angles, full_kinematics=True)
+        nodes = []
+        for (index, link) in enumerate(chain.links):
+            (node, orientation) = geometry.from_transformation_matrix(transformation_matrices[index])
+            nodes.append(node)
+        # The expected destination.
+        destination = np.array(nodes[-1][:-1])
+
+        if check_if_possible:
+            d = np.linalg.norm(destination - target)
+            if d > arrived_at:
+                if self._debug:
+                    print(f"Target {target} is too far away from {arm}: {d}")
+                return ActionStatus.too_far_to_reach
+        angles = [float(np.rad2deg(a)) for a in angles[1:-1]]
+
+        commands = []
+        i = 0
+        joint_order_index = 0
+        while i < len(angles):
+            joint_name = Magnebot.__JOINT_ORDER[arm][joint_order_index]
+            joint_type = Magnebot.__JOINT_AXES[joint_name]
+            joint_id = self.magnebot_static.arm_joints[joint_name]
+            if joint_type == Magnebot.__JointType.revolute:
+                commands.append({"$type": "set_revolute_target",
+                                 "joint_id": joint_id,
+                                 "target": angles[i]})
+                i += 1
+            elif joint_type == Magnebot.__JointType.spherical:
+                commands.append({"$type": "set_spherical_target",
+                                 "joint_id": joint_id,
+                                 "target": {"x": angles[i], "y": angles[i + 1], "z": angles[i + 2]}})
+                i += 3
+            else:
+                raise Exception(f"Joint type not defined: {joint_type} for {joint_name}.")
+            joint_order_index += 1
+        self._next_frame_commands.extend(commands)
+        return ActionStatus.success
+
+    def _continue_ik(self, target: np.array, absolute: bool, arm: Arm, arrived_at: float,
+                     state_0: SceneState) -> Tuple[SceneState, ActionStatus]:
+        """
+        Continue an IK action until the joints stop moving.
+
+        :param target: The target position.
+        :param arm: The arm that will be bending.
+        :param absolute: If True, `target` is in absolute world coordinates. If False, `target` is relative to the position and rotation of the Magnebot.
+        :param arrived_at: If the magnet is this distance or less from `target`, then the action is successful.
+        :param state_0: The scene state from the previous frame.
+
+        :return: Tuple: The new scene state, and the action status.
+        """
+
+        state_1 = SceneState(self.communicate([]))
+        moving = False
+        for a_id in self.magnebot_static.arm_joints.values():
+            if np.linalg.norm(state_0.joint_angles[a_id].angles[0] -
+                              state_1.joint_angles[a_id].angles[0]) > 0.001:
+                moving = True
+                break
+        # The joints are still moving, so the action continues.
+        if moving:
+            return state_1, ActionStatus.ongoing
+
+        # The action is done.
+        self._end_action()
+
+        # Check how close the magnet is to the expected relative position.
+        magnet_position = self.__absolute_to_relative(
+            position=self.state.robot_joints[self.magnebot_static.magnets[arm]].position,
+            state=self.state)
+        if absolute:
+            destination = self.__absolute_to_relative(position=target, state=self.state)
+        else:
+            destination = np.array(target[:])
+        d = np.linalg.norm(destination - magnet_position)
+        if d < arrived_at:
+            return state_1, ActionStatus.success
+        else:
+            if self._debug:
+                print(f"Tried and failed to reach for target: {d}")
+            return state_1, ActionStatus.failed_to_reach
+
     def __cache_static_data(self, resp: List[bytes]) -> None:
         """
         Cache static data after initializing the scene.
@@ -697,7 +857,7 @@ class Magnebot(FloorplanController):
                                                           mass=rigidbodies.get_mass(i))
         # Cache the static robot data.
         self.magnebot_static = MagnebotStatic(static_robot=get_data(resp=resp, d_type=StaticRobot))
-        self._set_state()
+        self._end_action()
 
     def __absolute_to_relative(self, position: np.array, state: SceneState) -> np.array:
         """
@@ -710,29 +870,6 @@ class Magnebot(FloorplanController):
         return TDWUtils.rotate_position_around(position=position - self.state.magnebot_transform.position,
                                                angle=-TDWUtils.get_angle_between(v1=Magnebot._FORWARD,
                                                                                  v2=state.magnebot_transform.forward))
-
-    def __get_ik(self, target_position: np.array, arm: Arm, state: SceneState) -> List[float]:
-        """
-        :param target_position: The target position as a numpy array: `[x, y, z]`
-        :param arm: The arm of the chain.
-        :param state: The current state.
-
-        :return: A list of angles in degrees to turn to.
-        """
-
-        # Get the IK solution using the current angles.
-        frame_target = np.eye(4)
-        frame_target[:3, 3] = target_position
-
-        angles: List[float] = list()
-        for joint_name in Magnebot.__JOINT_ORDER[arm]:
-            j_id = self.magnebot_static.arm_joints[joint_name]
-            angles.extend(state.joint_angles[j_id])
-        for b_id in state.joint_angles:
-            angles.extend(state.joint_angles[b_id])
-        return self.__ik_chains[arm].inverse_kinematics_frame(target=frame_target,
-                                                              initial_position=angles,
-                                                              no_position=False)
 
     @staticmethod
     def __get_arm(arm: Arm) -> Chain:
