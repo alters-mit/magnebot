@@ -3,7 +3,7 @@ import numpy as np
 
 class Transform:
     """
-    Positional and physics data for an object, avatar, body part, etc.
+    Positional data for an object, magnebot, body part, etc.
 
     ***
 
@@ -30,10 +30,3 @@ class Transform:
         self.rotation = rotation
         self.forward = forward
 
-
-class JointState(Transform):
-    def __init__(self, position: np.array, forward: np.array, rotation: np.array, angles: np.array,
-                 targets: np.array):
-        super().__init__(position=position, forward=forward, rotation=rotation)
-        self.angles = angles
-        self.targets = targets

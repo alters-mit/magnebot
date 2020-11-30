@@ -6,7 +6,8 @@ import numpy as np
 from tdw.output_data import OutputData, Robot, Transforms, CameraMatrices, Images, Magnebot
 from tdw.tdw_utils import TDWUtils
 from magnebot.arm import Arm
-from magnebot.transform import Transform, JointState
+from magnebot.transform import Transform
+from magnebot.joint_angles import JointAngles
 from magnebot.util import get_data
 
 
@@ -29,6 +30,8 @@ class SceneState:
 
     m.end()
     ```
+
+    ***
 
     ## Fields
 
@@ -71,7 +74,7 @@ class SceneState:
 
     ### Objects
 
-    - `objects` The dictionary of object [transform data](transform.md). Key = the object ID.
+    - `object_transforms` The dictionary of object [transform data](transform.md). Key = the object ID.
 
     ```python
     from magnebot import Magnebot
@@ -79,33 +82,35 @@ class SceneState:
     m = Magnebot()
     m.init_scene(scene="2a", layout=1, room=1)
 
-    for object_id in m.state.objects:
-        print(c.state.objects[object_id].position)
+    for object_id in m.state.object_transforms:
+        print(c.state.object_transforms[object_id].position)
     ```
 
     ### Magnebot
 
-    - `robot` The [transform data](transform.md) of the Magnebot.
+    - `magnebot_transform` The [transform data](transform.md) of the Magnebot.
 
     ```python
     from magnebot import Magnebot
 
     m = Magnebot()
     m.init_scene(scene="2a", layout=1, room=1)
-    print(c.state.robot.position)
+    print(m.state.magnebot_transform.position)
     ```
 
-    - `robot_joints` The [transform data](transform.md) of the Magnebot's joints. Key = The ID of the joint.
-      There's some additional metadata as well, but it's difficult to interpret and used mainly in the backend code.
+    - `joint_transforms` The [transform data](transform.md) of the Magnebot's joints. Key = The ID of the joint.
 
     ```python
     from magnebot import Magnebot
 
     m = Magnebot()
     m.init_scene(scene="2a", layout=1, room=1)
-    for j_id in m.state.robot_joints:
-        print(m.state.robot_joints[j_id].position)
+    for j_id in m.state.joint_transforms:
+        print(m.state.joint_transforms[j_id].position)
     ```
+
+    - `joint_angles` The [joint angles](joint_angles.md) of the Magnebot's joints. Key = the ID of the joint.
+      This is mainly useful for the backend code.
 
     - `held` A dictionary of object IDs currently held by the Magnebot.
       Key = The arm. Value = a numpy array of object IDs.
@@ -118,6 +123,8 @@ class SceneState:
     print(m.state.held[Arm.left]) # []
     ```
 
+    ***
+
     ## Functions
 
     """
@@ -126,30 +133,32 @@ class SceneState:
 
     def __init__(self, resp: List[bytes]):
         r = get_data(resp=resp, d_type=Robot)
-        self.robot_joints: Dict[int, JointState] = dict()
+        self.joint_transforms: Dict[int, Transform] = dict()
+        self.joint_angles: Dict[int, JointAngles] = dict()
         # Get data for the robot body parts.
         for i in range(r.get_num_joints()):
-            self.robot_joints[r.get_joint_id(i)] = JointState(
+            j_id = r.get_joint_id(i)
+            self.joint_transforms[j_id] = Transform(
                 position=np.array(r.get_joint_position(i)),
                 rotation=np.array(r.get_joint_rotation(i)),
-                forward=np.array(r.get_joint_forward(i)),
-                targets=r.get_joint_targets(i),
-                angles=r.get_joint_positions(i))
+                forward=np.array(r.get_joint_forward(i)))
+            self.joint_angles[j_id] = JointAngles(angles=np.array([np.rad2deg(a) for a in r.get_joint_positions(i)]),
+                                                  targets=np.array(r.get_joint_targets(i)))
         # Get data for the robot.
-        self.robot: Transform = Transform(position=np.array(r.get_position()),
-                                          rotation=np.array(r.get_rotation()),
-                                          forward=np.array(r.get_forward()))
+        self.magnebot_transform: Transform = Transform(position=np.array(r.get_position()),
+                                                       rotation=np.array(r.get_rotation()),
+                                                       forward=np.array(r.get_forward()))
         m = get_data(resp=resp, d_type=Magnebot)
         self.held: Dict[Arm, np.array] = {Arm.left: m.get_held_left(),
                                           Arm.right: m.get_held_right()}
 
         # Get object data.
         transforms = get_data(resp=resp, d_type=Transforms)
-        self.objects: Dict[int, Transform] = dict()
+        self.object_transforms: Dict[int, Transform] = dict()
         for i in range(transforms.get_num()):
-            self.objects[i] = Transform(position=np.array(transforms.get_position(i)),
-                                        forward=np.array(transforms.get_forward(i)),
-                                        rotation=np.array(transforms.get_rotation(i)))
+            self.object_transforms[i] = Transform(position=np.array(transforms.get_position(i)),
+                                                  forward=np.array(transforms.get_forward(i)),
+                                                  rotation=np.array(transforms.get_rotation(i)))
 
         # Get camera matrix data.
         matrices = get_data(resp=resp, d_type=CameraMatrices)

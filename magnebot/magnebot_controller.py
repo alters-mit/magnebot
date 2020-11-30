@@ -3,6 +3,8 @@ from json import loads
 import numpy as np
 from typing import List, Dict, Optional, Union, Tuple
 from ikpy.chain import Chain
+from ikpy.link import OriginLink, URDFLink
+from ikpy.utils import geometry
 from tdw.floorplan_controller import FloorplanController
 from tdw.output_data import Version, StaticRobot, SegmentationColors, Bounds, Rigidbodies
 from tdw.tdw_utils import TDWUtils
@@ -10,8 +12,8 @@ from tdw.object_init_data import AudioInitData
 from tdw.py_impact import PyImpact, ObjectInfo
 from tdw.release.pypi import PyPi
 from magnebot.util import get_data
-from magnebot.body_part_static import BodyPartStatic
 from magnebot.object_static import ObjectStatic
+from magnebot.magnebot_static import MagnebotStatic
 from magnebot.scene_state import SceneState
 from magnebot.action_status import ActionStatus
 from magnebot.paths import SPAWN_POSITIONS_PATH
@@ -19,15 +21,6 @@ from magnebot.arm import Arm
 
 
 class Magnebot(FloorplanController):
-    class __Wheel:
-        """
-        The object ID and current angle of a wheel.
-        """
-
-        def __init__(self, object_id: int, angle: float):
-            self.object_id = object_id
-            self.angle = angle
-
     # Global forward directional vector.
     _FORWARD = np.array([0, 0, 1])
 
@@ -42,8 +35,9 @@ class Magnebot(FloorplanController):
         self._debug = debug
         self._hold_limit = hold_limit
 
-        self.__wheels: Dict[str, Magnebot.__Wheel] = dict()
-        self.__joint_angles: Dict[Arm, List[float]] = dict()
+        # Set the expected IK chains.
+        self.__ik_chains: Dict[Arm, Chain] = {Arm.left: Magnebot.__get_arm(Arm.left),
+                                              Arm.right: Magnebot.__get_arm(Arm.right)}
 
         self.state: Optional[SceneState] = None
 
@@ -53,7 +47,7 @@ class Magnebot(FloorplanController):
         # Cache static data.
         self.objects_static: Dict[int, ObjectStatic] = dict()
         self.segmentation_color_to_id: Dict[int, int] = dict()
-        self.robot_static: Dict[int, BodyPartStatic] = dict()
+        self.magnebot_static: Optional[MagnebotStatic] = None
 
         # Commands that will be sent on the next frame.
         self._next_frame_commands: List[dict] = list()
@@ -180,7 +174,7 @@ class Magnebot(FloorplanController):
             :return: The current angle.
             """
 
-            a = TDWUtils.get_angle_between(wheel_state.robot.forward, f0)
+            a = TDWUtils.get_angle_between(wheel_state.magnebot_transform.forward, f0)
             if angle_0 < 0:
                 a *= -1
             elif a > 180:
@@ -188,8 +182,9 @@ class Magnebot(FloorplanController):
             return a
 
         self._start_action()
+        wheel_state = SceneState(resp=self.communicate([]))
         # The initial forward vector.
-        f0 = self.state.robot.forward
+        f0 = self.state.magnebot_transform.forward
         # The approximately number of iterations required, given the distance and speed.
         num_attempts = int(np.abs(angle) + 1) * speed * 50
         attempts = 0
@@ -198,19 +193,20 @@ class Magnebot(FloorplanController):
             attempts += 1
             # Set the direction of the wheels for the turn and send commands.
             commands = []
-            for wheel in self.__wheels:
+            for wheel in self.magnebot_static.wheels:
+                # Get the target from the current joint angles.
                 if "left" in wheel:
-                    self.__wheels[wheel].angle += speed if angle > 0 else -speed
+                    target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]].angles[
+                                 0] + speed if angle > 0 else -speed
                 else:
-                    self.__wheels[wheel].angle -= speed if angle > 0 else -speed
+                    target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]].angles[
+                                 0] - speed if angle > 0 else -speed
                 commands.append({"$type": "set_revolute_target",
-                                 "target": self.__wheels[wheel].angle,
-                                 "joint_id": self.__wheels[wheel].object_id})
-            resp = self.communicate(commands)
-
+                                 "target": target,
+                                 "joint_id": self.magnebot_static.wheels[wheel]})
             # Wait until the wheels are done turning.
             wheels_done = False
-            wheel_state = SceneState(resp=resp)
+            wheel_state = SceneState(resp=self.communicate(commands))
             while not wheels_done:
                 wheels_done, wheel_state = self._wheels_are_done(state_0=wheel_state)
             # Get the new angle.
@@ -250,14 +246,14 @@ class Magnebot(FloorplanController):
         """
 
         if isinstance(target, int):
-            target = self.state.objects[target].position
+            target = self.state.object_transforms[target].position
         elif isinstance(target, dict):
             target = TDWUtils.vector3_to_array(target)
         else:
             raise Exception(f"Invalid target: {target}")
 
         self._start_action()
-        angle = TDWUtils.get_angle(forward=self.state.robot.forward, origin=self.state.robot.position,
+        angle = TDWUtils.get_angle(forward=self.state.magnebot_transform.forward, origin=self.state.magnebot_transform.position,
                                    position=target)
         return self.turn_by(angle=angle, speed=speed, aligned_at=aligned_at)
 
@@ -280,29 +276,32 @@ class Magnebot(FloorplanController):
 
         self._start_action()
         # The initial position of the robot.
-        p0 = self.state.robot.position
+        p0 = self.state.magnebot_transform.position
 
         # Go until we've traversed the distance.
         d = 0
         # The approximately number of iterations required, given the distance and speed.
         num_attempts = int(np.abs(distance) + 1) * speed * 50
         attempts = 0
+        # Wait for the wheels to stop turning.
+        wheel_state = SceneState(resp=self.communicate([]))
         while d < np.abs(distance) and attempts < num_attempts:
             # Move forward a bit and see if we've arrived.
             commands = []
-            for wheel in ["wheel_left_front", "wheel_left_back", "wheel_right_front", "wheel_right_back"]:
-                self.__wheels[wheel].angle += speed if distance > 0 else -speed
+            for wheel in self.magnebot_static.wheels:
+                # Get the target from the current joint angles. Add or subtract the speed.
+                target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]].angles[
+                             0] + speed if distance > 0 else -speed
                 commands.append({"$type": "set_revolute_target",
-                                 "target": self.__wheels[wheel].angle,
-                                 "joint_id": self.__wheels[wheel].object_id})
-            resp = self.communicate(commands)
+                                 "target": target,
+                                 "joint_id": self.magnebot_static.wheels[wheel]})
             # Wait for the wheels to stop turning.
-            wheel_state = SceneState(resp=resp)
+            wheel_state = SceneState(resp=self.communicate(commands))
             wheels_turning = True
             while wheels_turning:
                 wheels_turning, wheel_state = self._wheels_are_done(state_0=wheel_state)
             # Check if we're at the destination.
-            p1 = SceneState(resp=resp).robot.position
+            p1 = wheel_state.magnebot_transform.position
             d = np.linalg.norm(p1 - p0)
             attempts += 1
         self._set_state()
@@ -342,17 +341,63 @@ class Magnebot(FloorplanController):
         # Move to the target unless the turn failed (and if we care about the turn failing).
         if status == ActionStatus.success or move_on_turn_fail:
             if isinstance(target, int):
-                target = self.state.objects[target].position
+                target = self.state.object_transforms[target].position
             elif isinstance(target, dict):
                 target = TDWUtils.vector3_to_array(target)
             else:
                 raise Exception(f"Invalid target: {target}")
 
-            return self.move_by(distance=np.linalg.norm(self.state.robot.position - target), speed=move_speed,
+            return self.move_by(distance=np.linalg.norm(self.state.magnebot_transform.position - target), speed=move_speed,
                                 arrived_at=arrived_at)
         else:
             self._set_state()
             return status
+
+    def reach_for(self, target: Dict[str, float], arm: Arm, check_if_possible: bool = True,
+                  absolute: bool = False, arrived_at: float = 0.125) -> ActionStatus:
+        target = TDWUtils.vector3_to_array(target)
+        # Convert to relative coordinates.
+        if absolute:
+            target = self.__absolute_to_relative(position=target, state=self.state)
+
+        angles = self.__get_ik(target_position=target, arm=arm)
+        # Check if the IK solution reaches the target.
+        chain = self.__ik_chains[arm]
+        transformation_matrices = chain.forward_kinematics(angles, full_kinematics=True)
+        nodes = []
+        for (index, link) in enumerate(chain.links):
+            (node, orientation) = geometry.from_transformation_matrix(transformation_matrices[index])
+            nodes.append(node)
+        # The expected destination.
+        destination = np.array(nodes[-1][:-1])
+
+        if check_if_possible:
+            d = np.linalg.norm(destination - target)
+            if d > arrived_at:
+                if self._debug:
+                    print(f"Target {target} is too far away from {arm}: {d}")
+                return ActionStatus.too_far_to_reach
+        angles = [float(np.rad2deg(a)) for a in angles[1:-1]]
+
+        raise Exception("TODO: send command and then wait for everything to stop turning.")
+
+        resp = self.communicate([])  # TODO remove this
+        state = SceneState(resp=resp)
+        angles = []  # TODO Record the IK solution.
+        # Record the IK solution.
+        self.__joint_angles[arm] = angles
+        self._set_state()
+
+        # Check how close the magnet is to the expected relative position.
+        magnet_position = self.__absolute_to_relative(position=self.state.robot_joints[self.magnebot_static.magnets[arm]].position,
+                                                      state=self.state)
+        d = np.linalg.norm(destination - magnet_position)
+        if d < arrived_at:
+            return ActionStatus.success
+        else:
+            if self._debug:
+                print(f"Tried and failed to reach for {target}: {d}")
+            return ActionStatus.failed_to_reach
 
     def end(self) -> None:
         """
@@ -431,9 +476,9 @@ class Magnebot(FloorplanController):
 
         resp = self.communicate([])
         state_1 = SceneState(resp=resp)
-        for wheel in self.__wheels:
-            w_id = self.__wheels[wheel].object_id
-            if np.linalg.norm(state_0.robot_joints[w_id].angles[0] - state_1.robot_joints[w_id].angles[0]) > 0.001:
+        for w_id in self.magnebot_static.wheels.values():
+            if np.linalg.norm(state_0.joint_angles[w_id].angles[0] -
+                              state_1.joint_angles[w_id].angles[0]) > 0.001:
                 return False, state_1
         return True, state_1
 
@@ -502,25 +547,6 @@ class Magnebot(FloorplanController):
         self._next_frame_commands.append({"$type": "enable_image_sensor",
                                           "enable": False})
 
-    def __get_ik(self, target_position: np.array, arm: Arm, chain: Chain) -> List[float]:
-        """
-        :param target_position: The target position as a numpy array: `[x, y, z]`
-        :param arm: The arm of the chain.
-        :param chain: The IK chain.
-
-        :return: A list of angles in degrees to turn to.
-        """
-        
-        # Get the IK solution.
-        frame_target = np.eye(4)
-        frame_target[:3, 3] = target_position
-        ik = chain.inverse_kinematics_frame(target=frame_target, initial_position=self.__joint_angles[arm],
-                                            no_position=False)
-        ik = [float(np.rad2deg(i)) for i in ik[1:-1]]
-        # Record the IK solution.
-        self.__joint_angles[arm] = ik[:]
-        return ik
-
     def __cache_static_data(self, resp: List[bytes]) -> None:
         """
         Cache static data after initializing the scene.
@@ -530,9 +556,8 @@ class Magnebot(FloorplanController):
         """
 
         # Clear static data.
-        self.__wheels.clear()
+        self.__magnets.clear()
         self.objects_static.clear()
-        self.robot_static.clear()
         self.segmentation_color_to_id.clear()
         self._next_frame_commands.clear()
         SceneState.FRAME_COUNT = 0
@@ -568,12 +593,83 @@ class Magnebot(FloorplanController):
                                                           segmentation_color=colors[object_id], size=bs[object_id],
                                                           mass=rigidbodies.get_mass(i))
         # Cache the static robot data.
-        static_robot = get_data(resp=resp, d_type=StaticRobot)
-        for i in range(static_robot.get_num_joints()):
-            body_part_id = static_robot.get_joint_id(i)
-            self.robot_static[body_part_id] = BodyPartStatic(sr=static_robot, index=i)
-            # Cache the wheels.
-            body_part_name = static_robot.get_joint_name(i)
-            if "wheel" in body_part_name:
-                self.__wheels[body_part_name] = Magnebot.__Wheel(object_id=body_part_id, angle=0)
+        self.magnebot_static = MagnebotStatic(static_robot=get_data(resp=resp, d_type=StaticRobot))
         self._set_state()
+
+    def __absolute_to_relative(self, position: np.array, state: SceneState) -> np.array:
+        """
+        :param position: The position in absolute world coordinates.
+        :param state: The current state.
+
+        :return: The converted position relative to the Magnebot's position and rotation.
+        """
+
+        return TDWUtils.rotate_position_around(position=position - self.state.magnebot_transform.position,
+                                               angle=-TDWUtils.get_angle_between(v1=Magnebot._FORWARD,
+                                                                                 v2=state.magnebot_transform.forward))
+
+    def __get_ik(self, target_position: np.array, arm: Arm) -> List[float]:
+        """
+        :param target_position: The target position as a numpy array: `[x, y, z]`
+        :param arm: The arm of the chain.
+
+        :return: A list of angles in degrees to turn to.
+        """
+
+        # Get the IK solution using the current angles.
+        frame_target = np.eye(4)
+        frame_target[:3, 3] = target_position
+        return self.__ik_chains[arm].inverse_kinematics_frame(target=frame_target,
+                                                              initial_position=self.__joint_angles[arm],
+                                                              no_position=False)
+
+    @staticmethod
+    def __get_arm(arm: Arm) -> Chain:
+        """
+        :param arm: The arm of the chain (determines the x position).
+
+        :return: An IK chain for the arm.
+        """
+
+        return Chain(name=arm.name, links=[
+            OriginLink(),
+            URDFLink(name="shoulder_pitch",
+                     translation_vector=[0.225 * -1 if arm == Arm.left else 1, 0.565, 0.075],
+                     orientation=[-np.pi / 2, 0, 0],
+                     rotation=[-1, 0, 0],
+                     bounds=(-1.0472, 3.12414)),
+            URDFLink(name="shoulder_yaw",
+                     translation_vector=[0, 0, 0],
+                     orientation=[0, 0, 0],
+                     rotation=[0, 1, 0],
+                     bounds=(-1.5708, 1.5708)),
+            URDFLink(name="shoulder_roll",
+                     translation_vector=[0, 0, 0],
+                     orientation=[0, 0, 0],
+                     rotation=[0, 0, 1],
+                     bounds=(-0.785398, 0.785398)),
+            URDFLink(name="elbow_pitch",
+                     translation_vector=[0, 0, -0.235],
+                     orientation=[0, 0, 0],
+                     rotation=[-1, 0, 0],
+                     bounds=(0, 2.79253)),
+            URDFLink(name="wrist_pitch",
+                     translation_vector=[0, 0, -0.15],
+                     orientation=[0, 0, 0],
+                     rotation=[0, 0, 1],
+                     bounds=(-1.5708, 1.5708)),
+            URDFLink(name="wrist_yaw",
+                     translation_vector=[0, 0, 0],
+                     orientation=[0, 0, 0],
+                     rotation=[0, 0, 1],
+                     bounds=(-1.5708, 1.5708)),
+            URDFLink(name="wrist_roll",
+                     translation_vector=[0, 0, 0],
+                     orientation=[0, 0, 0],
+                     rotation=[-1, 0, 0],
+                     bounds=(0, 1.5708)),
+            URDFLink(name="magnet",
+                     translation_vector=[0, 0, -0.0625],
+                     orientation=[0, 0, 0],
+                     rotation=[0, 0, 0])])
+
