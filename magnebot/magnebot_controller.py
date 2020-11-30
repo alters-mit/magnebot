@@ -67,7 +67,7 @@ class Magnebot(FloorplanController):
     All parameters of type `Arm` require you to import the [Arm enum class](arm.md):
 
     ```python
-    from sticky_mitten_avatar import Arm
+    from magnebot import Arm
 
     print(Arm.left)
     ```
@@ -133,13 +133,13 @@ class Magnebot(FloorplanController):
 
         ```python
         from tdw.tdw_utils import TDWUtils
-        from sticky_mitten_avatar import StickyMittenAvatarController
+        from magnebot import Magnebot
 
-        c = StickyMittenAvatarController()
-        c.init_scene(scene="2a", layout=1)
+        m = Magnebot()
+        m.init_scene(scene="2a", layout=1)
 
-        for hashable_color in c.segmentation_color_to_id:
-            object_id = c.segmentation_color_to_id[hashable_color]
+        for hashable_color in m.segmentation_color_to_id:
+            object_id = m.segmentation_color_to_id[hashable_color]
             # Convert the hashable color back to an [r, g, b] array.
             color = TDWUtils.hashable_to_color(hashable_color)
         ```
