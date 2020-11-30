@@ -2,7 +2,6 @@ from typing import Dict
 from tdw.output_data import StaticRobot
 from magnebot.body_part_static import BodyPartStatic
 from magnebot.arm import Arm
-from magnebot.arm_joint import ArmJoint
 from magnebot.wheel import Wheel
 
 
@@ -41,20 +40,10 @@ class MagnebotStatic:
         self.body_parts: Dict[int, BodyPartStatic] = dict()
 
         """:field
-        The object of each arm joint. Key = The [arm](arm.md). Value = A dictionary of [`ArmJoint` enum values](arm_joint.md) and their object IDs.
-        
-        ```python
-        from magnebot import Magnebot, Arm, ArmJoint
-
-        m = Magnebot()
-        m.init_scene(scene="2a", layout=1)
-
-        # Print the object ID of the left shoulder.
-        print(m.magnebot_static.arm_joints[Arm.left][ArmJoint.shoulder])
+        The object of each arm joint. Key = The name of the body part. Value = The object ID.
         ```
         """
-        self.arm_joints: Dict[Arm, Dict[ArmJoint, int]] = {Arm.left: dict(),
-                                                           Arm.right: dict()}
+        self.arm_joints: Dict[str, int] = dict()
 
         """:field
         The object IDs of each wheel. Key = the name of the wheel as an [`Wheel` enum value](wheel.md).
@@ -76,5 +65,4 @@ class MagnebotStatic:
             elif "magnet" in body_part_name:
                 self.magnets[Arm.left if "left" in body_part_name else Arm.right] = body_part_id
             else:
-                self.arm_joints[Arm.left if "left" in body_part_name else Arm.right][ArmJoint[body_part_name]] \
-                    = body_part_id
+                self.arm_joints[body_part_name] = body_part_id

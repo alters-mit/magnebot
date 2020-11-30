@@ -82,6 +82,10 @@ class Magnebot(FloorplanController):
     # Load default audio values for objects.
     __OBJECT_AUDIO = PyImpact.get_object_info()
 
+    # The order in which joint angles will be set.
+    __JOINT_ORDER = {Arm.left: ["spine", "shoulder_left", "elbow_left", "wrist_left"],
+                     Arm.right: ["spine", "shoulder_right", "elbow_right", "wrist_right"]}
+
     def __init__(self, port: int = 1071, launch_build: bool = True, id_pass: bool = True,
                  screen_width: int = 256, screen_height: int = 256, debug: bool = False):
         """
@@ -720,8 +724,10 @@ class Magnebot(FloorplanController):
         frame_target = np.eye(4)
         frame_target[:3, 3] = target_position
 
-        raise Exception("This won't work because we need to define the order of the angles.")
         angles: List[float] = list()
+        for joint_name in Magnebot.__JOINT_ORDER[arm]:
+            j_id = self.magnebot_static.arm_joints[joint_name]
+            angles.extend(state.joint_angles[j_id])
         for b_id in state.joint_angles:
             angles.extend(state.joint_angles[b_id])
         return self.__ik_chains[arm].inverse_kinematics_frame(target=frame_target,
