@@ -45,7 +45,7 @@ for j_id in m.state.joint_transforms:
     print(m.state.joint_transforms[j_id].position)
 ```
 
-- `joint_angles` The [joint angles](joint_angles.md) of the Magnebot's joints. Key = the ID of the joint. This is mainly useful for the backend code.
+- `joint_angles` The angles of each joint. Key = The ID of the joint. Value = The angles of the joint in degrees as a numpy array. This is mainly useful for the backend code.
 
 - `held` A dictionary of object IDs currently held by the Magnebot. Key = The arm. Value = a numpy array of object IDs.
 

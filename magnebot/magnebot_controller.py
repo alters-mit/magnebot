@@ -306,11 +306,11 @@ class Magnebot(FloorplanController):
             for wheel in self.magnebot_static.wheels:
                 # Get the target from the current joint angles.
                 if "left" in wheel:
-                    target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]].angles[
-                                 0] + speed if angle > 0 else -speed
+                    target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] + \
+                             speed if angle > 0 else -speed
                 else:
-                    target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]].angles[
-                                 0] - speed if angle > 0 else -speed
+                    target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] - \
+                             speed if angle > 0 else -speed
                 commands.append({"$type": "set_revolute_target",
                                  "target": target,
                                  "joint_id": self.magnebot_static.wheels[wheel]})
@@ -400,8 +400,8 @@ class Magnebot(FloorplanController):
             commands = []
             for wheel in self.magnebot_static.wheels:
                 # Get the target from the current joint angles. Add or subtract the speed.
-                target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]].angles[
-                             0] + speed if distance > 0 else -speed
+                target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] + \
+                         speed if distance > 0 else -speed
                 commands.append({"$type": "set_revolute_target",
                                  "target": target,
                                  "joint_id": self.magnebot_static.wheels[wheel]})
@@ -608,12 +608,6 @@ class Magnebot(FloorplanController):
         # Disable the image sensor.
         commands = [{"$type": "add_magnebot",
                      "position": magnebot_position},
-                    {"$type": "set_magnebot_magnet_hold_limit",
-                     "Arm": "left",
-                     "limit": self._hold_limit},
-                    {"$type": "set_magnebot_magnet_hold_limit",
-                     "Arm": "right",
-                     "limit": self._hold_limit},
                     {"$type": "create_avatar",
                      "type": "A_Img_Caps_Kinematic"},
                     {"$type": "parent_avatar_to_robot",
@@ -666,15 +660,10 @@ class Magnebot(FloorplanController):
         """
 
         # Clear static data.
-        self.__magnets.clear()
         self.objects_static.clear()
         self.segmentation_color_to_id.clear()
         self._next_frame_commands.clear()
         SceneState.FRAME_COUNT = 0
-
-        # Set the default joint angles.
-        self.__joint_angles = {Arm.left: [0, 0, 0, 0, 0, 0, 0, 0, 0],
-                               Arm.right: [0, 0, 0, 0, 0, 0, 0, 0, 0]}
 
         # Get segmentation color data.
         segmentation_colors = get_data(resp=resp, d_type=SegmentationColors)
@@ -718,10 +707,11 @@ class Magnebot(FloorplanController):
                                                angle=-TDWUtils.get_angle_between(v1=Magnebot._FORWARD,
                                                                                  v2=state.magnebot_transform.forward))
 
-    def __get_ik(self, target_position: np.array, arm: Arm) -> List[float]:
+    def __get_ik(self, target_position: np.array, arm: Arm, state: SceneState) -> List[float]:
         """
         :param target_position: The target position as a numpy array: `[x, y, z]`
         :param arm: The arm of the chain.
+        :param state: The current state.
 
         :return: A list of angles in degrees to turn to.
         """
@@ -729,8 +719,13 @@ class Magnebot(FloorplanController):
         # Get the IK solution using the current angles.
         frame_target = np.eye(4)
         frame_target[:3, 3] = target_position
+
+        raise Exception("This won't work because we need to define the order of the angles.")
+        angles: List[float] = list()
+        for b_id in state.joint_angles:
+            angles.extend(state.joint_angles[b_id])
         return self.__ik_chains[arm].inverse_kinematics_frame(target=frame_target,
-                                                              initial_position=self.__joint_angles[arm],
+                                                              initial_position=angles,
                                                               no_position=False)
 
     @staticmethod

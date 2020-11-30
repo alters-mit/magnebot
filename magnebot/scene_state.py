@@ -7,7 +7,6 @@ from tdw.output_data import OutputData, Robot, Transforms, CameraMatrices, Image
 from tdw.tdw_utils import TDWUtils
 from magnebot.arm import Arm
 from magnebot.transform import Transform
-from magnebot.joint_angles import JointAngles
 from magnebot.util import get_data
 
 
@@ -69,9 +68,9 @@ class SceneState:
         """
         self.joint_transforms: Dict[int, Transform] = dict()
         """:field
-        The [joint angles](joint_angles.md) of the Magnebot's joints. Key = the ID of the joint. This is mainly useful for the backend code.
+        The angles of each joint. Key = The ID of the joint. Value = The angles of the joint in degrees as a numpy array. This is mainly useful for the backend code.
         """
-        self.joint_angles: Dict[int, JointAngles] = dict()
+        self.joint_angles: Dict[int, np.array] = dict()
         # Get data for the robot body parts.
         for i in range(r.get_num_joints()):
             j_id = r.get_joint_id(i)
@@ -79,8 +78,7 @@ class SceneState:
                 position=np.array(r.get_joint_position(i)),
                 rotation=np.array(r.get_joint_rotation(i)),
                 forward=np.array(r.get_joint_forward(i)))
-            self.joint_angles[j_id] = JointAngles(angles=np.array([np.rad2deg(a) for a in r.get_joint_positions(i)]),
-                                                  targets=np.array(r.get_joint_targets(i)))
+            self.joint_angles[j_id] = np.array([np.rad2deg(a) for a in r.get_joint_positions(i)])
 
         m = get_data(resp=resp, d_type=Magnebot)
         """:field
