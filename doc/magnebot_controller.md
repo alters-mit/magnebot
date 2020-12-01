@@ -277,7 +277,7 @@ _These functions move and bend the joints of the Magnebots's arms. These functio
 
 #### reach_for
 
-**`def reach_for(self, target: Dict[str, float], arm: Arm, check_if_possible: bool = True, absolute: bool = False, arrived_at: float = 0.125, num_attempts: int = 200) -> ActionStatus`**
+**`def reach_for(self, target: Dict[str, float], arm: Arm, check_if_possible: bool = True, absolute: bool = False, arrived_at: float = 0.125) -> ActionStatus`**
 
 Reach for a target position.
 
@@ -295,11 +295,40 @@ Possible [return values](action_status.md):
 | target | The target position for the magnet at the arm to reach. |
 | arm | The arm that will reach for the target. |
 | check_if_possible | If True, check if the motion is possible before doing it and if not, end the action immediately. |
-| absolute | If True, `target` is in absolute world coordiates. If `False`, `target` is relative to the position and rotation of the Magnebot. |
+| absolute | If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot. |
 | arrived_at | If the magnet is this distance or less from `target`, then the action is successful. |
-| num_attempts | Try this many frames to rotate the arm joints before giving up and ending the action. |
 
 _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` is at the `target` and if not, why.
+
+#### reset_arm
+
+**`def reset_arm(self, arm: Arm) -> ActionStatus`**
+
+Reset an arm to its neutral position. If the arm is holding any objects, it will continue to do so.
+
+Possible [return values](action_status.md):
+
+- `success`
+- `too_many_attempts`
+
+| Parameter | Description |
+| --- | --- |
+| arm | The arm that will be reset. |
+
+_Returns:_  An `ActionStatus` indicating if the arm reset and if not, why.
+
+#### reset_arms
+
+**`def reset_arms(self) -> ActionStatus`**
+
+Reset both arms to their neutral positions. If either arm is holding any objects, it will continue to do so.
+
+Possible [return values](action_status.md):
+
+- `success`
+- `too_many_attempts`
+
+_Returns:_  An `ActionStatus` indicating if the arms reset and if not, why.
 
 ***
 

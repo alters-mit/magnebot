@@ -15,7 +15,7 @@
     },
     "Arm Articulation": {
       "description": "These functions move and bend the joints of the Magnebots's arms. These functions advance the simulation by many frames, depending on the nature of the action. `Magnebot.state` will reflect the simulation state at the final frame.",
-      "functions": ["reach_for"]
+      "functions": ["reach_for", "reset_arm", "reset_arms"]
     },
     "Misc.": {
       "description": "These are utility functions that won't advance the simulation by any frames.",
