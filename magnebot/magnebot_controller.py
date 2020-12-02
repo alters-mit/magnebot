@@ -78,8 +78,6 @@ class Magnebot(FloorplanController):
 
     """
 
-
-
     # Global forward directional vector.
     _FORWARD = np.array([0, 0, 1])
 
@@ -106,7 +104,7 @@ class Magnebot(FloorplanController):
     # Prismatic joint limits for the torso.
     TORSO_LIMITS = [0.21, 1.5]
     # The default height of the torso.
-    DEFAULT_TORSO_Y = 0.7
+    DEFAULT_TORSO_Y = 1
 
     def __init__(self, port: int = 1071, launch_build: bool = True, id_pass: bool = True,
                  screen_width: int = 256, screen_height: int = 256, debug: bool = False):
@@ -213,7 +211,7 @@ class Magnebot(FloorplanController):
 
     def init_scene(self, scene: str, layout: int, room: int = -1) -> None:
         """
-        Initialize a scene, populate it with objects, and add the avatar.
+        Initialize a scene, populate it with objects, and add the Magnebot. The simulation will advance through frames until the Magnebot's body is in its neutral position.
 
         **Always call this function before any other API calls.**
 
@@ -254,10 +252,13 @@ class Magnebot(FloorplanController):
         commands.extend(self._get_scene_init_commands(magnebot_position=rooms[room]))
         resp = self.communicate(commands)
         self.__cache_static_data(resp=resp)
+        # Wait for the Magnebot to reset to its neutral position.
+        self._do_arm_motion()
+        self._end_action()
 
     def init_test_scene(self) -> None:
         """
-        Initialize an empty test room with a Magnebot.
+        Initialize an empty test room with a Magnebot. The simulation will advance through frames until the Magnebot's body is in its neutral position.
 
         This function can be called instead of `init_scene()` for testing purposes. If so, it must be called before any other API calls.
 
@@ -279,6 +280,9 @@ class Magnebot(FloorplanController):
         commands.extend(self._get_scene_init_commands(magnebot_position={"x": 0, "y": 0, "z": 0}))
         resp = self.communicate(commands)
         self.__cache_static_data(resp=resp)
+        # Wait for the Magnebot to reset to its neutral position.
+        self._do_arm_motion()
+        self._end_action()
 
     def turn_by(self, angle: float, speed: float = 15, aligned_at: float = 3) -> ActionStatus:
         """
@@ -314,6 +318,7 @@ class Magnebot(FloorplanController):
             return a
 
         self._start_action()
+        self._start_move_or_turn()
         wheel_state = SceneState(resp=self.communicate([]))
         # The initial forward vector.
         f0 = self.state.magnebot_transform.forward
@@ -384,7 +389,6 @@ class Magnebot(FloorplanController):
         else:
             raise Exception(f"Invalid target: {target}")
 
-        self._start_action()
         angle = TDWUtils.get_angle(forward=self.state.magnebot_transform.forward, origin=self.state.magnebot_transform.position,
                                    position=target)
         return self.turn_by(angle=angle, speed=speed, aligned_at=aligned_at)
@@ -407,6 +411,7 @@ class Magnebot(FloorplanController):
         """
 
         self._start_action()
+        self._start_move_or_turn()
         # The initial position of the robot.
         p0 = self.state.magnebot_transform.position
 
@@ -471,7 +476,6 @@ class Magnebot(FloorplanController):
 
         # Turn to face the target.
         status = self.turn_to(target=target, speed=turn_speed, aligned_at=aligned_at)
-        self._start_action()
         # Move to the target unless the turn failed (and if we care about the turn failing).
         if status == ActionStatus.success or move_on_turn_fail:
             if isinstance(target, int):
@@ -659,7 +663,7 @@ class Magnebot(FloorplanController):
         """
 
         self._start_action()
-        self._next_frame_commands.extend(self._get_arm_reset_commands(arm=arm, reset_torso=reset_torso))
+        self._next_frame_commands.extend(self.__get_reset_arm_commands(arm=arm, reset_torso=reset_torso))
 
         status = self._do_arm_motion()
         self._end_action()
@@ -679,8 +683,8 @@ class Magnebot(FloorplanController):
 
         self._start_action()
         # Reset both arms.
-        self._next_frame_commands.extend(self._get_arm_reset_commands(arm=Arm.left, reset_torso=True))
-        self._next_frame_commands.extend(self._get_arm_reset_commands(arm=Arm.right, reset_torso=False))
+        self._next_frame_commands.extend(self.__get_reset_arm_commands(arm=Arm.left, reset_torso=True))
+        self._next_frame_commands.extend(self.__get_reset_arm_commands(arm=Arm.right, reset_torso=False))
         # Wait for both arms to stop moving.
         status = self._do_arm_motion()
         self._end_action()
@@ -751,6 +755,8 @@ class Magnebot(FloorplanController):
                                                         "enable": True},
                                                        {"$type": "send_images"},
                                                        {"$type": "send_camera_matrices"},
+                                                       {"$type": "set_immovable",
+                                                        "immovable": False},
                                                        {"$type": "set_magnet_targets",
                                                         "arm": Arm.left,
                                                         "targets": []},
@@ -791,6 +797,8 @@ class Magnebot(FloorplanController):
         # Disable the image sensor.
         commands = [{"$type": "add_magnebot",
                      "position": magnebot_position},
+                    {"$type": "set_immovable",
+                     "immovable": True},
                     {"$type": "create_avatar",
                      "type": "A_Img_Caps_Kinematic"},
                     {"$type": "parent_avatar_to_robot",
@@ -833,6 +841,18 @@ class Magnebot(FloorplanController):
 
         self._next_frame_commands.append({"$type": "enable_image_sensor",
                                           "enable": False})
+
+    def _start_move_or_turn(self) -> None:
+        """
+        Start a move or turn action.
+        """
+
+        # Move the torso up to its default height to prevent anything from dragging.
+        self._next_frame_commands.append({"$type": "set_prismatic_target",
+                                          "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
+                                          "target": Magnebot.DEFAULT_TORSO_Y,
+                                          "axis": "y"})
+        self._do_arm_motion()
 
     def _start_ik(self, target: Dict[str, float], arm: Arm, absolute: bool = False, arrived_at: float = 0.125,
                   state: SceneState = None) -> ActionStatus:
@@ -879,16 +899,28 @@ class Magnebot(FloorplanController):
             d = np.linalg.norm(destination - target)
             if d <= arrived_at:
                 got_solution = True
+            # Adjust the height of the torso and try again.
             torso_y += 0.1
         if not got_solution:
             return ActionStatus.cannot_reach
         angles = [float(np.rad2deg(a)) for a in angles[1:-1]]
 
+        # Make the base of the Magnebot immovable.
+        # Set the height of the torso.
+        commands = [{"$type": "set_immovable",
+                     "immovable": True},
+                    {"$type": "set_prismatic_target",
+                     "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
+                     "target": torso_y,
+                     "axis": "y"}]
         # Convert the IK solution into TDW commands, using the expected joint and axis order.
-        commands = []
         i = 0
         joint_order_index = 0
         while i < len(angles):
+            # Ignore the torso (which doesn't move in the context of the IK solution).
+            if i == 1:
+                i += 1
+                continue
             joint_name = Magnebot.JOINT_ORDER[arm][joint_order_index]
             joint_type = Magnebot.JOINT_AXES[joint_name]
             joint_id = self.magnebot_static.arm_joints[joint_name]
@@ -911,7 +943,7 @@ class Magnebot(FloorplanController):
         self._next_frame_commands.extend(commands)
         return ActionStatus.success
 
-    def _get_arm_reset_commands(self, arm: Arm, reset_torso: bool) -> List[dict]:
+    def __get_reset_arm_commands(self, arm: Arm, reset_torso: bool) -> List[dict]:
         """
         :param arm: The arm to reset.
         :param reset_torso: If True, reset the torso.
@@ -919,7 +951,8 @@ class Magnebot(FloorplanController):
         :return: A list of commands to reset the position of the arm.
         """
 
-        commands = []
+        commands = [{"$type": "set_immovable",
+                     "immovable": True}]
         # Reset the column rotation and the torso height.
         if reset_torso:
             commands.extend([{"$type": "set_prismatic_target",
@@ -934,9 +967,10 @@ class Magnebot(FloorplanController):
             joint_id = self.magnebot_static.arm_joints[joint_name]
             joint_type = Magnebot.JOINT_AXES[joint_name]
             if joint_type == JointType.revolute:
+                # Set the revolute joints to 0 except for the elbow, which should be held at a right angle.
                 commands.append({"$type": "set_revolute_target",
                                  "joint_id": joint_id,
-                                 "target": 0})
+                                 "target": 0 if "elbow" not in joint_type.name else 90})
             elif joint_type == JointType.spherical:
                 commands.append({"$type": "set_spherical_target",
                                  "joint_id": joint_id,
@@ -1005,13 +1039,19 @@ class Magnebot(FloorplanController):
         :return: An IK chain for the arm.
         """
 
-        # The shoulders are slightly above the torso and the column that the torso is on is slightly above the base.
-        shoulder_y = torso_y + 0.0592395 + 0.1591822
-
         return Chain(name=arm.name, links=[
             OriginLink(),
+            URDFLink(name="column",
+                     translation_vector=[0, 0.1591822, 0],
+                     orientation=[0, 0, 0],
+                     rotation=[0, 0, 1],
+                     bounds=(np.deg2rad(-179), np.deg2rad(179))),
+            URDFLink(name="torso",
+                     translation_vector=[0, torso_y, 0],
+                     orientation=[0, 0, 0],
+                     rotation=[0, 0, 0]),
             URDFLink(name="shoulder_pitch",
-                     translation_vector=[-0.2148952 * -1 if arm == Arm.left else 1, shoulder_y, 0.01911657],
+                     translation_vector=[-0.2148952 * -1 if arm == Arm.left else 1,  0.0592395, 0.01911657],
                      orientation=[0, 0, 0],
                      rotation=[1, 0, 0],
                      bounds=(-1.0472, 3.12414)),

@@ -6,15 +6,15 @@
       "functions": ["__init__"]
     },
     "Scene Setup": {
-      "description": "These functions should be sent at the start of the simulation. They advance the simulation by 1 frame and `Magnebot.state` will reflect the state of that frame.",
+      "description": "These functions should be sent at the start of the simulation.",
       "functions": ["init_scene", "init_test_scene"]
     },
     "Movement": {
-      "description": "These functions move or turn the Magnebot. These functions advance the simulation by many frames, depending on the nature of the action. `Magnebot.state` will reflect the simulation state at the final frame.",
+      "description": "These functions move or turn the Magnebot.",
       "functions": ["turn_by", "turn_to", "move_by", "move_to"]
     },
     "Arm Articulation": {
-      "description": "These functions move and bend the joints of the Magnebots's arms. These functions advance the simulation by many frames, depending on the nature of the action. `Magnebot.state` will reflect the simulation state at the final frame.",
+      "description": "These functions move and bend the joints of the Magnebots's arms.",
       "functions": ["reach_for", "grasp", "drop", "drop_all", "reset_arm", "reset_arms"]
     },
     "Misc.": {

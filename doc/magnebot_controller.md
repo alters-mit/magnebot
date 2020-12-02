@@ -106,13 +106,13 @@ print(m.magnebot_static.magnets)
 
 ### Scene Setup
 
-_These functions should be sent at the start of the simulation. They advance the simulation by 1 frame and `Magnebot.state` will reflect the state of that frame._
+_These functions should be sent at the start of the simulation._
 
 #### init_scene
 
 **`def init_scene(self, scene: str, layout: int, room: int = -1) -> None`**
 
-Initialize a scene, populate it with objects, and add the avatar.
+Initialize a scene, populate it with objects, and add the Magnebot. The simulation will advance through frames until the Magnebot's body is in its neutral position.
 
 **Always call this function before any other API calls.**
 
@@ -150,7 +150,7 @@ You can safely call `init_scene()` more than once to reset the simulation.
 
 **`def init_test_scene(self) -> None`**
 
-Initialize an empty test room with a Magnebot.
+Initialize an empty test room with a Magnebot. The simulation will advance through frames until the Magnebot's body is in its neutral position.
 
 This function can be called instead of `init_scene()` for testing purposes. If so, it must be called before any other API calls.
 
@@ -169,7 +169,7 @@ You can safely call `init_test_scene()` more than once to reset the simulation.
 
 ### Movement
 
-_These functions move or turn the Magnebot. These functions advance the simulation by many frames, depending on the nature of the action. `Magnebot.state` will reflect the simulation state at the final frame._
+_These functions move or turn the Magnebot._
 
 #### turn_by
 
@@ -273,7 +273,7 @@ _Returns:_  An `ActionStatus` indicating if the Magnebot moved to the target and
 
 ### Arm Articulation
 
-_These functions move and bend the joints of the Magnebots's arms. These functions advance the simulation by many frames, depending on the nature of the action. `Magnebot.state` will reflect the simulation state at the final frame._
+_These functions move and bend the joints of the Magnebots's arms._
 
 #### reach_for
 
