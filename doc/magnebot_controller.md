@@ -277,16 +277,16 @@ _These functions move and bend the joints of the Magnebots's arms. These functio
 
 #### reach_for
 
-**`def reach_for(self, target: Dict[str, float], arm: Arm, check_if_possible: bool = True, absolute: bool = False, arrived_at: float = 0.125) -> ActionStatus`**
+**`def reach_for(self, target: Dict[str, float], arm: Arm, absolute: bool = False, arrived_at: float = 0.125) -> ActionStatus`**
 
 Reach for a target position.
 
-The action ends when the Magnebot's magnet reaches the target or the arm stops moving. The arm might stop moving if the motion is impossible, there's an obstacle in the way, if the arm is holding something heavy, and so on.
+The action ends when the Magnebot's magnet reaches arm stops moving. The arm might stop moving if it succeeded at finishing the motion, in which case the action is successful. Or, the arms might stop moving because the motion is impossible, there's an obstacle in the way, if the arm is holding something heavy, and so on.
 
 Possible [return values](action_status.md):
 
 - `success`
-- `too_far_to_reach`
+- `cannot_reach`
 - `failed_to_bend`
 
 
@@ -294,11 +294,65 @@ Possible [return values](action_status.md):
 | --- | --- |
 | target | The target position for the magnet at the arm to reach. |
 | arm | The arm that will reach for the target. |
-| check_if_possible | If True, check if the motion is possible before doing it and if not, end the action immediately. |
 | absolute | If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot. |
 | arrived_at | If the magnet is this distance or less from `target`, then the action is successful. |
 
 _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` is at the `target` and if not, why.
+
+#### grasp
+
+**`def grasp(self, target: int, arm: Arm) -> ActionStatus`**
+
+Try to grasp the target object with the arm. The Magnebot will reach for the nearest position on the object.
+If, after bending the arm, the magnet is holding the object, then the action is successful.
+
+Possible [return values](action_status.md):
+
+- `success`
+- `cannot_reach`
+- `bad_raycast`
+- `failed_to_grasp`
+
+
+| Parameter | Description |
+| --- | --- |
+| target | The ID of the target object. |
+| arm | The arm of the magnet that will try to grasp the object. |
+
+_Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` is holding the `target` and if not, why.
+
+#### drop
+
+**`def drop(self, target: int, arm: Arm) -> ActionStatus`**
+
+Drop an object held by a magnet. This action takes exactly 1 frame; it won't wait for the object to finish falling.
+
+See [`SceneState.held`](scene_state.md) for a dictionary of held objects.
+
+Possible [return values](action_status.md):
+
+- `success`
+- `not_holding`
+
+
+| Parameter | Description |
+| --- | --- |
+| target | The ID of the object currently held by the magnet. |
+| arm | The arm of the magnet holding the object. |
+
+_Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` dropped the `target` and if not, why.
+
+#### drop_all
+
+**`def drop_all(self) -> ActionStatus`**
+
+Drop all objects held by either magnet. This action takes exactly 1 frame; it won't wait for the object to finish falling.
+
+Possible [return values](action_status.md):
+
+- `success`
+
+_Returns:_  An `ActionStatus`; always `success`.
 
 #### reset_arm
 

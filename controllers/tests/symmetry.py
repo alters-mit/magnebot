@@ -58,8 +58,8 @@ class Symmetry(Magnebot):
 
         # Assert left-right symmetry.
         for left_name, right_name in zip(self.left.keys(), self.right.keys()):
-            left_pos = self.state.joint_transforms[self.left[left_name]].position
-            right_pos = self.state.joint_transforms[self.right[right_name]].position
+            left_pos = self.state.body_part_transforms[self.left[left_name]].position
+            right_pos = self.state.body_part_transforms[self.right[right_name]].position
             # Assert that the (y, z) values are the same.
             for i, c in zip([1, 2], ["y", "z"]):
                 assert left_pos[i] == right_pos[i], f"{c} coordinate of joints isn't the same: " \
@@ -69,14 +69,14 @@ class Symmetry(Magnebot):
                                                  f"{left_name} = {left_pos}, {right_name} = {right_pos}"
         # Assert centrality.
         for name in self.center:
-            pos = self.state.joint_transforms[self.center[name]].position
+            pos = self.state.body_part_transforms[self.center[name]].position
             for i, c in zip([0, 2], ["x", "z"]):
                 assert pos[i] == 0, f"{c} coordinate of {name} isn't 0: {pos}"
 
         # Assert front-back symmetry.
         for front_name, back_name in zip(self.front.keys(), self.back.keys()):
-            front_pos = self.state.joint_transforms[self.front[front_name]].position
-            back_pos = self.state.joint_transforms[self.back[back_name]].position
+            front_pos = self.state.body_part_transforms[self.front[front_name]].position
+            back_pos = self.state.body_part_transforms[self.back[back_name]].position
             # Assert that the (x, y) values are the same.
             for i, c in zip([0, 1], ["x", "y"]):
                 assert front_pos[i] == back_pos[i], f"{c} coordinate of joints isn't the same: " \

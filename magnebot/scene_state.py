@@ -55,30 +55,40 @@ class SceneState:
                                                        rotation=np.array(r.get_rotation()),
                                                        forward=np.array(r.get_forward()))
         """:field
-        The [transform data](transform.md) of the Magnebot's joints. Key = The ID of the joint.
+        The [transform data](transform.md) of the Magnebot's body parts. Key = The ID of the body part.
+        
+        Some of these body parts aren't joints and aren't included in the [static data](magnebot_static.md).
 
         ```python
         from magnebot import Magnebot
     
         m = Magnebot()
         m.init_scene(scene="2a", layout=1, room=1)
-        for j_id in m.state.joint_transforms:
-            print(m.state.joint_transforms[j_id].position)
+        for j_id in m.state.body_part_transforms:
+            print(m.state.body_part_transforms[j_id].position)
         ```
         """
-        self.joint_transforms: Dict[int, Transform] = dict()
+        self.body_part_transforms: Dict[int, Transform] = dict()
         """:field
-        The angles of each joint. Key = The ID of the joint. Value = The angles of the joint in degrees as a numpy array. This is mainly useful for the backend code.
+        The angles of each Magnebot joint. Key = The ID of the joint. Value = The angles of the joint in degrees as a numpy array. This is mainly useful for the backend code.
         """
         self.joint_angles: Dict[int, np.array] = dict()
         # Get data for the robot body parts.
         for i in range(r.get_num_joints()):
             j_id = r.get_joint_id(i)
-            self.joint_transforms[j_id] = Transform(
+            self.body_part_transforms[j_id] = Transform(
                 position=np.array(r.get_joint_position(i)),
                 rotation=np.array(r.get_joint_rotation(i)),
                 forward=np.array(r.get_joint_forward(i)))
             self.joint_angles[j_id] = np.array([np.rad2deg(a) for a in r.get_joint_positions(i)])
+
+        # Get data for the non-joint robot body parts.
+        for i in range(r.get_num_non_moving()):
+            j_id = r.get_non_moving_id(i)
+            self.body_part_transforms[j_id] = Transform(
+                position=np.array(r.get_non_moving_position(i)),
+                rotation=np.array(r.get_non_moving_rotation(i)),
+                forward=np.array(r.get_non_moving_forward(i)))
 
         m = get_data(resp=resp, d_type=Magnebot)
         """:field
