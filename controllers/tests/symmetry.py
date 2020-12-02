@@ -11,16 +11,14 @@ class Symmetry(Magnebot):
 
     def __init__(self, port: int = 1071, launch_build: bool = True):
         super().__init__(port=port, launch_build=launch_build, id_pass=False, debug=True)
-        self.left = {"shoulder_rod_left": -1,
-                     "shoulder_left": -1,
+        self.left = {"shoulder_left": -1,
                      "upper_arm_left": -1,
                      "elbow_left": -1,
                      "wrist_left": -1,
                      "magnet_left": -1,
                      "wheel_left_front": -1,
                      "wheel_left_back": -1}
-        self.right = {"shoulder_rod_right": -1,
-                      "shoulder_right": -1,
+        self.right = {"shoulder_right": -1,
                       "upper_arm_right": -1,
                       "elbow_right": -1,
                       "wrist_right": -1,

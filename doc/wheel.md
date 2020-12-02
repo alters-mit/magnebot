@@ -1,6 +1,6 @@
 # Wheel
 
-`from magnebot.wheel import Wheel`
+`from magnebot import Wheel`
 
 The expected name of each wheel on the Magnebot.
 

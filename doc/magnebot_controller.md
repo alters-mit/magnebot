@@ -302,7 +302,7 @@ _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` i
 
 #### reset_arm
 
-**`def reset_arm(self, arm: Arm) -> ActionStatus`**
+**`def reset_arm(self, arm: Arm, reset_torso: bool = True) -> ActionStatus`**
 
 Reset an arm to its neutral position. If the arm is holding any objects, it will continue to do so.
 
@@ -311,9 +311,11 @@ Possible [return values](action_status.md):
 - `success`
 - `too_many_attempts`
 
+
 | Parameter | Description |
 | --- | --- |
 | arm | The arm that will be reset. |
+| reset_torso | If True, rotate and slide the torso to its neutral rotation and height. |
 
 _Returns:_  An `ActionStatus` indicating if the arm reset and if not, why.
 
@@ -321,7 +323,7 @@ _Returns:_  An `ActionStatus` indicating if the arm reset and if not, why.
 
 **`def reset_arms(self) -> ActionStatus`**
 
-Reset both arms to their neutral positions. If either arm is holding any objects, it will continue to do so.
+Reset both arms and the torso to their neutral positions. If either arm is holding any objects, it will continue to do so.
 
 Possible [return values](action_status.md):
 

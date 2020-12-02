@@ -1,4 +1,3 @@
-from enum import Enum
 import random
 from json import loads
 import numpy as np
@@ -19,6 +18,8 @@ from magnebot.scene_state import SceneState
 from magnebot.action_status import ActionStatus
 from magnebot.paths import SPAWN_POSITIONS_PATH
 from magnebot.arm import Arm
+from magnebot.joint_type import JointType
+from magnebot.arm_joint import ArmJoint
 
 
 class Magnebot(FloorplanController):
@@ -77,26 +78,7 @@ class Magnebot(FloorplanController):
 
     """
 
-    class __ArmJoint(Enum):
-        """
-        The expected name of an arm joint.
-        """
 
-        torso = 0
-        shoulder_left = 1
-        elbow_left = 2
-        wrist_left = 3
-        shoulder_right = 4
-        elbow_right = 5
-        wrist_right = 6
-
-    class __JointType(Enum):
-        """
-        Types of joint articulation.
-        """
-
-        revolute = 0
-        spherical = 1
 
     # Global forward directional vector.
     _FORWARD = np.array([0, 0, 1])
@@ -105,24 +87,27 @@ class Magnebot(FloorplanController):
     __OBJECT_AUDIO = PyImpact.get_object_info()
 
     # The order in which joint angles will be set.
-    __JOINT_ORDER: Dict[Arm, List[__ArmJoint]] = {Arm.left: [__ArmJoint.torso,
-                                                             __ArmJoint.shoulder_left,
-                                                             __ArmJoint.elbow_left,
-                                                             __ArmJoint.wrist_left],
-                                                  Arm.right: [__ArmJoint.torso,
-                                                              __ArmJoint.shoulder_right,
-                                                              __ArmJoint.elbow_right,
-                                                              __ArmJoint.wrist_right]}
+    JOINT_ORDER: Dict[Arm, List[ArmJoint]] = {Arm.left: [ArmJoint.column,
+                                                         ArmJoint.shoulder_left,
+                                                         ArmJoint.elbow_left,
+                                                         ArmJoint.wrist_left],
+                                              Arm.right: [ArmJoint.column,
+                                                          ArmJoint.shoulder_right,
+                                                          ArmJoint.elbow_right,
+                                                          ArmJoint.wrist_right]}
     # The expected joint articulation per joint
-    __JOINT_AXES: Dict[__ArmJoint, __JointType] = {__ArmJoint.torso: __JointType.revolute,
-                                                   __ArmJoint.shoulder_left: __JointType.spherical,
-                                                   __ArmJoint.elbow_left: __JointType.revolute,
-                                                   __ArmJoint.wrist_left: __JointType.spherical,
-                                                   __ArmJoint.shoulder_right: __JointType.spherical,
-                                                   __ArmJoint.elbow_right: __JointType.revolute,
-                                                   __ArmJoint.wrist_right: __JointType.spherical}
-    # Prismatic joint limits for the spine.
-    __SPINE_LIMITS = [0.37, 1.7]
+    JOINT_AXES: Dict[ArmJoint, JointType] = {ArmJoint.column: JointType.prismatic,
+                                             ArmJoint.torso: JointType.revolute,
+                                             ArmJoint.shoulder_left: JointType.spherical,
+                                             ArmJoint.elbow_left: JointType.revolute,
+                                             ArmJoint.wrist_left: JointType.spherical,
+                                             ArmJoint.shoulder_right: JointType.spherical,
+                                             ArmJoint.elbow_right: JointType.revolute,
+                                             ArmJoint.wrist_right: JointType.spherical}
+    # Prismatic joint limits for the torso.
+    TORSO_LIMITS = [0.21, 1.5]
+    # The default height of the torso.
+    DEFAULT_TORSO_Y = 0.7
 
     def __init__(self, port: int = 1071, launch_build: bool = True, id_pass: bool = True,
                  screen_width: int = 256, screen_height: int = 256, debug: bool = False):
@@ -561,7 +546,7 @@ class Magnebot(FloorplanController):
                 print(f"Tried and failed to reach for target: {d}")
             return ActionStatus.failed_to_reach
 
-    def reset_arm(self, arm: Arm) -> ActionStatus:
+    def reset_arm(self, arm: Arm, reset_torso: bool = True) -> ActionStatus:
         """
         Reset an arm to its neutral position. If the arm is holding any objects, it will continue to do so.
 
@@ -571,18 +556,21 @@ class Magnebot(FloorplanController):
         - `too_many_attempts`
 
         :param arm: The arm that will be reset.
+        :param reset_torso: If True, rotate and slide the torso to its neutral rotation and height.
+
         :return: An `ActionStatus` indicating if the arm reset and if not, why.
         """
 
         self._start_action()
-        self._next_frame_commands.extend(self.__get_arm_reset_commands(arm=arm))
+        self._next_frame_commands.extend(self.__get_arm_reset_commands(arm=arm, reset_torso=reset_torso))
+
         status = self._do_arm_motion()
         self._end_action()
         return status
 
     def reset_arms(self) -> ActionStatus:
         """
-        Reset both arms to their neutral positions. If either arm is holding any objects, it will continue to do so.
+        Reset both arms and the torso to their neutral positions. If either arm is holding any objects, it will continue to do so.
 
         Possible [return values](action_status.md):
 
@@ -594,8 +582,8 @@ class Magnebot(FloorplanController):
 
         self._start_action()
         # Reset both arms.
-        self._next_frame_commands.extend(self.__get_arm_reset_commands(arm=Arm.left))
-        self._next_frame_commands.extend(self.__get_arm_reset_commands(arm=Arm.right))
+        self._next_frame_commands.extend(self.__get_arm_reset_commands(arm=Arm.left, reset_torso=True))
+        self._next_frame_commands.extend(self.__get_arm_reset_commands(arm=Arm.right, reset_torso=False))
         # Wait for both arms to stop moving.
         status = self._do_arm_motion()
         self._end_action()
@@ -703,7 +691,7 @@ class Magnebot(FloorplanController):
                     {"$type": "create_avatar",
                      "type": "A_Img_Caps_Kinematic"},
                     {"$type": "parent_avatar_to_robot",
-                     "position": {"x": 0, "y": 0.8, "z": 0.24}},
+                     "position": {"x": 0, "y": 0.923, "z": 0.1838}},
                     {"$type": "set_pass_masks",
                      "pass_masks": ["_img", "_id", "_depth"] if self._id_pass else ["_img", "_depth"]},
                     {"$type": "enable_image_sensor",
@@ -770,8 +758,8 @@ class Magnebot(FloorplanController):
         frame_target[:3, 3] = target
 
         angles: List[float] = list()
-        for joint_name in Magnebot.__JOINT_ORDER[arm]:
-            j_id = self.magnebot_static.arm_joints[joint_name.name]
+        for joint_name in Magnebot.JOINT_ORDER[arm]:
+            j_id = self.magnebot_static.arm_joints[joint_name]
             angles.extend(state.joint_angles[j_id])
         for b_id in state.joint_angles:
             angles.extend(state.joint_angles[b_id])
@@ -800,15 +788,15 @@ class Magnebot(FloorplanController):
         i = 0
         joint_order_index = 0
         while i < len(angles):
-            joint_name = Magnebot.__JOINT_ORDER[arm][joint_order_index]
-            joint_type = Magnebot.__JOINT_AXES[joint_name]
+            joint_name = Magnebot.JOINT_ORDER[arm][joint_order_index]
+            joint_type = Magnebot.JOINT_AXES[joint_name]
             joint_id = self.magnebot_static.arm_joints[joint_name]
-            if joint_type == Magnebot.__JointType.revolute:
+            if joint_type == JointType.revolute:
                 commands.append({"$type": "set_revolute_target",
                                  "joint_id": joint_id,
                                  "target": angles[i]})
                 i += 1
-            elif joint_type == Magnebot.__JointType.spherical:
+            elif joint_type == JointType.spherical:
                 commands.append({"$type": "set_spherical_target",
                                  "joint_id": joint_id,
                                  "target": {"x": angles[i], "y": angles[i + 1], "z": angles[i + 2]}})
@@ -819,22 +807,33 @@ class Magnebot(FloorplanController):
         self._next_frame_commands.extend(commands)
         return ActionStatus.success
 
-    def __get_arm_reset_commands(self, arm: Arm) -> List[dict]:
+    def __get_arm_reset_commands(self, arm: Arm, reset_torso: bool) -> List[dict]:
         """
         :param arm: The arm to reset.
+        :param reset_torso: If True, reset the torso.
 
         :return: A list of commands to reset the position of the arm.
         """
 
         commands = []
-        for joint_name in Magnebot.__JOINT_ORDER[arm]:
-            joint_type = Magnebot.__JOINT_AXES[joint_name]
-            joint_id = self.magnebot_static.arm_joints[joint_name.name]
-            if joint_type == Magnebot.__JointType.revolute:
+        # Reset the column rotation and the torso height.
+        if reset_torso:
+            commands.extend([{"$type": "set_revolute_target",
+                              "joint_id": self.magnebot_static.arm_joints[ArmJoint.column],
+                              "target": 0},
+                             {"$type": "set_prismatic_target",
+                              "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
+                              "target": Magnebot.DEFAULT_TORSO_Y,
+                              "axis": "y"}])
+        # Reset every arm joint after the torso.
+        for joint_name in Magnebot.JOINT_ORDER[arm][1:]:
+            joint_id = self.magnebot_static.arm_joints[joint_name]
+            joint_type = Magnebot.JOINT_AXES[joint_name]
+            if joint_type == JointType.revolute:
                 commands.append({"$type": "set_revolute_target",
                                  "joint_id": joint_id,
                                  "target": 0})
-            elif joint_type == Magnebot.__JointType.spherical:
+            elif joint_type == JointType.spherical:
                 commands.append({"$type": "set_spherical_target",
                                  "joint_id": joint_id,
                                  "target": {"x": 0, "y": 0, "z": 0}})
