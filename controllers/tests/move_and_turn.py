@@ -5,12 +5,12 @@ Test Magnebot moving and turning.
 """
 
 
-def assert_status(status: ActionStatus):
+def assert_status(status: ActionStatus) -> None:
     assert status == ActionStatus.success, status
 
 
 if __name__ == "__main__":
-    c = Magnebot(launch_build=False, debug=True)
+    c = Magnebot(launch_build=False)
     c.init_test_scene()
     assert_status(c.turn_by(45))
     assert_status(c.turn_by(-30))
