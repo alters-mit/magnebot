@@ -284,7 +284,7 @@ class Magnebot(FloorplanController):
         self._do_arm_motion()
         self._end_action()
 
-    def turn_by(self, angle: float, speed: float = 15, aligned_at: float = 3) -> ActionStatus:
+    def turn_by(self, angle: float, speed: float = 45, aligned_at: float = 3) -> ActionStatus:
         """
         Turn the Magnebot by an angle.
 
@@ -332,12 +332,13 @@ class Magnebot(FloorplanController):
             commands = []
             for wheel in self.magnebot_static.wheels:
                 # Get the target from the current joint angles.
-                if "left" in wheel:
+                if "left" in wheel.name:
                     target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] + \
-                             speed if angle > 0 else -speed
+                             (speed if angle > 0 else -speed)
                 else:
                     target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] - \
-                             speed if angle > 0 else -speed
+                             (speed if angle > 0 else -speed)
+
                 commands.append({"$type": "set_revolute_target",
                                  "target": target,
                                  "joint_id": self.magnebot_static.wheels[wheel]})
@@ -393,7 +394,7 @@ class Magnebot(FloorplanController):
                                    position=target)
         return self.turn_by(angle=angle, speed=speed, aligned_at=aligned_at)
 
-    def move_by(self, distance: float, speed: float = 15, arrived_at: float = 0.1) -> ActionStatus:
+    def move_by(self, distance: float, speed: float = 45, arrived_at: float = 0.1) -> ActionStatus:
         """
         Move the Magnebot forward or backward by a given distance.
 
@@ -428,7 +429,7 @@ class Magnebot(FloorplanController):
             for wheel in self.magnebot_static.wheels:
                 # Get the target from the current joint angles. Add or subtract the speed.
                 target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] + \
-                         speed if distance > 0 else -speed
+                         (speed if distance > 0 else -speed)
                 commands.append({"$type": "set_revolute_target",
                                  "target": target,
                                  "joint_id": self.magnebot_static.wheels[wheel]})
@@ -754,10 +755,10 @@ class Magnebot(FloorplanController):
                                                        {"$type": "set_immovable",
                                                         "immovable": False},
                                                        {"$type": "set_magnet_targets",
-                                                        "arm": Arm.left,
+                                                        "arm": Arm.left.name,
                                                         "targets": []},
                                                        {"$type": "set_magnet_targets",
-                                                        "arm": Arm.right,
+                                                        "arm": Arm.right.name,
                                                         "targets": []}]))
 
     def _wheels_are_done(self, state_0: SceneState) -> Tuple[bool, SceneState]:
@@ -772,8 +773,8 @@ class Magnebot(FloorplanController):
         resp = self.communicate([])
         state_1 = SceneState(resp=resp)
         for w_id in self.magnebot_static.wheels.values():
-            if np.linalg.norm(state_0.joint_angles[w_id].angles[0] -
-                              state_1.joint_angles[w_id].angles[0]) > 0.001:
+            if np.linalg.norm(state_0.joint_angles[w_id][0] -
+                              state_1.joint_angles[w_id][0]) > 0.1:
                 return False, state_1
         return True, state_1
 
@@ -873,6 +874,7 @@ class Magnebot(FloorplanController):
 
             # Generate an IK chain, given the current desired torso height.
             chain = self.__get_ik_chain(arm=arm, torso_y=torso_y)
+
             # Get the IK solution.
             ik = chain.inverse_kinematics_frame(target=frame_target,
                                                 initial_position=initial_angles,
@@ -899,11 +901,20 @@ class Magnebot(FloorplanController):
         if absolute:
             target = self.__absolute_to_relative(position=target, state=state)
 
+        self._next_frame_commands.append({"$type": "add_position_marker",
+                                          "position": TDWUtils.array_to_vector3(target)})
+
         # Get the initial angles of each joint.
-        initial_angles: List[float] = list()
+        # The first angle is always 0 (the origin link).
+        initial_angles = [0]
         for j in Magnebot.JOINT_ORDER[arm]:
             j_id = self.magnebot_static.arm_joints[j]
             initial_angles.extend(self.state.joint_angles[j_id])
+        # Insert a 0 degree torso rotation.
+        initial_angles.insert(2, 0)
+        # Add the magnet.
+        initial_angles.append(0)
+        initial_angles = np.array([np.deg2rad(ia) for ia in initial_angles])
 
         # Get the IK solution using the current angles.
         # This is pulled from pyik.
@@ -932,6 +943,7 @@ class Magnebot(FloorplanController):
         if not got_solution:
             return ActionStatus.cannot_reach
         # Convert the angles to degrees. Remove the first node (the origin link) and last node (the magnet).
+        print(angles)
         angles = [float(np.rad2deg(a)) for a in angles[1:-1]]
 
         # Convert the IK solution into TDW commands, using the expected joint and axis order.
@@ -1024,8 +1036,8 @@ class Magnebot(FloorplanController):
             state_1 = SceneState(self.communicate([]))
             moving = False
             for a_id in self.magnebot_static.arm_joints.values():
-                if np.linalg.norm(state_0.joint_angles[a_id].angles[0] -
-                                  state_1.joint_angles[a_id].angles[0]) > 0.001:
+                if np.linalg.norm(state_0.joint_angles[a_id][0] -
+                                  state_1.joint_angles[a_id][0]) > 0.001:
                     moving = True
                     break
             state_0 = state_1

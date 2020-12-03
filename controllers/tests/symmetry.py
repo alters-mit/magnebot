@@ -2,6 +2,7 @@ from tdw.output_data import StaticRobot
 from magnebot import Magnebot, Arm
 from magnebot.action_status import ActionStatus
 from magnebot.util import get_data
+from magnebot.scene_state import SceneState
 
 
 class Symmetry(Magnebot):
@@ -35,7 +36,7 @@ class Symmetry(Magnebot):
         super().init_test_scene()
         # Get the object IDs for all non-joints as well as joints.
         resp = self.communicate({"$type": "send_static_robots"})
-        sr = StaticRobot(get_data(resp=resp, d_type=StaticRobot))
+        sr = get_data(resp=resp, d_type=StaticRobot)
         for i in range(sr.get_num_joints()):
             j_name = sr.get_joint_name(i)
             j_id = sr.get_joint_id(i)
@@ -48,8 +49,7 @@ class Symmetry(Magnebot):
             for d in [self.left, self.right, self.center, self.front, self.back]:
                 if j_name in d:
                     d[j_name] = j_id
-
-        self.assert_symmetry()
+        self.state = SceneState(resp=resp)
 
     def assert_symmetry(self) -> None:
         """

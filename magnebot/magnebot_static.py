@@ -98,10 +98,7 @@ class MagnebotStatic:
             body_part_name = static_robot.get_joint_name(i)
             if "wheel" in body_part_name:
                 self.wheels[Wheel[body_part_name]] = body_part_id
+            elif "magnet" in body_part_name:
+                self.magnets[Arm.left if "left" in body_part_name else Arm.right] = body_part_id
             else:
                 self.arm_joints[ArmJoint[body_part_name]] = body_part_id
-        # Cache the magnets.
-        for i in range(static_robot.get_num_non_moving()):
-            body_part_name = static_robot.get_non_moving_name(i)
-            if "magnet" in body_part_name:
-                self.magnets[Arm.left if "left" in body_part_name else Arm.right] = static_robot.get_non_moving_id(i)
