@@ -310,7 +310,6 @@ Possible [return values](action_status.md):
 
 - `success`
 - `cannot_reach`
-- `bad_raycast`
 - `failed_to_grasp`
 
 

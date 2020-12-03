@@ -551,7 +551,6 @@ class Magnebot(FloorplanController):
 
         - `success`
         - `cannot_reach`
-        - `bad_raycast`
         - `failed_to_grasp`
 
         :param target: The ID of the target object.
@@ -570,11 +569,8 @@ class Magnebot(FloorplanController):
         # Get the mitten's position.
         m_pos = self.state.body_part_transforms[self.magnebot_static.magnets[arm]]
         # Raycast to the target to get a target position.
+        # If the raycast fails, just aim for the centroid of the object.
         raycast_ok, target_position = self._get_raycast(origin=m_pos, object_id=target)
-
-        if not raycast_ok:
-            self._end_action()
-            return ActionStatus.bad_raycast
 
         target_position = Magnebot.__absolute_to_relative(position=target_position, state=self.state)
         # Start the IK action.
@@ -868,6 +864,34 @@ class Magnebot(FloorplanController):
         :return: An `ActionStatus` describing whether the IK action began.
         """
 
+        def __get_ik_solution() -> Tuple[bool, List[float]]:
+            """
+            Get an IK solution to a target given the height of the torso.
+
+            :return: Tuple: True if this solution will bring the end of the IK chain to the target position; the IK solution.
+            """
+
+            # Generate an IK chain, given the current desired torso height.
+            chain = self.__get_ik_chain(arm=arm, torso_y=torso_y)
+            # Get the IK solution.
+            ik = chain.inverse_kinematics_frame(target=frame_target,
+                                                initial_position=initial_angles,
+                                                no_position=False)
+            # Get the forward kinematics matrix of the IK solution.
+            transformation_matrices = chain.forward_kinematics(ik, full_kinematics=True)
+            # Convert the matrix into positions (this is pulled from pyik).
+            nodes = []
+            for (index, link) in enumerate(chain.links):
+                (node, orientation) = geometry.from_transformation_matrix(transformation_matrices[index])
+                nodes.append(node)
+            # Check if the last position on the node is very close to the target.
+            # If so, this IK solution is expected to succeed.
+            end_node = np.array(nodes[-1][:-1])
+            d = np.linalg.norm(end_node - target)
+            # Return whether the IK solution is expected to succeed; and the IK solution.
+            return d <= arrived_at, ik
+
+        # If the `state` argument is None, work off of `self.state`.
         if state is None:
             state = self.state
         target = TDWUtils.vector3_to_array(target)
@@ -875,49 +899,55 @@ class Magnebot(FloorplanController):
         if absolute:
             target = self.__absolute_to_relative(position=target, state=state)
 
+        # Get the initial angles of each joint.
+        initial_angles: List[float] = list()
+        for j in Magnebot.JOINT_ORDER[arm]:
+            j_id = self.magnebot_static.arm_joints[j]
+            initial_angles.extend(self.state.joint_angles[j_id])
+
         # Get the IK solution using the current angles.
+        # This is pulled from pyik.
         frame_target = np.eye(4)
         frame_target[:3, 3] = target
 
-        angles: List[float] = list()
         # Try to get an IK solution from various heights.
-        torso_y = Magnebot.TORSO_LIMITS[0]
+        # Start at the default height and incrementally raise the torso.
+        # We need to do this iteratively because pyik doesn't support prismatic joints!
+        # But it should be ok because there's only one prismatic joint in this robot.
+        angles: List[float] = list()
+        torso_y = Magnebot.DEFAULT_TORSO_Y
         got_solution = False
-        while not got_solution and torso_y < Magnebot.TORSO_LIMITS[1]:
-            chain = self.__get_ik_chain(arm=arm, torso_y=torso_y)
-            angles = chain.inverse_kinematics_frame(target=frame_target,
-                                                    initial_position=angles,
-                                                    no_position=False)
-            # Check if the IK solution reaches the target.
-            transformation_matrices = chain.forward_kinematics(angles, full_kinematics=True)
-            nodes = []
-            for (index, link) in enumerate(chain.links):
-                (node, orientation) = geometry.from_transformation_matrix(transformation_matrices[index])
-                nodes.append(node)
-            # The expected destination.
-            destination = np.array(nodes[-1][:-1])
-            d = np.linalg.norm(destination - target)
-            if d <= arrived_at:
-                got_solution = True
-            # Adjust the height of the torso and try again.
-            torso_y += 0.1
+        while not got_solution and torso_y <= Magnebot.TORSO_LIMITS[1]:
+            got_solution, angles = __get_ik_solution()
+            if not got_solution:
+                torso_y += 0.1
+        # If we couldn't find a solution, try to lower the torso.
+        if not got_solution:
+            torso_y = Magnebot.DEFAULT_TORSO_Y
+            while not got_solution and torso_y >= Magnebot.TORSO_LIMITS[0]:
+                got_solution, angles = __get_ik_solution()
+                if not got_solution:
+                    torso_y -= 0.1
+        # If we couldn't find a solution at any torso height, then there isn't a solution.
         if not got_solution:
             return ActionStatus.cannot_reach
+        # Convert the angles to degrees. Remove the first node (the origin link) and last node (the magnet).
         angles = [float(np.rad2deg(a)) for a in angles[1:-1]]
 
-        # Make the base of the Magnebot immovable.
-        # Set the height of the torso.
+        # Convert the IK solution into TDW commands, using the expected joint and axis order.
+        # Make the base of the Magnebot immovable because otherwise it might push itself off the ground and tip over.
+        # Slide the torso to the desired height.
         commands = [{"$type": "set_immovable",
                      "immovable": True},
                     {"$type": "set_prismatic_target",
                      "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
                      "target": torso_y,
                      "axis": "y"}]
-        # Convert the IK solution into TDW commands, using the expected joint and axis order.
         i = 0
         joint_order_index = 0
         while i < len(angles):
-            # Ignore the torso (which doesn't move in the context of the IK solution).
+            # The second angle in the chain is the torso, which is considered a fixed joint
+            # (because we're handling it iteratively). So we ignore this node in the IK solution.
             if i == 1:
                 i += 1
                 continue
@@ -1007,11 +1037,11 @@ class Magnebot(FloorplanController):
 
     def _get_raycast(self, object_id: int, origin: np.array) -> Tuple[bool, np.array]:
         """
-        Raycast to a target object from the avatar.
+        Raycast to a target object from an origin.
 
         :param object_id: The object ID.
 
-        :return: The point of the raycast hit and whether the raycast hit the object.
+        :return: Tuple: The point of the raycast hit or the centroid of the object; and whether the raycast hit the object.
         """
 
         resp = self.communicate({"$type": "send_bounds",
@@ -1028,7 +1058,8 @@ class Magnebot(FloorplanController):
                                  "destination": destination})
         raycast = get_data(resp=resp, d_type=Raycast)
         point = np.array(raycast.get_point())
-        return raycast.get_hit() and raycast.get_object_id() is not None and raycast.get_object_id() == object_id, point
+        hit = raycast.get_hit() and raycast.get_object_id() is not None and raycast.get_object_id() == object_id
+        return hit, point if hit else destination
 
     @staticmethod
     def __get_ik_chain(arm: Arm, torso_y: float) -> Chain:

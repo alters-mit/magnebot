@@ -29,6 +29,5 @@ class ActionStatus(Enum):
     unaligned = 4  # The Magnebot tried to turn but failed to align with the target angle, position, or object.
     cannot_reach = 5  # The Magnebot didn't try to reach for the target position because it can't.
     failed_to_reach = 6  # The Magnebot tried to reach for the target but failed; the magnet is too far away.
-    bad_raycast = 7  # The Magnebot didn't try to grasp the object because there is something between the magnet and the object.
-    failed_to_grasp = 8  # The Magnebot tried to grasp the object and failed.
-    not_holding = 9  # The Magnebot didn't try to drop the object because it isn't holding the object with that magnet.
+    failed_to_grasp = 7  # The Magnebot tried to grasp the object and failed.
+    not_holding = 8  # The Magnebot didn't try to drop the object because it isn't holding the object with that magnet.
