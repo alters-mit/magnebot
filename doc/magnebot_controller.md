@@ -148,7 +148,7 @@ You can safely call `init_scene()` more than once to reset the simulation.
 Possible [return values](action_status.md):
 
 - `success`
-- `too_many_attempts` (Technically this is _possible_, but it shouldn't ever happen.)
+- `failed_to_bend` (Technically this is _possible_, but it shouldn't ever happen.)
 
 | Parameter | Description |
 | --- | --- |
@@ -178,7 +178,7 @@ You can safely call `init_test_scene()` more than once to reset the simulation.
 Possible [return values](action_status.md):
 
 - `success`
-- `too_many_attempts` (Technically this is _possible_, but it shouldn't ever happen.)
+- `failed_to_bend` (Technically this is _possible_, but it shouldn't ever happen.)
 
 ***
 
@@ -188,7 +188,7 @@ _These functions move or turn the Magnebot._
 
 #### turn_by
 
-**`def turn_by(self, angle: float, speed: float = 45, aligned_at: float = 3) -> ActionStatus`**
+**`def turn_by(self, angle: float, aligned_at: float = 3) -> ActionStatus`**
 
 Turn the Magnebot by an angle.
 
@@ -199,21 +199,19 @@ When turning, the left wheels will turn one way and the right wheels in the oppo
 Possible [return values](action_status.md):
 
 - `success`
-- `too_many_attempts`
-- `unaligned`
+- `failed_to_turn`
 
 
 | Parameter | Description |
 | --- | --- |
 | angle | The target angle in degrees. Positive value = clockwise turn. |
 | aligned_at | If the different between the current angle and the target angle is less than this value, then the action is successful. |
-| speed | The wheels will turn this many degrees per attempt to turn. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
 
 #### turn_to
 
-**`def turn_to(self, target: Union[int, Dict[str, float]], speed: float = 15, aligned_at: float = 3) -> ActionStatus`**
+**`def turn_to(self, target: Union[int, Dict[str, float]], aligned_at: float = 3) -> ActionStatus`**
 
 Turn the Magnebot to face a target object or position.
 
@@ -224,42 +222,38 @@ When turning, the left wheels will turn one way and the right wheels in the oppo
 Possible [return values](action_status.md):
 
 - `success`
-- `too_many_attempts`
-- `unaligned`
+- `failed_to_turn`
 
 
 | Parameter | Description |
 | --- | --- |
 | target | Either the ID of an object or a Vector3 position. |
 | aligned_at | If the different between the current angle and the target angle is less than this value, then the action is successful. |
-| speed | The wheels will turn this many degrees per attempt to turn. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
 
 #### move_by
 
-**`def move_by(self, distance: float, speed: float = 45, arrived_at: float = 0.1) -> ActionStatus`**
+**`def move_by(self, distance: float, arrived_at: float = 0.1) -> ActionStatus`**
 
 Move the Magnebot forward or backward by a given distance.
 
 Possible [return values](action_status.md):
 
 - `success`
-- `overshot_move`
-- `too_many_attempts`
+- `failed_to_move`
 
 
 | Parameter | Description |
 | --- | --- |
 | distance | The target distance. If less than zero, the Magnebot will move backwards. |
-| speed | The Magnebot's wheels will rotate by this many degrees per iteration. |
 | arrived_at | If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot moved by `distance` and if not, why.
 
 #### move_to
 
-**`def move_to(self, target: Union[int, Dict[str, float]], move_speed: float = 15, arrived_at: float = 0.1, turn_speed: float = 15, aligned_at: float = 3, move_on_turn_fail: bool = False) -> ActionStatus`**
+**`def move_to(self, target: Union[int, Dict[str, float]], arrived_at: float = 0.1, aligned_at: float = 3) -> ActionStatus`**
 
 Move the Magnebot to a target object or position.
 
@@ -268,19 +262,15 @@ The Magnebot will first try to turn to face the target by internally calling a `
 Possible [return values](action_status.md):
 
 - `success`
-- `overshot_move`
-- `too_many_attempts` (when moving, and also when turning if `move_on_turn_fail == False`)
-- `unaligned` (when turning if `move_on_turn_fail == False`)
+- `failed_to_move`
+- `failed_to_turn`
 
 
 | Parameter | Description |
 | --- | --- |
 | target | Either the ID of an object or a Vector3 position. |
-| move_speed | The Magnebot's wheels will rotate by this many degrees per iteration when moving. |
 | arrived_at | While moving, if at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
-| turn_speed | The Magnebot's wheels will rotate by this many degrees per iteration when turning. |
 | aligned_at | While turning, if the different between the current angle and the target angle is less than this value, then the action is successful. |
-| move_on_turn_fail | If True, the Magnebot will move forward even if the internal `turn_to()` action didn't return `success`. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot moved to the target and if not, why.
 
@@ -302,7 +292,7 @@ Possible [return values](action_status.md):
 
 - `success`
 - `cannot_reach`
-- `failed_to_bend`
+- `failed_to_reach`
 
 
 | Parameter | Description |
@@ -354,7 +344,7 @@ Possible [return values](action_status.md):
 | target | The ID of the object currently held by the magnet. |
 | arm | The arm of the magnet holding the object. |
 
-_Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` dropped the `target` and if not, why.
+_Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` dropped the `target`.
 
 #### drop_all
 
@@ -365,8 +355,9 @@ Drop all objects held by either magnet. This action takes exactly 1 frame; it wo
 Possible [return values](action_status.md):
 
 - `success`
+- `not_holding`
 
-_Returns:_  An `ActionStatus`; always `success`.
+_Returns:_  An `ActionStatus` if the Magnebot dropped any objects.
 
 #### reset_arm
 
@@ -377,7 +368,7 @@ Reset an arm to its neutral position. If the arm is holding any objects, it will
 Possible [return values](action_status.md):
 
 - `success`
-- `too_many_attempts`
+- `failed_to_bend`
 
 
 | Parameter | Description |
@@ -396,7 +387,7 @@ Reset both arms and the torso to their neutral positions. If either arm is holdi
 Possible [return values](action_status.md):
 
 - `success`
-- `too_many_attempts`
+- `failed_to_bend`
 
 _Returns:_  An `ActionStatus` indicating if the arms reset and if not, why.
 

@@ -15,22 +15,22 @@ status = m.move_by(1)
 print(status) # ActionStatus.success
 ```
 
-If, according to the status code, the Magnebot _tried to_ do something and failed, the Magnebot moved for _n_ frames before giving up.
+If the Magnebot _tried to_ do something and failed, the Magnebot moved for _n_ frames before giving up.
 
-If, according to the status code, the Magnebot _didn't try_ to do something, the action failed without advancing the simulation at all.
+If the Magnebot _didn't try_ to do something, the action failed without advancing the simulation at all.
 
 | Value | Description |
 | --- | --- |
 | `ongoing` | The action is ongoing. |
 | `success` | The action was successful. |
-| `overshot_move` | The Magnebot tried to move somewhere but overshot the target distance or position. |
-| `too_many_attempts` | The Magnebot tried to do an action for too many frames and gave up. |
-| `unaligned` | The Magnebot tried to turn but failed to align with the target angle, position, or object. |
+| `failed_to_move` | The Magnebot tried to move to a target position or object but failed. |
+| `failed_to_turn` | The Magnebot tried to turn but failed to align with the target angle, position, or object. |
 | `cannot_reach` | The Magnebot didn't try to reach for the target position because it can't. |
-| `failed_to_reach` | The Magnebot tried to reach for the target but failed; the magnet is too far away. |
+| `failed_to_reach` | The Magnebot tried to reach for the target but failed; the magnet isn't close to the target. |
 | `failed_to_grasp` | The Magnebot tried to grasp the object and failed. |
-| `not_holding` | The Magnebot didn't try to drop the object because it isn't holding the object with that magnet. |
-| `clamped_camera_rotation` | The Magnebot rotated its camera but at least one angle of rotation was clamped (see `Magnebot.CAMERA_RPY_CONSTRAINTS`). |
+| `not_holding` | The Magnebot didn't try to drop the object(s) because it isn't holding them. |
+| `clamped_camera_rotation` | The Magnebot rotated its camera but at least one angle of rotation was clamped. |
+| `failed_to_bend` | The Magnebot tried to bend its arm but failed to bend it all the way. |
 
 ***
 

@@ -250,7 +250,7 @@ class Magnebot(FloorplanController):
         Possible [return values](action_status.md):
 
         - `success`
-        - `too_many_attempts` (Technically this is _possible_, but it shouldn't ever happen.)
+        - `failed_to_bend` (Technically this is _possible_, but it shouldn't ever happen.)
 
         :param scene: The name of an interior floorplan scene. Each number (1, 2, etc.) has a different shape, different rooms, etc. Each letter (a, b, c) is a cosmetically distinct variant with the same floorplan.
         :param layout: The furniture layout of the floorplan. Each number (0, 1, 2) will populate the floorplan with different furniture in different positions.
@@ -290,7 +290,7 @@ class Magnebot(FloorplanController):
         Possible [return values](action_status.md):
 
         - `success`
-        - `too_many_attempts` (Technically this is _possible_, but it shouldn't ever happen.)
+        - `failed_to_bend` (Technically this is _possible_, but it shouldn't ever happen.)
         """
 
         commands = [{"$type": "load_scene",
@@ -304,7 +304,7 @@ class Magnebot(FloorplanController):
         self._end_action()
         return status
 
-    def turn_by(self, angle: float, speed: float = 45, aligned_at: float = 3) -> ActionStatus:
+    def turn_by(self, angle: float, aligned_at: float = 3) -> ActionStatus:
         """
         Turn the Magnebot by an angle.
 
@@ -315,12 +315,10 @@ class Magnebot(FloorplanController):
         Possible [return values](action_status.md):
 
         - `success`
-        - `too_many_attempts`
-        - `unaligned`
+        - `failed_to_turn`
 
         :param angle: The target angle in degrees. Positive value = clockwise turn.
         :param aligned_at: If the different between the current angle and the target angle is less than this value, then the action is successful.
-        :param speed: The wheels will turn this many degrees per attempt to turn.
 
         :return: An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
         """
@@ -342,10 +340,13 @@ class Magnebot(FloorplanController):
         wheel_state = SceneState(resp=self.communicate([]))
         # The initial forward vector.
         f0 = self.state.magnebot_transform.forward
+        speed = angle * 2.5
         # The approximately number of iterations required, given the distance and speed.
-        num_attempts = int(np.abs(angle) + 1) * speed * 50
+        num_attempts = int((np.abs(angle) + 1) / 2)
         attempts = 0
         angle_0 = angle
+        if self._debug:
+            print(f"num_attempts: {num_attempts}", f"angle_0: {angle_0}", f"speed: {speed}")
         while attempts < num_attempts:
             attempts += 1
             # Set the direction of the wheels for the turn and send commands.
@@ -369,20 +370,26 @@ class Magnebot(FloorplanController):
                 wheels_done, wheel_state = self._wheels_are_done(state_0=wheel_state)
             # Get the new angle.
             angle_1 = _get_angle_1()
+            if self._debug:
+                print(f"speed: {speed}", f"angle_1: {angle_1}")
             # If the difference between the target angle and the current angle is very small, we're done.
             if np.abs(angle_1 - angle_0) < aligned_at:
                 self._end_action()
                 return ActionStatus.success
+            # Adjust the speed.
+            if np.abs(angle_1) > np.abs(angle_0):
+                if angle_1 > angle_0:
+                    speed = (angle_0 - angle_1) * 3.5
+                else:
+                    speed = (angle_1 - angle_0) * 3.5
         self._end_action()
         angle_1 = _get_angle_1()
         if np.abs(angle_1 - angle_0) < aligned_at:
             return ActionStatus.success
-        elif attempts >= num_attempts:
-            return ActionStatus.too_many_attempts
         else:
-            return ActionStatus.unaligned
+            return ActionStatus.failed_to_turn
 
-    def turn_to(self, target: Union[int, Dict[str, float]], speed: float = 15, aligned_at: float = 3) -> ActionStatus:
+    def turn_to(self, target: Union[int, Dict[str, float]], aligned_at: float = 3) -> ActionStatus:
         """
         Turn the Magnebot to face a target object or position.
 
@@ -393,12 +400,10 @@ class Magnebot(FloorplanController):
         Possible [return values](action_status.md):
 
         - `success`
-        - `too_many_attempts`
-        - `unaligned`
+        - `failed_to_turn`
 
         :param target: Either the ID of an object or a Vector3 position.
         :param aligned_at: If the different between the current angle and the target angle is less than this value, then the action is successful.
-        :param speed: The wheels will turn this many degrees per attempt to turn.
 
         :return: An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
         """
@@ -412,20 +417,18 @@ class Magnebot(FloorplanController):
 
         angle = TDWUtils.get_angle(forward=self.state.magnebot_transform.forward, origin=self.state.magnebot_transform.position,
                                    position=target)
-        return self.turn_by(angle=angle, speed=speed, aligned_at=aligned_at)
+        return self.turn_by(angle=angle, aligned_at=aligned_at)
 
-    def move_by(self, distance: float, speed: float = 45, arrived_at: float = 0.1) -> ActionStatus:
+    def move_by(self, distance: float, arrived_at: float = 0.1) -> ActionStatus:
         """
         Move the Magnebot forward or backward by a given distance.
 
         Possible [return values](action_status.md):
 
         - `success`
-        - `overshot_move`
-        - `too_many_attempts`
+        - `failed_to_move`
 
         :param distance: The target distance. If less than zero, the Magnebot will move backwards.
-        :param speed: The Magnebot's wheels will rotate by this many degrees per iteration.
         :param arrived_at: If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
 
         :return: An `ActionStatus` indicating if the Magnebot moved by `distance` and if not, why.
@@ -433,23 +436,35 @@ class Magnebot(FloorplanController):
 
         self._start_action()
         self._start_move_or_turn()
+
         # The initial position of the robot.
         p0 = self.state.magnebot_transform.position
+        p1 = self.state.magnebot_transform.position + (self.state.magnebot_transform.forward * distance)
+        d = np.linalg.norm(p1 - p0)
+        # We're already here.
+        if d < arrived_at:
+            self._end_action()
+            if self._debug:
+                print(f"No movement. We're already here: {d}")
+            return ActionStatus.success
 
         # Go until we've traversed the distance.
-        d = 0
+        speed = distance * 150
         # The approximately number of iterations required, given the distance and speed.
-        num_attempts = int(np.abs(distance) + 1) * speed * 50
+        num_attempts = int(np.abs(speed))
         attempts = 0
+        # We are trying to adjust the distance.
+        if self._debug:
+            print(f"num_attempts: {num_attempts}", f"distance: {distance}", f"speed: {speed}")
+        # The approximately number of iterations required, given the distance and speed.
         # Wait for the wheels to stop turning.
         wheel_state = SceneState(resp=self.communicate([]))
-        while d < np.abs(distance) and attempts < num_attempts:
+        while attempts < num_attempts:
             # Move forward a bit and see if we've arrived.
             commands = []
             for wheel in self.magnebot_static.wheels:
                 # Get the target from the current joint angles. Add or subtract the speed.
-                target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] + \
-                         (speed if distance > 0 else -speed)
+                target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] + speed
                 commands.append({"$type": "set_revolute_target",
                                  "target": target,
                                  "joint_id": self.magnebot_static.wheels[wheel]})
@@ -461,18 +476,30 @@ class Magnebot(FloorplanController):
             # Check if we're at the destination.
             p1 = wheel_state.magnebot_transform.position
             d = np.linalg.norm(p1 - p0)
+
+            # Arrived!
+            if np.abs(np.abs(distance) - d) < arrived_at:
+                self._end_action()
+                return ActionStatus.success
+            # Overshot. Adjust the speed.
+            if d > np.abs(distance):
+                # Go until we've traversed the distance.
+                speed = np.abs(d - distance) * 225 * (-1 if speed > 0 else 1)
             attempts += 1
+        if self._debug and distance < 0:
+            print(f"distance: {distance}", f"d: {d}", f"speed: {speed}")
         self._end_action()
+        p1 = wheel_state.magnebot_transform.position
+        d = np.linalg.norm(p1 - p0)
+        # Arrived!
         if np.abs(np.abs(distance) - d) < arrived_at:
             return ActionStatus.success
-        elif attempts >= num_attempts:
-            return ActionStatus.too_many_attempts
+        # Failed to arrive.
         else:
-            return ActionStatus.overshot_move
+            return ActionStatus.failed_to_move
 
-    def move_to(self, target: Union[int, Dict[str, float]], move_speed: float = 15, arrived_at: float = 0.1,
-                turn_speed: float = 15, aligned_at: float = 3,
-                move_on_turn_fail: bool = False) -> ActionStatus:
+    def move_to(self, target: Union[int, Dict[str, float]], arrived_at: float = 0.1,
+                aligned_at: float = 3) -> ActionStatus:
         """
         Move the Magnebot to a target object or position.
 
@@ -481,24 +508,20 @@ class Magnebot(FloorplanController):
         Possible [return values](action_status.md):
 
         - `success`
-        - `overshot_move`
-        - `too_many_attempts` (when moving, and also when turning if `move_on_turn_fail == False`)
-        - `unaligned` (when turning if `move_on_turn_fail == False`)
+        - `failed_to_move`
+        - `failed_to_turn`
 
         :param target: Either the ID of an object or a Vector3 position.
-        :param move_speed: The Magnebot's wheels will rotate by this many degrees per iteration when moving.
         :param arrived_at: While moving, if at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
-        :param turn_speed: The Magnebot's wheels will rotate by this many degrees per iteration when turning.
         :param aligned_at: While turning, if the different between the current angle and the target angle is less than this value, then the action is successful.
-        :param move_on_turn_fail: If True, the Magnebot will move forward even if the internal `turn_to()` action didn't return `success`.
 
         :return: An `ActionStatus` indicating if the Magnebot moved to the target and if not, why.
         """
 
         # Turn to face the target.
-        status = self.turn_to(target=target, speed=turn_speed, aligned_at=aligned_at)
-        # Move to the target unless the turn failed (and if we care about the turn failing).
-        if status == ActionStatus.success or move_on_turn_fail:
+        status = self.turn_to(target=target, aligned_at=aligned_at)
+        # Move to the target.
+        if status == ActionStatus.success:
             if isinstance(target, int):
                 target = self.state.object_transforms[target].position
             elif isinstance(target, dict):
@@ -507,7 +530,7 @@ class Magnebot(FloorplanController):
                 raise Exception(f"Invalid target: {target}")
 
             return self.move_by(distance=np.linalg.norm(self.state.magnebot_transform.position - target),
-                                speed=move_speed, arrived_at=arrived_at)
+                                arrived_at=arrived_at)
         else:
             self._end_action()
             return status
@@ -522,7 +545,7 @@ class Magnebot(FloorplanController):
 
         - `success`
         - `cannot_reach`
-        - `failed_to_bend`
+        - `failed_to_reach`
 
         :param target: The target position for the magnet at the arm to reach.
         :param arm: The arm that will reach for the target.
@@ -546,10 +569,8 @@ class Magnebot(FloorplanController):
             return status
 
         # Wait for the arm motion to end.
-        status = self._do_arm_motion()
+        self._do_arm_motion()
         self._end_action()
-        if status != ActionStatus.success:
-            return status
 
         # Check how close the magnet is to the expected relative position.
         magnet_position = Magnebot.__absolute_to_relative(
@@ -629,18 +650,20 @@ class Magnebot(FloorplanController):
         :param target: The ID of the object currently held by the magnet.
         :param arm: The arm of the magnet holding the object.
 
-        :return: An `ActionStatus` indicating if the magnet at the end of the `arm` dropped the `target` and if not, why.
+        :return: An `ActionStatus` indicating if the magnet at the end of the `arm` dropped the `target`.
         """
+
+        self._start_action()
 
         if target in self.state.held[arm]:
             if self._debug:
                 print(f"Can't drop {target} because it isn't being held by {arm}")
+            self._end_action()
             return ActionStatus.not_holding
 
         self._next_frame_commands.append({"$type": "drop_from_magnet",
                                           "arm": arm.name,
                                           "object_id": target})
-        self._start_action()
         self._end_action()
         return ActionStatus.success
 
@@ -651,16 +674,21 @@ class Magnebot(FloorplanController):
         Possible [return values](action_status.md):
 
         - `success`
+        - `not_holding`
 
-        :return: An `ActionStatus`; always `success`.
+        :return: An `ActionStatus` if the Magnebot dropped any objects.
         """
+
+        self._start_action()
+        if len(self.state.held[Arm.left]) == 0 and len(self.state.held[Arm.right]) == 0:
+            self._end_action()
+            return ActionStatus.not_holding
 
         for arm in self.state.held:
             for object_id in self.state.held[arm]:
                 self._next_frame_commands.append({"$type": "drop_from_magnet",
                                                   "arm": arm.name,
                                                   "object_id": object_id})
-        self._start_action()
         self._end_action()
         return ActionStatus.success
 
@@ -671,7 +699,7 @@ class Magnebot(FloorplanController):
         Possible [return values](action_status.md):
 
         - `success`
-        - `too_many_attempts`
+        - `failed_to_bend`
 
         :param arm: The arm that will be reset.
         :param reset_torso: If True, rotate and slide the torso to its neutral rotation and height.
@@ -693,7 +721,7 @@ class Magnebot(FloorplanController):
         Possible [return values](action_status.md):
 
         - `success`
-        - `too_many_attempts`
+        - `failed_to_bend`
 
         :return: An `ActionStatus` indicating if the arms reset and if not, why.
         """
@@ -1160,7 +1188,7 @@ class Magnebot(FloorplanController):
             state_0 = state_1
             attempts += 1
         if moving:
-            return ActionStatus.too_many_attempts
+            return ActionStatus.failed_to_bend
         else:
             return ActionStatus.success
 
