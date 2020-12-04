@@ -1026,7 +1026,7 @@ class Magnebot(FloorplanController):
                                                 no_position=False)
             # Get the forward kinematics matrix of the IK solution.
             transformation_matrices = chain.forward_kinematics(ik, full_kinematics=True)
-            # Convert the matrix into positions (this is pulled from pyik).
+            # Convert the matrix into positions (this is pulled from ikpy).
             nodes = []
             for (index, link) in enumerate(chain.links):
                 (node, orientation) = geometry.from_transformation_matrix(transformation_matrices[index])
@@ -1062,13 +1062,13 @@ class Magnebot(FloorplanController):
         initial_angles = np.array([np.deg2rad(ia) for ia in initial_angles])
 
         # Get the IK solution using the current angles.
-        # This is pulled from pyik.
+        # This is from ikpy.
         frame_target = np.eye(4)
         frame_target[:3, 3] = target
 
         # Try to get an IK solution from various heights.
         # Start at the default height and incrementally raise the torso.
-        # We need to do this iteratively because pyik doesn't support prismatic joints!
+        # We need to do this iteratively because ikpy doesn't support prismatic joints!
         # But it should be ok because there's only one prismatic joint in this robot.
         angles: List[float] = list()
         torso_y = Magnebot.DEFAULT_TORSO_Y
