@@ -30,6 +30,7 @@ If, according to the status code, the Magnebot _didn't try_ to do something, the
 | `failed_to_reach` | The Magnebot tried to reach for the target but failed; the magnet is too far away. |
 | `failed_to_grasp` | The Magnebot tried to grasp the object and failed. |
 | `not_holding` | The Magnebot didn't try to drop the object because it isn't holding the object with that magnet. |
+| `clamped_camera_rotation` | The Magnebot rotated its camera but at least one angle of rotation was clamped (see `Magnebot.CAMERA_RPY_CONSTRAINTS`). |
 
 ***
 

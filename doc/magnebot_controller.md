@@ -60,6 +60,12 @@ print(Arm.left)
 
 - `state` Dynamic data for all of the most recent frame (i.e. the frame after doing an action such as `move_to()`). [Read this](scene_state.md) for a full API.
 
+- `camera_rpy` The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees.
+
+This is handled outside of `self.state` because it isn't calculated using output data from the build.
+
+See: `Magnebot.CAMERA_RPY_CONSTRAINTS` and `Magnebot.rotate_camera()`
+
 - `segmentation_color_to_id` A dictionary. Key = a hashable representation of the object's segmentation color. Value = The object ID. See `static_object_info` for a dictionary mapped to object ID with additional data.
 
 ```python
@@ -91,13 +97,12 @@ print(m.magnebot_static.magnets)
 
 #### \_\_init\_\_
 
-**`def __init__(self, port: int = 1071, launch_build: bool = True, id_pass: bool = True, screen_width: int = 256, screen_height: int = 256, debug: bool = False)`**
+**`def __init__(self, port: int = 1071, launch_build: bool = True, screen_width: int = 256, screen_height: int = 256, debug: bool = False)`**
 
 | Parameter | Description |
 | --- | --- |
 | port | The socket port. [Read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md#command-line-arguments) for more information. |
 | launch_build | If True, the build will launch automatically on the default port (1071). If False, you will need to launch the build yourself (for example, from a Docker container). |
-| id_pass | If True, the Magnebot will capture a segmentation colors image pass. |
 | screen_width | The width of the screen in pixels. |
 | screen_height | The height of the screen in pixels. |
 | debug | If True, enable debug mode and output debug messages to the console. |
@@ -110,7 +115,7 @@ _These functions should be sent at the start of the simulation._
 
 #### init_scene
 
-**`def init_scene(self, scene: str, layout: int, room: int = -1) -> None`**
+**`def init_scene(self, scene: str, layout: int, room: int = -1) -> ActionStatus`**
 
 Initialize a scene, populate it with objects, and add the Magnebot. The simulation will advance through frames until the Magnebot's body is in its neutral position.
 
@@ -140,6 +145,11 @@ Images of each scene+layout combination can be found [here](https://github.com/a
 
 You can safely call `init_scene()` more than once to reset the simulation.
 
+Possible [return values](action_status.md):
+
+- `success`
+- `too_many_attempts` (Technically this is _possible_, but it shouldn't ever happen.)
+
 | Parameter | Description |
 | --- | --- |
 | scene | The name of an interior floorplan scene. Each number (1, 2, etc.) has a different shape, different rooms, etc. Each letter (a, b, c) is a cosmetically distinct variant with the same floorplan. |
@@ -148,7 +158,7 @@ You can safely call `init_scene()` more than once to reset the simulation.
 
 #### init_test_scene
 
-**`def init_test_scene(self) -> None`**
+**`def init_test_scene(self) -> ActionStatus`**
 
 Initialize an empty test room with a Magnebot. The simulation will advance through frames until the Magnebot's body is in its neutral position.
 
@@ -165,6 +175,11 @@ m.init_test_scene()
 
 You can safely call `init_test_scene()` more than once to reset the simulation.
 
+Possible [return values](action_status.md):
+
+- `success`
+- `too_many_attempts` (Technically this is _possible_, but it shouldn't ever happen.)
+
 ***
 
 ### Movement
@@ -173,7 +188,7 @@ _These functions move or turn the Magnebot._
 
 #### turn_by
 
-**`def turn_by(self, angle: float, speed: float = 15, aligned_at: float = 3) -> ActionStatus`**
+**`def turn_by(self, angle: float, speed: float = 45, aligned_at: float = 3) -> ActionStatus`**
 
 Turn the Magnebot by an angle.
 
@@ -223,7 +238,7 @@ _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and
 
 #### move_by
 
-**`def move_by(self, distance: float, speed: float = 15, arrived_at: float = 0.1) -> ActionStatus`**
+**`def move_by(self, distance: float, speed: float = 45, arrived_at: float = 0.1) -> ActionStatus`**
 
 Move the Magnebot forward or backward by a given distance.
 
@@ -384,6 +399,74 @@ Possible [return values](action_status.md):
 - `too_many_attempts`
 
 _Returns:_  An `ActionStatus` indicating if the arms reset and if not, why.
+
+***
+
+### Camera
+
+_These commands rotate the Magnebot's camera._
+
+#### rotate_camera
+
+**`def rotate_camera(self, roll: float = 0, pitch: float = 0, yaw: float = 0) -> ActionStatus`**
+
+Rotate the camera by the (roll, pitch, yaw) axes. This action takes exactly 1 frame.
+
+Each axis of rotation is constrained (see `Magnebot.CAMERA_RPY_CONSTRAINTS`).
+
+| Axis | Minimum | Maximum |
+| --- | --- | --- |
+| roll | -55 | 55 |
+| pitch | -70 | 70 |
+| yaw | -85 | 85 |
+
+See `Magnebot.camera_rpy` for the current (roll, pitch, yaw) angles of the camera.
+
+```python
+from magnebot import Magnebot
+
+m = Magnebot()
+m.init_test_scene()
+status = m.rotate_camera(roll=-10, pitch=-90, yaw=45)
+print(status) # ActionStatus.clamped_camera_rotation
+print(m.camera_rpy) # [-10 -70 45]
+```
+
+Possible [return values](action_status.md):
+
+- `success`
+- `clamped_camera_rotation`
+
+
+| Parameter | Description |
+| --- | --- |
+| roll | The roll angle in degrees. |
+| pitch | The pitch angle in degrees. |
+| yaw | The yaw angle in degrees. |
+
+_Returns:_  An `ActionStatus` indicating if the camera rotated fully or if the rotation was clamped..
+
+#### reset_camera
+
+**`def reset_camera(self) -> ActionStatus`**
+
+Reset the rotation of the Magnebot's camera to its default angles. This action takes exactly 1 frame.
+
+```python
+from magnebot import Magnebot
+
+m = Magnebot()
+m.init_test_scene()
+m.rotate_camera(roll=-10, pitch=-90, yaw=45)
+m.reset_camera()
+print(m.camera_rpy) # [0 0 0]
+```
+
+Possible [return values](action_status.md):
+
+- `success`
+
+_Returns:_  An `ActionStatus` (always `success`).
 
 ***
 

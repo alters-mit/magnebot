@@ -31,3 +31,4 @@ class ActionStatus(Enum):
     failed_to_reach = 6  # The Magnebot tried to reach for the target but failed; the magnet is too far away.
     failed_to_grasp = 7  # The Magnebot tried to grasp the object and failed.
     not_holding = 8  # The Magnebot didn't try to drop the object because it isn't holding the object with that magnet.
+    clamped_camera_rotation = 9  # The Magnebot rotated its camera but at least one angle of rotation was clamped (see `Magnebot.CAMERA_RPY_CONSTRAINTS`).

@@ -83,6 +83,8 @@ class Magnebot(FloorplanController):
 
     # Load default audio values for objects.
     __OBJECT_AUDIO = PyImpact.get_object_info()
+    # The camera roll, pitch, yaw constraints in degrees.
+    CAMERA_RPY_CONSTRAINTS = [55, 70, 85]
 
     # The order in which joint angles will be set.
     JOINT_ORDER: Dict[Arm, List[ArmJoint]] = {Arm.left: [ArmJoint.column,
@@ -106,12 +108,11 @@ class Magnebot(FloorplanController):
     # The default height of the torso.
     DEFAULT_TORSO_Y = 1
 
-    def __init__(self, port: int = 1071, launch_build: bool = True, id_pass: bool = True,
+    def __init__(self, port: int = 1071, launch_build: bool = True,
                  screen_width: int = 256, screen_height: int = 256, debug: bool = False):
         """
         :param port: The socket port. [Read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md#command-line-arguments) for more information.
         :param launch_build: If True, the build will launch automatically on the default port (1071). If False, you will need to launch the build yourself (for example, from a Docker container).
-        :param id_pass: If True, the Magnebot will capture a segmentation colors image pass.
         :param screen_width: The width of the screen in pixels.
         :param screen_height: The height of the screen in pixels.
         :param debug: If True, enable debug mode and output debug messages to the console.
@@ -119,7 +120,6 @@ class Magnebot(FloorplanController):
 
         super().__init__(port=port, launch_build=launch_build)
 
-        self._id_pass = id_pass
         self._debug = debug
 
         """:field
@@ -127,10 +127,18 @@ class Magnebot(FloorplanController):
         """
         self.state: Optional[SceneState] = None
 
+        """:field
+        The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees.
+        
+        This is handled outside of `self.state` because it isn't calculated using output data from the build.
+        
+        See: `Magnebot.CAMERA_RPY_CONSTRAINTS` and `Magnebot.rotate_camera()`
+        """
+        self.camera_rpy: np.array([0, 0, 0])
+
         # Commands to initialize objects.
         self._object_init_commands: Dict[int, List[dict]] = dict()
 
-        # Cache static data.
         """
         Data for all objects in the scene that is static (won't change between frames), such as object IDs, mass, etc. Key = the ID of the object. [Read the full API here](object_static.md).
         
@@ -209,7 +217,7 @@ class Magnebot(FloorplanController):
                 print(f"Your installed version of tdw ({python_version}) doesn't match the version of the build "
                       f"{build_version}. This might cause errors!")
 
-    def init_scene(self, scene: str, layout: int, room: int = -1) -> None:
+    def init_scene(self, scene: str, layout: int, room: int = -1) -> ActionStatus:
         """
         Initialize a scene, populate it with objects, and add the Magnebot. The simulation will advance through frames until the Magnebot's body is in its neutral position.
 
@@ -239,6 +247,11 @@ class Magnebot(FloorplanController):
 
         You can safely call `init_scene()` more than once to reset the simulation.
 
+        Possible [return values](action_status.md):
+
+        - `success`
+        - `too_many_attempts` (Technically this is _possible_, but it shouldn't ever happen.)
+
         :param scene: The name of an interior floorplan scene. Each number (1, 2, etc.) has a different shape, different rooms, etc. Each letter (a, b, c) is a cosmetically distinct variant with the same floorplan.
         :param layout: The furniture layout of the floorplan. Each number (0, 1, 2) will populate the floorplan with different furniture in different positions.
         :param room: The index of the room that the Magnebot will spawn in the center of. If `room == -1` the room will be chosen randomly.
@@ -253,10 +266,11 @@ class Magnebot(FloorplanController):
         resp = self.communicate(commands)
         self.__cache_static_data(resp=resp)
         # Wait for the Magnebot to reset to its neutral position.
-        self._do_arm_motion()
+        status = self._do_arm_motion()
         self._end_action()
+        return status
 
-    def init_test_scene(self) -> None:
+    def init_test_scene(self) -> ActionStatus:
         """
         Initialize an empty test room with a Magnebot. The simulation will advance through frames until the Magnebot's body is in its neutral position.
 
@@ -272,6 +286,11 @@ class Magnebot(FloorplanController):
         ```
 
         You can safely call `init_test_scene()` more than once to reset the simulation.
+
+        Possible [return values](action_status.md):
+
+        - `success`
+        - `too_many_attempts` (Technically this is _possible_, but it shouldn't ever happen.)
         """
 
         commands = [{"$type": "load_scene",
@@ -281,8 +300,9 @@ class Magnebot(FloorplanController):
         resp = self.communicate(commands)
         self.__cache_static_data(resp=resp)
         # Wait for the Magnebot to reset to its neutral position.
-        self._do_arm_motion()
+        status = self._do_arm_motion()
         self._end_action()
+        return status
 
     def turn_by(self, angle: float, speed: float = 45, aligned_at: float = 3) -> ActionStatus:
         """
@@ -687,6 +707,100 @@ class Magnebot(FloorplanController):
         self._end_action()
         return status
 
+    def rotate_camera(self, roll: float = 0, pitch: float = 0, yaw: float = 0) -> ActionStatus:
+        """
+        Rotate the camera by the (roll, pitch, yaw) axes. This action takes exactly 1 frame.
+
+        Each axis of rotation is constrained (see `Magnebot.CAMERA_RPY_CONSTRAINTS`).
+
+        | Axis | Minimum | Maximum |
+        | --- | --- | --- |
+        | roll | -55 | 55 |
+        | pitch | -70 | 70 |
+        | yaw | -85 | 85 |
+
+        See `Magnebot.camera_rpy` for the current (roll, pitch, yaw) angles of the camera.
+
+        ```python
+        from magnebot import Magnebot
+
+        m = Magnebot()
+        m.init_test_scene()
+        status = m.rotate_camera(roll=-10, pitch=-90, yaw=45)
+        print(status) # ActionStatus.clamped_camera_rotation
+        print(m.camera_rpy) # [-10 -70 45]
+        ```
+
+        Possible [return values](action_status.md):
+
+        - `success`
+        - `clamped_camera_rotation`
+
+        :param roll: The roll angle in degrees.
+        :param pitch: The pitch angle in degrees.
+        :param yaw: The yaw angle in degrees.
+
+        :return: An `ActionStatus` indicating if the camera rotated fully or if the rotation was clamped..
+        """
+
+        self._start_action()
+        deltas = [roll, pitch, yaw]
+        # Clamp the rotation.
+        clamped = False
+        for i in range(len(self.camera_rpy)):
+            a = self.camera_rpy[i] + deltas[i]
+            if np.abs(a) > Magnebot.CAMERA_RPY_CONSTRAINTS[i]:
+                clamped = True
+                # Clamp the angle to either the minimum or maximum bound.
+                if a > 0:
+                    deltas[i] = Magnebot.CAMERA_RPY_CONSTRAINTS[i] - self.camera_rpy[i]
+                else:
+                    deltas[i] = -Magnebot.CAMERA_RPY_CONSTRAINTS[i] - self.camera_rpy[i]
+        # Get the clamped delta.
+        if self._debug:
+            print(f"Old RPY: {self.camera_rpy}", f"Delta RPY: {deltas}")
+        for angle, axis in zip(deltas, ["roll", "pitch", "yaw"]):
+            self._next_frame_commands.append({"$type": "rotate_sensor_container_by",
+                                              "axis": axis,
+                                              "angle": float(angle)})
+        self._end_action()
+        for i in range(len(self.camera_rpy)):
+            self.camera_rpy[i] += deltas[i]
+        if self._debug:
+            print(f"\tNew RPY: {self.camera_rpy}")
+        if clamped:
+            return ActionStatus.clamped_camera_rotation
+        else:
+            return ActionStatus.success
+
+    def reset_camera(self) -> ActionStatus:
+        """
+        Reset the rotation of the Magnebot's camera to its default angles. This action takes exactly 1 frame.
+
+        ```python
+        from magnebot import Magnebot
+
+        m = Magnebot()
+        m.init_test_scene()
+        m.rotate_camera(roll=-10, pitch=-90, yaw=45)
+        m.reset_camera()
+        print(m.camera_rpy) # [0 0 0]
+        ```
+
+        Possible [return values](action_status.md):
+
+        - `success`
+
+        :return: An `ActionStatus` (always `success`).
+        """
+
+        for i in range(len(self.camera_rpy)):
+            self.camera_rpy[i] = 0
+        self._start_action()
+        self._next_frame_commands.append({"$type": "reset_sensor_container_rotation"})
+        self._end_action()
+        return ActionStatus.success
+
     def end(self) -> None:
         """
         End the simulation. Terminate the build process.
@@ -748,18 +862,23 @@ class Magnebot(FloorplanController):
         Set the scene state at the end of an action.
         """
 
-        self.state = SceneState(resp=self.communicate([{"$type": "enable_image_sensor",
-                                                        "enable": True},
-                                                       {"$type": "send_images"},
-                                                       {"$type": "send_camera_matrices"},
-                                                       {"$type": "set_immovable",
-                                                        "immovable": False},
-                                                       {"$type": "set_magnet_targets",
-                                                        "arm": Arm.left.name,
-                                                        "targets": []},
-                                                       {"$type": "set_magnet_targets",
-                                                        "arm": Arm.right.name,
-                                                        "targets": []}]))
+        # These commands can't be added directly as a parameter to `communicate()`
+        # because sometimes `_start_action()` will be called on the same frame, which disables the camera.
+        self._next_frame_commands.extend([{"$type": "enable_image_sensor",
+                                           "enable": True},
+                                          {"$type": "send_images"},
+                                          {"$type": "send_camera_matrices",
+                                           "ids": ["a"]},
+                                          {"$type": "set_immovable",
+                                           "immovable": False},
+                                          {"$type": "set_magnet_targets",
+                                           "arm": Arm.left.name,
+                                           "targets": []},
+                                          {"$type": "set_magnet_targets",
+                                           "arm": Arm.right.name,
+                                           "targets": []}])
+        # Send the commands (see `communicate()` for how `_next_frame_commands` are handled).
+        self.state = SceneState(resp=self.communicate([]))
 
     def _wheels_are_done(self, state_0: SceneState) -> Tuple[bool, SceneState]:
         """
@@ -767,7 +886,7 @@ class Magnebot(FloorplanController):
 
         :param state_0: The scene state from the previous frame.
 
-        :return: True if none of the wheels are tunring.
+        :return: True if none of the wheels are turning.
         """
 
         resp = self.communicate([])
@@ -801,11 +920,9 @@ class Magnebot(FloorplanController):
                     {"$type": "parent_avatar_to_robot",
                      "position": {"x": 0, "y": 0.923, "z": 0.1838}},
                     {"$type": "set_pass_masks",
-                     "pass_masks": ["_img", "_id", "_depth"] if self._id_pass else ["_img", "_depth"]},
+                     "pass_masks": ["_img", "_id", "_depth"]},
                     {"$type": "enable_image_sensor",
                      "enable": False}]
-        # Add the avatar (camera).
-        commands.extend(TDWUtils.create_avatar())
         # Add the objects.
         for object_id in self._object_init_commands:
             commands.extend(self._object_init_commands[object_id])
@@ -1145,6 +1262,7 @@ class Magnebot(FloorplanController):
         self.objects_static.clear()
         self.segmentation_color_to_id.clear()
         self._next_frame_commands.clear()
+        self.camera_rpy: np.array = np.array([0, 0, 0])
         SceneState.FRAME_COUNT = 0
 
         # Get segmentation color data.
