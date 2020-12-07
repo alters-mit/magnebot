@@ -988,9 +988,15 @@ class Magnebot(FloorplanController):
             chain = self.__get_ik_chain(arm=arm, torso_y=torso_y)
 
             # Get the IK solution.
-            ik = chain.inverse_kinematics_frame(target=frame_target,
-                                                initial_position=initial_angles,
-                                                no_position=False)
+            ik = chain.inverse_kinematics(target_position=target,
+                                          initial_position=initial_angles)
+
+            if self._debug:
+                print(target, torso_y, ik)
+                ax = matplotlib.pyplot.figure().add_subplot(111, projection='3d')
+                chain.plot(ik, ax, target=target)
+                matplotlib.pyplot.show()
+
             # Get the forward kinematics matrix of the IK solution.
             transformation_matrices = chain.forward_kinematics(ik, full_kinematics=True)
             # Convert the matrix into positions (this is pulled from ikpy).
@@ -1028,11 +1034,6 @@ class Magnebot(FloorplanController):
             print(f"Initial angles: {initial_angles}")
         initial_angles = np.array([np.deg2rad(ia) for ia in initial_angles])
 
-        # Get the IK solution using the current angles.
-        # This is from ikpy.
-        frame_target = np.eye(4)
-        frame_target[:3, 3] = target
-
         # Try to get an IK solution from various heights.
         # Start at the default height and incrementally raise the torso.
         # We need to do this iteratively because ikpy doesn't support prismatic joints!
@@ -1054,11 +1055,7 @@ class Magnebot(FloorplanController):
         # If we couldn't find a solution at any torso height, then there isn't a solution.
         if not got_solution:
             return ActionStatus.cannot_reach
-        if self._debug:
-            ax = matplotlib.pyplot.figure().add_subplot(111, projection='3d')
-            chain = self.__get_ik_chain(arm=arm, torso_y=torso_y)
-            chain.plot(angles, ax, target=target)
-            matplotlib.pyplot.show()
+
         # Convert the angles to degrees. Remove the first node (the origin link) and last node (the magnet).
         angles = [float(np.rad2deg(a)) for a in angles[1:-1]]
         if self._debug:
@@ -1198,44 +1195,44 @@ class Magnebot(FloorplanController):
         return Chain(name=arm.name, links=[
             OriginLink(),
             URDFLink(name="column",
-                     translation_vector=[0, 0, 0.159 + torso_y],
-                     orientation=[0, 0, 0],
-                     rotation=[0, -1, 0],
+                     translation_vector=[0, 0.159 + torso_y, 0],
+                     orientation=[0, np.deg2rad(180), 0],
+                     rotation=[1, 0, 0],
                      bounds=(np.deg2rad(-179), np.deg2rad(179))),
             URDFLink(name="shoulder_pitch",
-                     translation_vector=[0.019, 0.215 * 1 if arm == Arm.left else -1,  0.059],
+                     translation_vector=[0.215 * -1 if arm == Arm.left else 1, 0.059, 0.019],
                      orientation=[0, 0, 0],
-                     rotation=[0, 0, 1],
+                     rotation=[0, 1, 0],
                      bounds=(np.deg2rad(-150), np.deg2rad(70))),
             URDFLink(name="shoulder_roll",
                      translation_vector=[0, 0, 0],
                      orientation=[0, 0, 0],
-                     rotation=[0, -1, 0],
+                     rotation=[1, 0, 0],
                      bounds=(np.deg2rad(-70 if arm == Arm.left else -45), np.deg2rad(45 if arm == Arm.left else 70))),
             URDFLink(name="shoulder_yaw",
                      translation_vector=[0, 0, 0],
                      orientation=[0, 0, 0],
-                     rotation=[1, 0, 0],
+                     rotation=[0, 0, 1],
                      bounds=(np.deg2rad(-110 if arm == Arm.left else -20), np.deg2rad(20 if arm == Arm.left else 110))),
             URDFLink(name="elbow_pitch",
-                     translation_vector=[0.015, 0.051 * 1 if arm == Arm.left else -1, -0.29],
+                     translation_vector=[0.051 * -1 if arm == Arm.left else 1, -0.29, 0.015],
                      orientation=[0, 0, 0],
-                     rotation=[0, 0, 1],
+                     rotation=[0, 1, 0],
                      bounds=(np.deg2rad(-90), np.deg2rad(145))),
             URDFLink(name="wrist_pitch",
                      translation_vector=[0, 0, -0.373],
                      orientation=[0, 0, 0],
-                     rotation=[0, 0, 1],
+                     rotation=[1, 0, 0],
                      bounds=(np.deg2rad(-90), np.deg2rad(90))),
             URDFLink(name="wrist_roll",
                      translation_vector=[0, 0, 0],
                      orientation=[0, 0, 0],
-                     rotation=[0, -1, 0],
+                     rotation=[0, 0, 1],
                      bounds=(np.deg2rad(-90), np.deg2rad(90))),
             URDFLink(name="wrist_yaw",
                      translation_vector=[0, 0, 0],
                      orientation=[0, 0, 0],
-                     rotation=[1, 0, 0],
+                     rotation=[0, 1, 0],
                      bounds=(np.deg2rad(-15), np.deg2rad(15))),
             URDFLink(name="magnet",
                      translation_vector=[0, 0, -0.095],
