@@ -1,6 +1,7 @@
 import random
 from json import loads
 import numpy as np
+import matplotlib.pyplot
 from typing import List, Dict, Optional, Union, Tuple
 from ikpy.chain import Chain
 from ikpy.link import OriginLink, URDFLink
@@ -1087,9 +1088,15 @@ class Magnebot(FloorplanController):
         # If we couldn't find a solution at any torso height, then there isn't a solution.
         if not got_solution:
             return ActionStatus.cannot_reach
+        if self._debug:
+            ax = matplotlib.pyplot.figure().add_subplot(111, projection='3d')
+            chain = self.__get_ik_chain(arm=arm, torso_y=torso_y)
+            chain.plot(angles, ax, target=target)
+            matplotlib.pyplot.show()
         # Convert the angles to degrees. Remove the first node (the origin link) and last node (the magnet).
-        print(angles)
         angles = [float(np.rad2deg(a)) for a in angles[1:-1]]
+        if self._debug:
+            print(angles)
 
         # Convert the IK solution into TDW commands, using the expected joint and axis order.
         # Make the base of the Magnebot immovable because otherwise it might push itself off the ground and tip over.
@@ -1237,7 +1244,7 @@ class Magnebot(FloorplanController):
             URDFLink(name="torso",
                      translation_vector=[0, torso_y, 0],
                      orientation=[0, 0, 0],
-                     rotation=[0, 0, 0]),
+                     rotation=None),
             URDFLink(name="shoulder_pitch",
                      translation_vector=[-0.215 * -1 if arm == Arm.left else 1,  0.059, 0.019],
                      orientation=[0, 0, 0],
@@ -1276,7 +1283,7 @@ class Magnebot(FloorplanController):
             URDFLink(name="magnet",
                      translation_vector=[0, -0.095, 0],
                      orientation=[0, 0, 0],
-                     rotation=[0, 0, 0])])
+                     rotation=None)])
 
     def __cache_static_data(self, resp: List[bytes]) -> None:
         """
