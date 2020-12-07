@@ -1,8 +1,8 @@
-# BodyPartStatic
+# JointStatic
 
-`from magnebot.body_part_static import BodyPartStatic`
+`from magnebot.joint_static import JointStatic`
 
-Static data for a body part of the Magnebot.
+Static data for a joint the Magnebot.
 
 ***
 

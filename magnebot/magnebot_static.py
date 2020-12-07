@@ -1,6 +1,6 @@
 from typing import Dict
 from tdw.output_data import StaticRobot
-from magnebot.body_part_static import BodyPartStatic
+from magnebot.joint_static import JointStatic
 from magnebot.arm import Arm
 from magnebot.wheel import Wheel
 from magnebot.arm_joint import ArmJoint
@@ -25,7 +25,8 @@ class MagnebotStatic:
         """
 
         """:field
-        [Static body part info](body_part_static.md) for each body part. Key = The body part object ID.
+        [Static joint info](joint_static.md) for each joint, including the column, torso, wheels, and arm joints.
+        Key = The body part object ID.
         
         ```python
         from magnebot import Magnebot
@@ -34,14 +35,14 @@ class MagnebotStatic:
         m.init_scene(scene="2a", layout=1)
 
         # Print the object ID and segmentation color of each body part.
-        for b_id in m.magnebot_static.body_parts:
-            print(b_id, m.magnebot_static.body_parts[b_id].segmentation_color)
+        for b_id in m.magnebot_static.joints:
+            print(b_id, m.magnebot_static.joints[b_id].segmentation_color)
         ```
         """
-        self.body_parts: Dict[int, BodyPartStatic] = dict()
+        self.joints: Dict[int, JointStatic] = dict()
 
         """:field
-        The object of each arm joint. Key = The [`ArmJoint` enum value](arm_joint.md). Value = The object ID.
+        The name and ID of each arm joint. Key = The [`ArmJoint` enum value](arm_joint.md). Value = The object ID.
         
         ```python
         from magnebot import Magnebot, ArmJoint
@@ -51,7 +52,7 @@ class MagnebotStatic:
         
         # Print the object ID and segmentation color of the left shoulder.
         b_id = m.magnebot_static.arm_joints[ArmJoint.shoulder_left]
-        color = m.magnebot_static.body_parts[b_id].segmentation_color
+        color = m.magnebot_static.joints[b_id].segmentation_color
         print(b_id, color)
         ```
         """
@@ -68,7 +69,7 @@ class MagnebotStatic:
 
         # Print the object ID and segmentation color of the left back wheel.
         b_id = m.magnebot_static.wheels[Wheel.wheel_left_back]
-        color = m.magnebot_static.body_parts[b_id].segmentation_color
+        color = m.magnebot_static.joints[b_id].segmentation_color
         print(b_id, color)
         ```
         """
@@ -84,21 +85,21 @@ class MagnebotStatic:
 
         # Print the object ID and the segmentation color of the left magnet.
         b_id = m.magnebot_static.magnets[Arm.left]
-        color = m.magnebot_static.body_parts[b_id].segmentation_color
+        color = m.magnebot_static.joints[b_id].segmentation_color
         print(b_id, color)
         ```
         """
         self.magnets: Dict[Arm, int] = dict()
 
         for i in range(static_robot.get_num_joints()):
-            body_part_id = static_robot.get_joint_id(i)
+            joint_id = static_robot.get_joint_id(i)
             # Cache the body parts.
-            self.body_parts[body_part_id] = BodyPartStatic(sr=static_robot, index=i)
+            self.joints[joint_id] = JointStatic(sr=static_robot, index=i)
             # Cache the wheels.
-            body_part_name = static_robot.get_joint_name(i)
-            if "wheel" in body_part_name:
-                self.wheels[Wheel[body_part_name]] = body_part_id
-            elif "magnet" in body_part_name:
-                self.magnets[Arm.left if "left" in body_part_name else Arm.right] = body_part_id
+            joint_name = static_robot.get_joint_name(i)
+            if "wheel" in joint_name:
+                self.wheels[Wheel[joint_name]] = joint_id
+            elif "magnet" in joint_name:
+                self.magnets[Arm.left if "left" in joint_name else Arm.right] = joint_id
             else:
-                self.arm_joints[ArmJoint[body_part_name]] = body_part_id
+                self.arm_joints[ArmJoint[joint_name]] = joint_id

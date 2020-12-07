@@ -2,9 +2,9 @@ import numpy as np
 from tdw.output_data import StaticRobot
 
 
-class BodyPartStatic:
+class JointStatic:
     """
-    Static data for a body part of the Magnebot.
+    Static data for a joint the Magnebot.
     """
 
     def __init__(self, sr: StaticRobot, index: int):
