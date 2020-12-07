@@ -265,7 +265,7 @@ class Magnebot(FloorplanController):
         assert 0 <= room < len(rooms), f"Invalid room: {room}"
         commands.extend(self._get_scene_init_commands(magnebot_position=rooms[room]))
         resp = self.communicate(commands)
-        self.__cache_static_data(resp=resp)
+        self._cache_static_data(resp=resp)
         # Wait for the Magnebot to reset to its neutral position.
         status = self._do_arm_motion()
         self._end_action()
@@ -527,7 +527,7 @@ class Magnebot(FloorplanController):
         # Get the destination, which will be used to determine if the action was a success.
         destination = TDWUtils.vector3_to_array(target)
         if absolute:
-            destination = Magnebot.__absolute_to_relative(position=destination, state=self.state)
+            destination = Magnebot._absolute_to_relative(position=destination, state=self.state)
 
         # Start the IK action.
         status = self._start_ik(target=target, arm=arm, absolute=absolute, arrived_at=arrived_at)
@@ -540,7 +540,7 @@ class Magnebot(FloorplanController):
         self._end_action()
 
         # Check how close the magnet is to the expected relative position.
-        magnet_position = Magnebot.__absolute_to_relative(
+        magnet_position = Magnebot._absolute_to_relative(
             position=self.state.body_part_transforms[self.magnebot_static.magnets[arm]].position,
             state=self.state)
         d = np.linalg.norm(destination - magnet_position)
@@ -581,7 +581,7 @@ class Magnebot(FloorplanController):
         # If the raycast fails, just aim for the centroid of the object.
         raycast_ok, target_position = self._get_raycast(origin=m_pos, object_id=target)
 
-        target_position = Magnebot.__absolute_to_relative(position=target_position, state=self.state)
+        target_position = Magnebot._absolute_to_relative(position=target_position, state=self.state)
         # Start the IK action.
         status = self._start_ik(target=target_position, arm=arm, absolute=True)
 
@@ -1011,7 +1011,7 @@ class Magnebot(FloorplanController):
         target = TDWUtils.vector3_to_array(target)
         # Convert to relative coordinates.
         if absolute:
-            target = self.__absolute_to_relative(position=target, state=state)
+            target = self._absolute_to_relative(position=target, state=state)
 
         self._next_frame_commands.append({"$type": "add_position_marker",
                                           "position": TDWUtils.array_to_vector3(target)})
@@ -1251,7 +1251,7 @@ class Magnebot(FloorplanController):
                      orientation=[0, 0, 0],
                      rotation=None)])
 
-    def __cache_static_data(self, resp: List[bytes]) -> None:
+    def _cache_static_data(self, resp: List[bytes]) -> None:
         """
         Cache static data after initializing the scene.
         Sets the initial SceneState.
@@ -1297,7 +1297,7 @@ class Magnebot(FloorplanController):
         self._end_action()
 
     @staticmethod
-    def __absolute_to_relative(position: np.array, state: SceneState) -> np.array:
+    def _absolute_to_relative(position: np.array, state: SceneState) -> np.array:
         """
         :param position: The position in absolute world coordinates.
         :param state: The current state.

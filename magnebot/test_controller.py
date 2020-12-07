@@ -38,7 +38,7 @@ class TestController(Magnebot):
                     TDWUtils.create_empty_room(12, 12)]
         commands.extend(self._get_scene_init_commands(magnebot_position={"x": 0, "y": 0, "z": 0}))
         resp = self.communicate(commands)
-        self.__cache_static_data(resp=resp)
+        self._cache_static_data(resp=resp)
         # Wait for the Magnebot to reset to its neutral position.
         status = self._do_arm_motion()
         self._end_action()
