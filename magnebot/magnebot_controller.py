@@ -1027,6 +1027,8 @@ class Magnebot(FloorplanController):
         # Add the magnet.
         initial_angles.append(0)
         initial_angles = np.array([np.deg2rad(ia) for ia in initial_angles])
+        if self._debug:
+            print(f"Initial angles: {initial_angles}")
 
         # Get the IK solution using the current angles.
         # This is from ikpy.
@@ -1216,16 +1218,16 @@ class Magnebot(FloorplanController):
                      orientation=[0, 0, 0],
                      rotation=[0, 0, 1],
                      bounds=(np.deg2rad(-150), np.deg2rad(70))),
-            URDFLink(name="shoulder_yaw",
-                     translation_vector=[0, 0, 0],
-                     orientation=[0, 0, 0],
-                     rotation=[1, 0, 0],
-                     bounds=(np.deg2rad(-110 if arm == Arm.left else -20), np.deg2rad(20 if arm == Arm.left else 110))),
             URDFLink(name="shoulder_roll",
                      translation_vector=[0, 0, 0],
                      orientation=[0, 0, 0],
                      rotation=[0, -1, 0],
                      bounds=(np.deg2rad(-70 if arm == Arm.left else -45), np.deg2rad(45 if arm == Arm.left else 70))),
+            URDFLink(name="shoulder_yaw",
+                     translation_vector=[0, 0, 0],
+                     orientation=[0, 0, 0],
+                     rotation=[1, 0, 0],
+                     bounds=(np.deg2rad(-110 if arm == Arm.left else -20), np.deg2rad(20 if arm == Arm.left else 110))),
             URDFLink(name="elbow_pitch",
                      translation_vector=[0.051 * -1 if arm == Arm.left else 1, -0.29, 0.015],
                      orientation=[0, 0, 0],
@@ -1236,16 +1238,16 @@ class Magnebot(FloorplanController):
                      orientation=[0, 0, 0],
                      rotation=[0, 0, 1],
                      bounds=(np.deg2rad(-90), np.deg2rad(90))),
-            URDFLink(name="wrist_yaw",
-                     translation_vector=[0, 0, 0],
-                     orientation=[0, 0, 0],
-                     rotation=[1, 0, 0],
-                     bounds=(np.deg2rad(-15), np.deg2rad(15))),
             URDFLink(name="wrist_roll",
                      translation_vector=[0, 0, 0],
                      orientation=[0, 0, 0],
                      rotation=[0, -1, 0],
                      bounds=(np.deg2rad(-90), np.deg2rad(90))),
+            URDFLink(name="wrist_yaw",
+                     translation_vector=[0, 0, 0],
+                     orientation=[0, 0, 0],
+                     rotation=[1, 0, 0],
+                     bounds=(np.deg2rad(-15), np.deg2rad(15))),
             URDFLink(name="magnet",
                      translation_vector=[0, -0.095, 0],
                      orientation=[0, 0, 0],
