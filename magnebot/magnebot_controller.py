@@ -1022,8 +1022,6 @@ class Magnebot(FloorplanController):
         for j in Magnebot.JOINT_ORDER[arm]:
             j_id = self.magnebot_static.arm_joints[j]
             initial_angles.extend(self.state.joint_angles[j_id])
-        # Insert a 0 degree torso rotation.
-        initial_angles.insert(2, 0)
         # Add the magnet.
         initial_angles.append(0)
         initial_angles = np.array([np.deg2rad(ia) for ia in initial_angles])
@@ -1078,11 +1076,6 @@ class Magnebot(FloorplanController):
         i = 0
         joint_order_index = 0
         while i < len(angles):
-            # The second angle in the chain is the torso, which is considered a fixed joint
-            # (because we're handling it iteratively). So we ignore this node in the IK solution.
-            if i == 1:
-                i += 1
-                continue
             joint_name = Magnebot.JOINT_ORDER[arm][joint_order_index]
             joint_type = Magnebot.JOINT_AXES[joint_name]
             joint_id = self.magnebot_static.arm_joints[joint_name]
@@ -1205,14 +1198,10 @@ class Magnebot(FloorplanController):
         return Chain(name=arm.name, links=[
             OriginLink(),
             URDFLink(name="column",
-                     translation_vector=[0, 0.159, 0],
+                     translation_vector=[0, 0.159 + torso_y, 0],
                      orientation=[0, 0, 0],
                      rotation=[0, -1, 0],
                      bounds=(np.deg2rad(-179), np.deg2rad(179))),
-            URDFLink(name="torso",
-                     translation_vector=[0, torso_y, 0],
-                     orientation=[0, 0, 0],
-                     rotation=None),
             URDFLink(name="shoulder_pitch",
                      translation_vector=[-0.215 * -1 if arm == Arm.left else 1,  0.059, 0.019],
                      orientation=[0, 0, 0],
