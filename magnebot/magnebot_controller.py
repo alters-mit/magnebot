@@ -271,40 +271,6 @@ class Magnebot(FloorplanController):
         self._end_action()
         return status
 
-    def init_test_scene(self) -> ActionStatus:
-        """
-        Initialize an empty test room with a Magnebot. The simulation will advance through frames until the Magnebot's body is in its neutral position.
-
-        This function can be called instead of `init_scene()` for testing purposes. If so, it must be called before any other API calls.
-
-        ```python
-        from magnebot import Magnebot
-
-        m = Magnebot()
-        m.init_test_scene()
-
-        # Your code here.
-        ```
-
-        You can safely call `init_test_scene()` more than once to reset the simulation.
-
-        Possible [return values](action_status.md):
-
-        - `success`
-        - `failed_to_bend` (Technically this is _possible_, but it shouldn't ever happen.)
-        """
-
-        commands = [{"$type": "load_scene",
-                     "scene_name": "ProcGenScene"},
-                    TDWUtils.create_empty_room(12, 12)]
-        commands.extend(self._get_scene_init_commands(magnebot_position={"x": 0, "y": 0, "z": 0}))
-        resp = self.communicate(commands)
-        self.__cache_static_data(resp=resp)
-        # Wait for the Magnebot to reset to its neutral position.
-        status = self._do_arm_motion()
-        self._end_action()
-        return status
-
     def turn_by(self, angle: float, aligned_at: float = 3) -> ActionStatus:
         """
         Turn the Magnebot by an angle.
@@ -1239,7 +1205,7 @@ class Magnebot(FloorplanController):
             URDFLink(name="column",
                      translation_vector=[0, 0.159, 0],
                      orientation=[0, 0, 0],
-                     rotation=[0, 0, 1],
+                     rotation=[0, -1, 0],
                      bounds=(np.deg2rad(-179), np.deg2rad(179))),
             URDFLink(name="torso",
                      translation_vector=[0, torso_y, 0],
@@ -1248,22 +1214,22 @@ class Magnebot(FloorplanController):
             URDFLink(name="shoulder_pitch",
                      translation_vector=[-0.215 * -1 if arm == Arm.left else 1,  0.059, 0.019],
                      orientation=[0, 0, 0],
-                     rotation=[1, 0, 0],
+                     rotation=[0, 0, 1],
                      bounds=(np.deg2rad(-150), np.deg2rad(70))),
             URDFLink(name="shoulder_yaw",
                      translation_vector=[0, 0, 0],
                      orientation=[0, 0, 0],
-                     rotation=[0, 1, 0],
+                     rotation=[1, 0, 0],
                      bounds=(np.deg2rad(-110 if arm == Arm.left else -20), np.deg2rad(20 if arm == Arm.left else 110))),
             URDFLink(name="shoulder_roll",
                      translation_vector=[0, 0, 0],
                      orientation=[0, 0, 0],
-                     rotation=[0, 0, 1],
+                     rotation=[0, -1, 0],
                      bounds=(np.deg2rad(-70 if arm == Arm.left else -45), np.deg2rad(45 if arm == Arm.left else 70))),
             URDFLink(name="elbow_pitch",
                      translation_vector=[0.051 * -1 if arm == Arm.left else 1, -0.29, 0.015],
                      orientation=[0, 0, 0],
-                     rotation=[1, 0, 0],
+                     rotation=[0, 0, 1],
                      bounds=(np.deg2rad(-90), np.deg2rad(145))),
             URDFLink(name="wrist_pitch",
                      translation_vector=[0, -0.373, 0],
@@ -1273,12 +1239,12 @@ class Magnebot(FloorplanController):
             URDFLink(name="wrist_yaw",
                      translation_vector=[0, 0, 0],
                      orientation=[0, 0, 0],
-                     rotation=[0, 0, 1],
+                     rotation=[1, 0, 0],
                      bounds=(np.deg2rad(-15), np.deg2rad(15))),
             URDFLink(name="wrist_roll",
                      translation_vector=[0, 0, 0],
                      orientation=[0, 0, 0],
-                     rotation=[1, 0, 0],
+                     rotation=[0, -1, 0],
                      bounds=(np.deg2rad(-90), np.deg2rad(90))),
             URDFLink(name="magnet",
                      translation_vector=[0, -0.095, 0],

@@ -1,11 +1,11 @@
 from tdw.output_data import StaticRobot
-from magnebot import Magnebot, Arm
+from magnebot import TestController, Arm
 from magnebot.action_status import ActionStatus
 from magnebot.util import get_data
 from magnebot.scene_state import SceneState
 
 
-class Symmetry(Magnebot):
+class Symmetry(TestController):
     """
     Test the symmetry of the Magnebot's parts before and after moving.
     """
@@ -32,8 +32,8 @@ class Symmetry(Magnebot):
         self.front = {"axle_front": -1}
         self.back = {"axle_back": -1}
 
-    def init_test_scene(self) -> None:
-        super().init_test_scene()
+    def init_scene(self, scene: str = None, layout: int = None, room: int = -1) -> ActionStatus:
+        s = super().init_scene()
         # Get the object IDs for all non-joints as well as joints.
         resp = self.communicate({"$type": "send_static_robots"})
         sr = get_data(resp=resp, d_type=StaticRobot)
@@ -50,6 +50,7 @@ class Symmetry(Magnebot):
                 if j_name in d:
                     d[j_name] = j_id
         self.state = SceneState(resp=resp)
+        return s
 
     def assert_symmetry(self) -> None:
         """
@@ -88,7 +89,7 @@ class Symmetry(Magnebot):
 
 if __name__ == "__main__":
     m = Symmetry(launch_build=False)
-    m.init_test_scene()
+    m.init_scene()
     # Bend both arms to mirrored targets.
     for direction, arm in zip([1, -1], [Arm.left, Arm.right]):
         status = m.reach_for(target={"x": 0.2 * direction, "y": 0.4, "z": 0.3}, arm=arm)

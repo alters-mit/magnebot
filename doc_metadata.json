@@ -7,7 +7,7 @@
     },
     "Scene Setup": {
       "description": "These functions should be sent at the start of the simulation.",
-      "functions": ["init_scene", "init_test_scene"]
+      "functions": ["init_scene"]
     },
     "Movement": {
       "description": "These functions move or turn the Magnebot.",

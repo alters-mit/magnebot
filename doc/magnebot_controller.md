@@ -156,30 +156,6 @@ Possible [return values](action_status.md):
 | layout | The furniture layout of the floorplan. Each number (0, 1, 2) will populate the floorplan with different furniture in different positions. |
 | room | The index of the room that the Magnebot will spawn in the center of. If `room == -1` the room will be chosen randomly. |
 
-#### init_test_scene
-
-**`def init_test_scene(self) -> ActionStatus`**
-
-Initialize an empty test room with a Magnebot. The simulation will advance through frames until the Magnebot's body is in its neutral position.
-
-This function can be called instead of `init_scene()` for testing purposes. If so, it must be called before any other API calls.
-
-```python
-from magnebot import Magnebot
-
-m = Magnebot()
-m.init_test_scene()
-
-# Your code here.
-```
-
-You can safely call `init_test_scene()` more than once to reset the simulation.
-
-Possible [return values](action_status.md):
-
-- `success`
-- `failed_to_bend` (Technically this is _possible_, but it shouldn't ever happen.)
-
 ***
 
 ### Movement
