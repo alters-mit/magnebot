@@ -992,8 +992,10 @@ class Magnebot(FloorplanController):
                                           initial_position=initial_angles)
 
             if self._debug:
-                print(target, torso_y, ik)
                 ax = matplotlib.pyplot.figure().add_subplot(111, projection='3d')
+                ax.set_xlabel("X")
+                ax.set_ylabel("Y")
+                ax.set_zlabel("Z")
                 chain.plot(ik, ax, target=target)
                 matplotlib.pyplot.show()
 
@@ -1196,13 +1198,13 @@ class Magnebot(FloorplanController):
             OriginLink(),
             URDFLink(name="column",
                      translation_vector=[0, 0.159 + (torso_y / (1.5 + 0.21)), 0],
-                     orientation=[0, np.deg2rad(180), 0],
-                     rotation=[1, 0, 0],
+                     orientation=[0, 0, 0],
+                     rotation=[0, 1, 0],
                      bounds=(np.deg2rad(-179), np.deg2rad(179))),
             URDFLink(name="shoulder_pitch",
                      translation_vector=[0.215 * -1 if arm == Arm.left else 1, 0.059, 0.019],
                      orientation=[0, 0, 0],
-                     rotation=[-1, 0, 0],
+                     rotation=[1, 0, 0],
                      bounds=(np.deg2rad(-150), np.deg2rad(70))),
             URDFLink(name="shoulder_roll",
                      translation_vector=[0, 0, 0],
