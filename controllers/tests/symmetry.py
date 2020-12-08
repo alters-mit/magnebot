@@ -1,18 +1,13 @@
-from tdw.output_data import StaticRobot
 from magnebot import TestController, Arm
 from magnebot.action_status import ActionStatus
-from magnebot.util import get_data
-from magnebot.scene_state import SceneState
 
-
-class Symmetry(TestController):
-    """
-    Test the symmetry of the Magnebot's parts before and after moving.
-    """
+"""
+Test arm movement symmetry.
+"""
 
 
 if __name__ == "__main__":
-    m = Symmetry(launch_build=False)
+    m = TestController()
     m.init_scene()
     # Bend both arms to mirrored targets.
     for direction, arm in zip([1, -1], [Arm.left, Arm.right]):

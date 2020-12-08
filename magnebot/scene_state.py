@@ -123,9 +123,9 @@ class SceneState:
         """
         self.object_transforms: Dict[int, Transform] = dict()
         for i in range(transforms.get_num()):
-            self.object_transforms[i] = Transform(position=np.array(transforms.get_position(i)),
-                                                  forward=np.array(transforms.get_forward(i)),
-                                                  rotation=np.array(transforms.get_rotation(i)))
+            self.object_transforms[transforms.get_id(i)] = Transform(position=np.array(transforms.get_position(i)),
+                                                                     forward=np.array(transforms.get_forward(i)),
+                                                                     rotation=np.array(transforms.get_rotation(i)))
 
         # Get camera matrix data.
         matrices = get_data(resp=resp, d_type=CameraMatrices)

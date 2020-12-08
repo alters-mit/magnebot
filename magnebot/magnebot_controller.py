@@ -382,8 +382,10 @@ class Magnebot(FloorplanController):
         else:
             raise Exception(f"Invalid target: {target}")
 
-        angle = TDWUtils.get_angle(forward=self.state.magnebot_transform.forward, origin=self.state.magnebot_transform.position,
-                                   position=target)
+        angle = TDWUtils.get_angle_between(v1=self.state.magnebot_transform.forward,
+                                           v2=target - self.state.magnebot_transform.position)
+        if angle > 180:
+            angle -= 360
         return self.turn_by(angle=angle, aligned_at=aligned_at)
 
     def move_by(self, distance: float, arrived_at: float = 0.1) -> ActionStatus:
@@ -576,12 +578,14 @@ class Magnebot(FloorplanController):
         self._start_action()
 
         # Get the mitten's position.
-        m_pos = self.state.body_part_transforms[self.magnebot_static.magnets[arm]]
+        m_pos = self.state.body_part_transforms[self.magnebot_static.magnets[arm]].position
         # Raycast to the target to get a target position.
         # If the raycast fails, just aim for the centroid of the object.
         raycast_ok, target_position = self._get_raycast(origin=m_pos, object_id=target)
 
-        target_position = Magnebot._absolute_to_relative(position=target_position, state=self.state)
+        if self._debug:
+            self._next_frame_commands.append({"$type": "add_position_marker",
+                                              "position": TDWUtils.array_to_vector3(target_position)})
         # Start the IK action.
         status = self._start_ik(target=target_position, arm=arm, absolute=True)
 
@@ -622,9 +626,9 @@ class Magnebot(FloorplanController):
 
         self._start_action()
 
-        if target in self.state.held[arm]:
+        if target not in self.state.held[arm]:
             if self._debug:
-                print(f"Can't drop {target} because it isn't being held by {arm}")
+                print(f"Can't drop {target} because it isn't being held by {arm}: {self.state.held[arm]}")
             self._end_action()
             return ActionStatus.not_holding
 
@@ -828,7 +832,7 @@ class Magnebot(FloorplanController):
     def _add_object(self, model_name: str, position: Dict[str, float] = None,
                     rotation: Dict[str, float] = None, library: str = "models_core.json",
                     scale: Dict[str, float] = None, audio: ObjectInfo = None,
-                    mass: float = None) -> None:
+                    mass: float = None) -> int:
         """
         Add an object to the scene.
 
@@ -839,6 +843,8 @@ class Magnebot(FloorplanController):
         :param scale: The scale factor of the object. If None, the scale factor is (1, 1, 1)
         :param audio: Audio values for the object. If None, use default values.
         :param mass: If not None, use this mass instead of the default.
+
+        :return: The ID of the object.
         """
 
         # Get the data.
@@ -851,6 +857,7 @@ class Magnebot(FloorplanController):
                                   audio=audio, library=library)
         object_id, object_commands = init_data.get_commands()
         self._object_init_commands[object_id] = object_commands
+        return object_id
 
     def _end_action(self) -> None:
         """
@@ -950,6 +957,8 @@ class Magnebot(FloorplanController):
 
         self._next_frame_commands.append({"$type": "enable_image_sensor",
                                           "enable": False})
+        if self._debug:
+            self._next_frame_commands.append({"$type": "remove_position_markers"})
 
     def _start_move_or_turn(self) -> None:
         """
@@ -1016,7 +1025,8 @@ class Magnebot(FloorplanController):
         # If the `state` argument is None, work off of `self.state`.
         if state is None:
             state = self.state
-        target = TDWUtils.vector3_to_array(target)
+        if isinstance(target, dict):
+            target = TDWUtils.vector3_to_array(target)
         # Convert to relative coordinates.
         if absolute:
             target = self._absolute_to_relative(position=target, state=state)
@@ -1121,7 +1131,7 @@ class Magnebot(FloorplanController):
                 # Set the revolute joints to 0 except for the elbow, which should be held at a right angle.
                 commands.append({"$type": "set_revolute_target",
                                  "joint_id": joint_id,
-                                 "target": 0 if "elbow" not in joint_type.name else 90})
+                                 "target": 0 if "elbow" not in joint_name.name else 90})
             elif joint_type == JointType.spherical:
                 commands.append({"$type": "set_spherical_target",
                                  "joint_id": joint_id,
@@ -1180,7 +1190,7 @@ class Magnebot(FloorplanController):
         raycast = get_data(resp=resp, d_type=Raycast)
         point = np.array(raycast.get_point())
         hit = raycast.get_hit() and raycast.get_object_id() is not None and raycast.get_object_id() == object_id
-        return hit, point if hit else destination
+        return hit, point if hit else bounds.get_center(0)
 
     @staticmethod
     def __get_ik_chain(arm: Arm, torso_y: float) -> Chain:

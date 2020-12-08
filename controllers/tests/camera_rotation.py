@@ -1,13 +1,13 @@
 import numpy as np
-from magnebot import Magnebot, ActionStatus
+from magnebot import TestController, ActionStatus
 
 """
 Test Magnebot camera rotation.
 """
 
 if __name__ == "__main__":
-    m = Magnebot(launch_build=False, debug=True)
-    m.init_test_scene()
+    m = TestController()
+    m.init_scene()
     status = m.rotate_camera(roll=0, pitch=0, yaw=0)
     # No rotation.
     assert np.linalg.norm(m.camera_rpy) == 0
