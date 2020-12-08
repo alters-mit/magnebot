@@ -1232,7 +1232,7 @@ class Magnebot(FloorplanController):
             URDFLink(name="wrist_yaw",
                      translation_vector=[0, 0, 0],
                      orientation=[0, 0, 0],
-                     rotation=[0, 1, 0],
+                     rotation=[0, 0, 1],
                      bounds=(np.deg2rad(-15), np.deg2rad(15))),
             URDFLink(name="magnet",
                      translation_vector=[0, 0, -0.095],
