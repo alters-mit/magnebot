@@ -1195,7 +1195,7 @@ class Magnebot(FloorplanController):
         return Chain(name=arm.name, links=[
             OriginLink(),
             URDFLink(name="column",
-                     translation_vector=[0, 0.159 + torso_y, 0],
+                     translation_vector=[0, 0.159 + (torso_y / (1.5 + 0.21)), 0],
                      orientation=[0, np.deg2rad(180), 0],
                      rotation=[1, 0, 0],
                      bounds=(np.deg2rad(-179), np.deg2rad(179))),
@@ -1215,7 +1215,7 @@ class Magnebot(FloorplanController):
                      rotation=[0, 0, 1],
                      bounds=(np.deg2rad(-110 if arm == Arm.left else -20), np.deg2rad(20 if arm == Arm.left else 110))),
             URDFLink(name="elbow_pitch",
-                     translation_vector=[0.051 * -1 if arm == Arm.left else 1, -0.29, 0.015],
+                     translation_vector=[0.033 * -1 if arm == Arm.left else 1, -0.33, 0],
                      orientation=[0, 0, 0],
                      rotation=[1, 0, 0],
                      bounds=(np.deg2rad(-90), np.deg2rad(145))),
