@@ -1021,9 +1021,6 @@ class Magnebot(FloorplanController):
         if absolute:
             target = self._absolute_to_relative(position=target, state=state)
 
-        self._next_frame_commands.append({"$type": "add_position_marker",
-                                          "position": TDWUtils.array_to_vector3(target)})
-
         # Get the initial angles of each joint.
         # The first angle is always 0 (the origin link).
         initial_angles = [0]
