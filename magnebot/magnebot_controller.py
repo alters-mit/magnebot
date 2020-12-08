@@ -1219,10 +1219,10 @@ class Magnebot(FloorplanController):
             URDFLink(name="elbow_pitch",
                      translation_vector=[0.033 * -1 if arm == Arm.left else 1, -0.33, 0],
                      orientation=[0, 0, 0],
-                     rotation=[1, 0, 0],
+                     rotation=[-1, 0, 0],
                      bounds=(np.deg2rad(-90), np.deg2rad(145))),
             URDFLink(name="wrist_pitch",
-                     translation_vector=[0, 0, -0.373],
+                     translation_vector=[0, -0.373, 0],
                      orientation=[0, 0, 0],
                      rotation=[-1, 0, 0],
                      bounds=(np.deg2rad(-90), np.deg2rad(90))),
@@ -1237,7 +1237,7 @@ class Magnebot(FloorplanController):
                      rotation=[0, 0, 1],
                      bounds=(np.deg2rad(-15), np.deg2rad(15))),
             URDFLink(name="magnet",
-                     translation_vector=[0, 0, -0.095],
+                     translation_vector=[0, -0.095, 0],
                      orientation=[0, 0, 0],
                      rotation=None)])
 
