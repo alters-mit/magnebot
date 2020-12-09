@@ -1057,17 +1057,18 @@ class Magnebot(FloorplanController):
         angles: List[float] = list()
         torso_y = Magnebot.DEFAULT_TORSO_Y
         got_solution = False
-        while not got_solution and torso_y <= Magnebot.TORSO_LIMITS[1]:
+        while not got_solution and torso_y >= Magnebot.TORSO_LIMITS[0]:
             got_solution, angles = __get_ik_solution()
             if not got_solution:
-                torso_y += 0.1
-        # If we couldn't find a solution, try to lower the torso.
+                torso_y -= 0.1
+        # If we couldn't find a solution, try to raise the torso.
+        torso_y = Magnebot.DEFAULT_TORSO_Y
         if not got_solution:
             torso_y = Magnebot.DEFAULT_TORSO_Y
-            while not got_solution and torso_y >= Magnebot.TORSO_LIMITS[0]:
+            while not got_solution and torso_y <= Magnebot.TORSO_LIMITS[1]:
                 got_solution, angles = __get_ik_solution()
                 if not got_solution:
-                    torso_y -= 0.1
+                    torso_y += 0.1
         # If we couldn't find a solution at any torso height, then there isn't a solution.
         if not got_solution:
             return ActionStatus.cannot_reach
