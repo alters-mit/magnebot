@@ -581,15 +581,18 @@ class Magnebot(FloorplanController):
 
         self._start_action()
 
-        # Get the mitten's position.
-        m_pos = self.state.body_part_transforms[self.magnebot_static.magnets[arm]].position
-        # Raycast to the target to get a target position.
-        # If the raycast fails, just aim for the centroid of the object.
-        raycast_ok, target_position = self._get_raycast(origin=m_pos, object_id=target)
+        # Reach for the center of the object.
+        resp = self.communicate([{"$type": "send_bounds",
+                                  "ids": [target],
+                                 "frequency": "once"},
+                                 {"$type": "set_immovable",
+                                  "immovable": True}])
+        bounds = get_data(resp=resp, d_type=Bounds)
+        target_position = TDWUtils.array_to_vector3(bounds.get_center(0))
 
         if self._debug:
             self._next_frame_commands.append({"$type": "add_position_marker",
-                                              "position": TDWUtils.array_to_vector3(target_position)})
+                                              "position": target_position})
         # Start the IK action.
         status = self._start_ik(target=target_position, arm=arm, absolute=True)
 
@@ -1169,32 +1172,6 @@ class Magnebot(FloorplanController):
             return ActionStatus.failed_to_bend
         else:
             return ActionStatus.success
-
-    def _get_raycast(self, object_id: int, origin: np.array) -> Tuple[bool, np.array]:
-        """
-        Raycast to a target object from an origin.
-
-        :param object_id: The object ID.
-
-        :return: Tuple: The point of the raycast hit or the centroid of the object; and whether the raycast hit the object.
-        """
-
-        resp = self.communicate({"$type": "send_bounds",
-                                 "ids": [object_id],
-                                 "frequency": "once"})
-        bounds = get_data(resp=resp, d_type=Bounds)
-        # Raycast to the center of the bounds to get the nearest point.
-        destination = TDWUtils.array_to_vector3(bounds.get_center(0))
-        state = SceneState(resp=resp)
-        # Add a forward directional vector.
-        origin += np.array(state.magnebot_transform.forward) * 0.01
-        resp = self.communicate({"$type": "send_raycast",
-                                 "origin": TDWUtils.array_to_vector3(origin),
-                                 "destination": destination})
-        raycast = get_data(resp=resp, d_type=Raycast)
-        point = np.array(raycast.get_point())
-        hit = raycast.get_hit() and raycast.get_object_id() is not None and raycast.get_object_id() == object_id
-        return hit, point if hit else bounds.get_center(0)
 
     @staticmethod
     def __get_ik_chain(arm: Arm, torso_y: float) -> Chain:
