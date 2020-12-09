@@ -8,7 +8,7 @@ from ikpy.link import OriginLink, URDFLink
 from ikpy.utils import geometry
 from tdw.floorplan_controller import FloorplanController
 from tdw.output_data import Version, StaticRobot, SegmentationColors, Bounds, Rigidbodies, Raycast
-from tdw.tdw_utils import TDWUtils
+from tdw.tdw_utils import TDWUtils, QuaternionUtils
 from tdw.object_init_data import AudioInitData
 from tdw.py_impact import PyImpact, ObjectInfo
 from tdw.release.pypi import PyPi
@@ -108,6 +108,15 @@ class Magnebot(FloorplanController):
     TORSO_LIMITS = [0.21, 1.5]
     # The default height of the torso.
     DEFAULT_TORSO_Y = 1
+
+    # The radius of the Magnebot as defined by its longer axis.
+    MAGNEBOT_RADIUS = 0.22
+    # The circumference of the Magnebot.
+    MAGNEBOT_CIRCUMFERENCE = np.pi * 2 * MAGNEBOT_RADIUS
+    # The radius of the Magnebot wheel.
+    WHEEL_RADIUS = 0.1
+    # The circumference of the Magnebot wheel.
+    WHEEL_CIRCUMFERENCE = 2 * np.pi * WHEEL_RADIUS
 
     def __init__(self, port: int = 1071, launch_build: bool = True,
                  screen_width: int = 256, screen_height: int = 256, debug: bool = False):
@@ -290,42 +299,36 @@ class Magnebot(FloorplanController):
         :return: An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
         """
 
-        def _get_angle_1() -> float:
-            """
-            :return: The current angle.
-            """
-
-            a = TDWUtils.get_angle_between(wheel_state.magnebot_transform.forward, f0)
-            if angle_0 < 0:
-                a *= -1
-            elif a > 180:
-                a = 360 - a
-            return a
-
         self._start_action()
         self._start_move_or_turn()
-        wheel_state = SceneState(resp=self.communicate([]))
-        # The initial forward vector.
-        f0 = self.state.magnebot_transform.forward
-        speed = angle * 2.5
-        # The approximately number of iterations required, given the distance and speed.
+
+        # Get the angle to the target.
+        # The approximate number of iterations required, given the distance and speed.
         num_attempts = int((np.abs(angle) + 1) / 2)
         attempts = 0
-        angle_0 = angle
         if self._debug:
-            print(f"num_attempts: {num_attempts}", f"angle_0: {angle_0}", f"speed: {speed}")
+            print(f"turn_by: {angle}")
+        wheel_state = self.state
+        target_angle = angle
+        delta_angle = target_angle
         while attempts < num_attempts:
             attempts += 1
+
+            # Calculate the delta angler of the wheels, given the target angle of the Magnebot.
+            # Source: https://answers.unity.com/questions/1120115/tank-wheels-and-treads.html
+            # Source: return ActionStatus.failed_to_turn
+            # The distance that the Magnebot needs to travel, defined as a fraction of its circumference.
+            d = (delta_angle / 360.0) * Magnebot.MAGNEBOT_CIRCUMFERENCE
+            # The 3 is a magic number. Who knows what it means??
+            spin = (d / Magnebot.WHEEL_CIRCUMFERENCE) * 360 * 3
             # Set the direction of the wheels for the turn and send commands.
             commands = []
             for wheel in self.magnebot_static.wheels:
-                # Get the target from the current joint angles.
+                # Spin one side of the wheels forward and the other backward to effect a turn.
                 if "left" in wheel.name:
-                    target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] + \
-                             (speed if angle > 0 else -speed)
+                    target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] + spin
                 else:
-                    target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] - \
-                             (speed if angle > 0 else -speed)
+                    target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] - spin
 
                 commands.append({"$type": "set_revolute_target",
                                  "target": target,
@@ -335,23 +338,24 @@ class Magnebot(FloorplanController):
             wheel_state = SceneState(resp=self.communicate(commands))
             while not wheels_done:
                 wheels_done, wheel_state = self._wheels_are_done(state_0=wheel_state)
-            # Get the new angle.
-            angle_1 = _get_angle_1()
-            if self._debug:
-                print(f"speed: {speed}", f"angle_1: {angle_1}")
-            # If the difference between the target angle and the current angle is very small, we're done.
-            if np.abs(angle_1 - angle_0) < aligned_at:
+            # Get the change in angle from the initial rotation.
+            theta = QuaternionUtils.get_y_angle(self.state.magnebot_transform.rotation,
+                                                wheel_state.magnebot_transform.rotation)
+            # If the angle to the target is very small, then we're done.
+            if np.abs(angle - theta) < aligned_at:
                 self._end_action()
+                if self._debug:
+                    print("Turn complete!")
                 return ActionStatus.success
-            # Adjust the speed.
-            if np.abs(angle_1) > np.abs(angle_0):
-                if angle_1 > angle_0:
-                    speed = (angle_0 - angle_1) * 3.5
-                else:
-                    speed = (angle_1 - angle_0) * 3.5
+            # Course-correct the angle.
+            delta_angle = angle - theta
+            if self._debug:
+                print(f"angle: {angle}", f"delta_angle: {delta_angle}", f"spin: {spin}", f"d: {d}", f"theta: {theta}")
+
         self._end_action()
-        angle_1 = _get_angle_1()
-        if np.abs(angle_1 - angle_0) < aligned_at:
+        if np.abs(target_angle - angle) < aligned_at:
+            if self._debug:
+                print("Turn complete!")
             return ActionStatus.success
         else:
             return ActionStatus.failed_to_turn
