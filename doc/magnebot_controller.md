@@ -62,18 +62,22 @@ print(Arm.left)
 | --- | --- | --- |
 | `FORWARD` | np.array | The global forward directional vector. |
 | `CAMERA_RPY_CONSTRAINTS` | List[float] | The camera roll, pitch, yaw constraints in degrees. |
-| `TORSO_LIMITS` | List[float] | The prismatic joint limits for the torso. |
-| `DEFAULT_TORSO_Y` | float | The default height of the torso. |
 | `MAGNEBOT_RADIUS` | float | The radius of the Magnebot as defined by its longer axis. |
 | `MAGNEBOT_CIRCUMFERENCE` | float | The circumference of the Magnebot. |
 | `WHEEL_RADIUS` | float | The radius of the Magnebot wheel. |
 | `WHEEL_CIRCUMFERENCE` | float | The circumference of the Magnebot wheel. |
+| `THIRD_PERSON_CAMERA_ID ` |  | If there is a third-person camera in the scene, this is its ID (i.e. the avatar ID).
+    See: `add_third_person_camera()` |
 
 ***
 
 ## Fields
 
 - `state` Dynamic data for all of the most recent frame (i.e. the frame after doing an action such as `move_to()`). [Read this](scene_state.md) for a full API.
+
+- `auto_save_images` If True, automatically save images to `images_directory` at the end of every action.
+
+- `images_directory` The output directory for images if `auto_save_images == True`. This is a [`Path` object from `pathlib`](https://docs.python.org/3/library/pathlib.html).
 
 - `camera_rpy` The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees.
 
@@ -112,7 +116,7 @@ print(m.magnebot_static.magnets)
 
 #### \_\_init\_\_
 
-**`Magnebot(port, launch_build, screen_width, screen_height, debug)`**
+**`Magnebot(port, launch_build, screen_width, screen_height, auto_save_images, images_directory, debug)`**
 
 | Parameter | Type | Description |
 | --- | --- | --- |
@@ -120,6 +124,8 @@ print(m.magnebot_static.magnets)
 | launch_build |  bool  | If True, the build will launch automatically on the default port (1071). If False, you will need to launch the build yourself (for example, from a Docker container). |
 | screen_width |  int  | The width of the screen in pixels. |
 | screen_height |  int  | The height of the screen in pixels. |
+| auto_save_images |  bool  | If True, automatically save images to `images_directory` at the end of every action. |
+| images_directory |  str  | The output directory for images if `auto_save_images == True`. |
 | debug |  bool  | If True, enable debug mode and output debug messages to the console. |
 
 ***
@@ -455,6 +461,29 @@ _Returns:_  An `ActionStatus` (always `success`).
 ### Misc.
 
 _These are utility functions that won't advance the simulation by any frames._
+
+#### add_third_person_camera
+
+**`self.add_third_person_camera(position)`**
+
+Add a third person camera (i.e. a camera not attached to the any object) to the scene.
+This camera will output images at the end of every action (see [`SceneState.third_person_images`](scene_state.md)).
+
+The camera will always point at the Magnebot.
+
+_Backend developers:_ For the ID of the camera, see: `Magnebot.THIRD_PERSON_CAMERA_ID`.
+
+Possible [return values](action_status.md):
+
+- `success`
+
+
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| position |  Dict[str, float] | The position of the camera. The camera will never move from this position but it will rotate to look at the Magnebot. |
+
+_Returns:_  An `ActionStatus` (always `success`).
 
 #### end
 

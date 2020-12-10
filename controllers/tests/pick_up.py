@@ -18,7 +18,8 @@ class PickUp(TestController):
         # Add some objects to an empty room. Record their object IDs.
         self.target_object_0 = self._add_object("jug05", position={"x": -0.408, "y": 0, "z": 0.428})
         self.target_object_1 = self._add_object("jug05", position={"x": -1.76, "y": 0, "z": -1.08})
-        self.box = self._add_object("basket_18inx18inx12iin", position={"x": 0.03, "y": 0, "z": -2.38})
+        self.box = self._add_object("basket_18inx18inx12iin", position={"x": 0.03, "y": 0, "z": -2.38},
+                                    scale={"x": 1, "y": 0.4, "z": 1})
 
         return super().init_scene()
 
@@ -26,6 +27,8 @@ class PickUp(TestController):
 if __name__ == "__main__":
     m = PickUp()
     m.init_scene()
+
+    m.add_third_person_camera(position={"x": -2.36, "y": 2, "z": -2.27})
 
     # Grasp the first object.
     status = m.grasp(target=m.target_object_0, arm=Arm.left)
@@ -35,7 +38,7 @@ if __name__ == "__main__":
     assert status == ActionStatus.failed_to_bend, status
 
     # Go to the next object.
-    status = m.move_to(target=m.target_object_1, arrived_at=0.6)
+    status = m.move_to(target=m.target_object_1, arrived_at=0.75)
     assert status == ActionStatus.success, status
     # Grasp the object.
     status = m.grasp(target=m.target_object_1, arm=Arm.right)
@@ -44,7 +47,7 @@ if __name__ == "__main__":
     # Failed to reset entirely due to the mass of the object.
     assert status == ActionStatus.failed_to_bend, status
     # Go to the box.
-    m.move_to(target=m.box, arrived_at=0.8)
+    m.move_to(target=m.box, arrived_at=1.1)
 
     # Get a point above the box.
     box_top = m.state.object_transforms[m.box].position[:]

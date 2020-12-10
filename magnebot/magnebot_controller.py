@@ -2,6 +2,7 @@ import random
 from json import loads
 from typing import List, Dict, Optional, Union, Tuple
 from csv import DictReader
+from pathlib import Path
 import numpy as np
 import matplotlib.pyplot
 from ikpy.chain import Chain
@@ -137,13 +138,21 @@ class Magnebot(FloorplanController):
     """
     WHEEL_CIRCUMFERENCE: float = 2 * np.pi * WHEEL_RADIUS
 
-    def __init__(self, port: int = 1071, launch_build: bool = True,
-                 screen_width: int = 256, screen_height: int = 256, debug: bool = False):
+    """:class_var
+    If there is a third-person camera in the scene, this is its ID (i.e. the avatar ID).
+    See: `add_third_person_camera()`
+    """
+    THIRD_PERSON_CAMERA_ID = "c"
+
+    def __init__(self, port: int = 1071, launch_build: bool = True, screen_width: int = 256, screen_height: int = 256,
+                 debug: bool = False, auto_save_images: bool = False, images_directory: str = "images"):
         """
         :param port: The socket port. [Read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md#command-line-arguments) for more information.
         :param launch_build: If True, the build will launch automatically on the default port (1071). If False, you will need to launch the build yourself (for example, from a Docker container).
         :param screen_width: The width of the screen in pixels.
         :param screen_height: The height of the screen in pixels.
+        :param auto_save_images: If True, automatically save images to `images_directory` at the end of every action.
+        :param images_directory: The output directory for images if `auto_save_images == True`.
         :param debug: If True, enable debug mode and output debug messages to the console.
         """
 
@@ -155,6 +164,18 @@ class Magnebot(FloorplanController):
         Dynamic data for all of the most recent frame (i.e. the frame after doing an action such as `move_to()`). [Read this](scene_state.md) for a full API.
         """
         self.state: Optional[SceneState] = None
+
+        """:field
+        If True, automatically save images to `images_directory` at the end of every action.
+        """
+        self.auto_save_images = auto_save_images
+
+        """:field
+        The output directory for images if `auto_save_images == True`. This is a [`Path` object from `pathlib`](https://docs.python.org/3/library/pathlib.html).
+        """
+        self.images_directory = Path(images_directory)
+        if not self.images_directory.exists():
+            self.images_directory.mkdir(parents=True)
 
         """:field
         The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees.
@@ -218,6 +239,9 @@ class Magnebot(FloorplanController):
 
         # Commands that will be sent on the next frame.
         self._next_frame_commands: List[dict] = list()
+
+        # Send these commands every frame.
+        self._per_frame_commands: List[dict] = list()
 
         # Set image encoding to .jpg
         # Set the highest render quality.
@@ -825,6 +849,35 @@ class Magnebot(FloorplanController):
         self._end_action()
         return ActionStatus.success
 
+    def add_third_person_camera(self, position: Dict[str, float]) -> ActionStatus:
+        """
+        Add a third person camera (i.e. a camera not attached to the any object) to the scene.
+        This camera will output images at the end of every action (see [`SceneState.third_person_images`](scene_state.md)).
+
+        The camera will always point at the Magnebot.
+
+        _Backend developers:_ For the ID of the camera, see: `Magnebot.THIRD_PERSON_CAMERA_ID`.
+
+        Possible [return values](action_status.md):
+
+        - `success`
+
+        :return: An `ActionStatus` (always `success`).
+
+        :param position: The position of the camera. The camera will never move from this position but it will rotate to look at the Magnebot.
+
+        :return: An `ActionStatus` (always `success`).
+        """
+
+        self._next_frame_commands.extend(TDWUtils.create_avatar(avatar_id="c", position=position))
+        self._next_frame_commands.append({"$type": "set_pass_masks",
+                                          "pass_masks": ["_img"],
+                                          "avatar_id": Magnebot.THIRD_PERSON_CAMERA_ID})
+        self._per_frame_commands.append({"$type": "look_at_robot",
+                                         "avatar_id": Magnebot.THIRD_PERSON_CAMERA_ID})
+        self._end_action()
+        return ActionStatus.success
+
     def end(self) -> None:
         """
         End the simulation. Terminate the build process.
@@ -845,11 +898,11 @@ class Magnebot(FloorplanController):
 
         if not isinstance(commands, list):
             commands = [commands]
-        # Add avatar commands from the previous frame.
+        # Add commands for this frame only.
         commands.extend(self._next_frame_commands)
-
-        # Clear avatar commands.
         self._next_frame_commands.clear()
+        # Add per-frame commands.
+        commands.extend(self._per_frame_commands)
 
         # Send the commands and get a response.
         return super().communicate(commands)
@@ -906,6 +959,10 @@ class Magnebot(FloorplanController):
                                            "targets": []}])
         # Send the commands (see `communicate()` for how `_next_frame_commands` are handled).
         self.state = SceneState(resp=self.communicate([]))
+
+        # Save images.
+        if self.auto_save_images:
+            self.state.save_images(output_directory=self.images_directory)
 
     def _wheels_are_done(self, state_0: SceneState) -> Tuple[bool, SceneState]:
         """
