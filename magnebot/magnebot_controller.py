@@ -584,9 +584,7 @@ class Magnebot(FloorplanController):
         # Reach for the center of the object.
         resp = self.communicate([{"$type": "send_bounds",
                                   "ids": [target],
-                                 "frequency": "once"},
-                                 {"$type": "set_immovable",
-                                  "immovable": True}])
+                                 "frequency": "once"}])
         bounds = get_data(resp=resp, d_type=Bounds)
         target_position = TDWUtils.array_to_vector3(bounds.get_center(0))
 
@@ -1062,7 +1060,6 @@ class Magnebot(FloorplanController):
             if not got_solution:
                 torso_y -= 0.1
         # If we couldn't find a solution, try to raise the torso.
-        torso_y = Magnebot.DEFAULT_TORSO_Y
         if not got_solution:
             torso_y = Magnebot.DEFAULT_TORSO_Y
             while not got_solution and torso_y <= Magnebot.TORSO_LIMITS[1]:
@@ -1078,12 +1075,14 @@ class Magnebot(FloorplanController):
         if self._debug:
             print(angles)
 
-        # Convert the IK solution into TDW commands, using the expected joint and axis order.
         # Make the base of the Magnebot immovable because otherwise it might push itself off the ground and tip over.
+        # Do this now, rather than in the `commands` list, to prevent a slide during arm movement.
+        self.communicate({"$type": "set_immovable",
+                          "immovable": True})
+
+        # Convert the IK solution into TDW commands, using the expected joint and axis order.
         # Slide the torso to the desired height.
-        commands = [{"$type": "set_immovable",
-                     "immovable": True},
-                    {"$type": "set_prismatic_target",
+        commands = [{"$type": "set_prismatic_target",
                      "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
                      "target": torso_y,
                      "axis": "y"}]
