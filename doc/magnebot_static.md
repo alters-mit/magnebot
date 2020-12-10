@@ -78,9 +78,9 @@ print(b_id, color)
 
 #### \_\_init\_\_
 
-**`def __init__(self, static_robot: StaticRobot)`**
+**`MagnebotStatic(static_robot)`**
 
-| Parameter | Description |
-| --- | --- |
-| static_robot | Static robot output data. |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| static_robot |  StaticRobot | Static robot output data. |
 

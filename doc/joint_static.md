@@ -22,10 +22,10 @@ Static data for a joint the Magnebot.
 
 #### \_\_init\_\_
 
-**`def __init__(self, sr: StaticRobot, index: int)`**
+**`JointStatic(sr, index)`**
 
-| Parameter | Description |
-| --- | --- |
-| sr | The static robot output data. |
-| index | The index of this body part in `sr`. |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| sr |  StaticRobot | The static robot output data. |
+| index |  int | The index of this body part in `sr`. |
 

@@ -21,9 +21,9 @@ class TestController(Magnebot):
         This function must be called before any other API calls.
 
         ```python
-        from magnebot import Magnebot
+        from magnebot import TestController
 
-        m = Magnebot()
+        m = TestController()
         m.init_scene()
 
         # Your code here.

@@ -10,6 +10,3 @@ The name of each wheel on the Magnebot.
 | `wheel_left_back` |  |
 | `wheel_right_front` |  |
 | `wheel_right_back` |  |
-
-***
-

@@ -14,6 +14,3 @@ The name of an arm joint.
 | `shoulder_right` |  |
 | `elbow_right` |  |
 | `wrist_right` |  |
-
-***
-

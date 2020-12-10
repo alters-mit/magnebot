@@ -8,18 +8,42 @@ This can be useful for testing the Magnebot.
 
 ***
 
-#### init_scene
+#### \_\_init\_\_
 
-**`def init_scene(self, scene: str = None, layout: int = None, room: int = -1) -> ActionStatus`**
+**`TestController()`**
 
 Initialize an empty test room with a Magnebot. The simulation will advance through frames until the Magnebot's body is in its neutral position.
 
 This function must be called before any other API calls.
 
 ```python
-from magnebot import Magnebot
+from magnebot import TestController
 
-m = Magnebot()
+m = TestController()
+m.init_scene()
+
+# Your code here.
+```
+
+You can safely call `init_scene()` more than once to reset the simulation.
+
+Possible [return values](action_status.md):
+
+- `success`
+- `failed_to_bend` (Technically this is _possible_, but it shouldn't ever happen.)
+
+#### init_scene
+
+**`self.init_scene()`**
+
+Initialize an empty test room with a Magnebot. The simulation will advance through frames until the Magnebot's body is in its neutral position.
+
+This function must be called before any other API calls.
+
+```python
+from magnebot import TestController
+
+m = TestController()
 m.init_scene()
 
 # Your code here.

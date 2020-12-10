@@ -22,6 +22,14 @@ m.end()
 
 ***
 
+## Class Variables
+
+| Variable | Type | Description |
+| --- | --- | --- |
+| `FRAME_COUNT` | int | The current frame count. This updates every time the scene is reset (see `Magnebot.init_scene()`) or when an action (such as `Magnebot.move_by()`) ends. |
+
+***
+
 ## Fields
 
 - `magnebot_transform` The [transform data](transform.md) of the Magnebot.
@@ -104,28 +112,28 @@ id_pass = m.state.images["id"]
 
 #### \_\_init\_\_
 
-**`def __init__(self, resp: List[bytes])`**
+**`SceneState(resp)`**
 
-| Parameter | Description |
-| --- | --- |
-| resp | The response from the build. |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| resp |  List[bytes] | The response from the build. |
 
 #### save_images
 
-**`def save_images(self, output_directory: Union[str, Path]) -> None`**
+**`self.save_images(output_directory)`**
 
 Save the ID pass (segmentation colors) and the depth pass to disk.
 Images will be named: `[frame_number]_[pass_name].[extension]`
 For example, the depth pass on the first frame will be named: `00000000_depth.png`
 The image pass is a jpg file and the other passes are png files.
 
-| Parameter | Description |
-| --- | --- |
-| output_directory | The directory that the images will be saved to. |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| output_directory |  Union[str, Path] | The directory that the images will be saved to. |
 
 #### get_pil_images
 
-**`def get_pil_images(self) -> dict`**
+**`self.get_pil_images()`**
 
 Convert each image pass from the robot camera to PIL images.
 
@@ -133,7 +141,7 @@ _Returns:_  A dictionary of PIL images. Key = the pass name (img, id, depth); Va
 
 #### get_depth_values
 
-**`def get_depth_values(self) -> np.array`**
+**`self.get_depth_values()`**
 
 Convert the depth pass to depth values. Can be None if there is no depth image data.
 

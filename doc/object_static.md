@@ -40,13 +40,13 @@ for object_id in m.objects_static:
 
 #### \_\_init\_\_
 
-**`def __init__(self, name: str, object_id: int, mass: float, segmentation_color: np.array, size: np.array)`**
+**`ObjectStatic(name, object_id, mass, segmentation_color, size)`**
 
-| Parameter | Description |
-| --- | --- |
-| name | The name of the object. |
-| object_id | The unique ID of the object. |
-| mass | The mass of the object. |
-| segmentation_color | The segmentation color of the object. |
-| size | The size of the object. |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| name |  str | The name of the object. |
+| object_id |  int | The unique ID of the object. |
+| mass |  float | The mass of the object. |
+| segmentation_color |  np.array | The segmentation color of the object. |
+| size |  np.array | The size of the object. |
 

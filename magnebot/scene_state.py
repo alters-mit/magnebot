@@ -31,7 +31,10 @@ class SceneState:
     ```
     """
 
-    FRAME_COUNT = 0
+    """:class_var
+    The current frame count. This updates every time the scene is reset (see `Magnebot.init_scene()`) or when an action (such as `Magnebot.move_by()`) ends.
+    """
+    FRAME_COUNT: int = 0
 
     def __init__(self, resp: List[bytes]):
         """
@@ -170,6 +173,7 @@ class SceneState:
         Images rendered by third-person cameras as dictionary. Key = The camera ID. Value: A dictionary of image passes, structured exactly like `images` (see above).
         """
         self.third_person_images: Dict[str: Dict[str, np.array]] = dict()
+        got_magnebot_images = False
         for i in range(0, len(resp) - 1):
             if OutputData.get_data_type_id(resp[i]) == "imag":
                 images = Images(resp[i])
@@ -182,8 +186,12 @@ class SceneState:
                         self.third_person_images[avatar_id][images.get_pass_mask(j)[1:]] = images.get_image(j)
                 # Save robot images.
                 else:
+                    got_magnebot_images = True
                     for j in range(images.get_num_passes()):
                         self.images[images.get_pass_mask(j)[1:]] = images.get_image(j)
+        # Update the frame count.
+        if got_magnebot_images:
+            SceneState.FRAME_COUNT += 1
 
     def save_images(self, output_directory: Union[str, Path]) -> None:
         """
@@ -207,7 +215,6 @@ class SceneState:
             p = output_directory.joinpath(f"{prefix}_{pass_name}.{'jpg' if pass_name == 'img' else 'png'}")
             with p.open("wb") as f:
                 f.write(self.images[pass_name])
-        SceneState.FRAME_COUNT += 1
 
     def get_pil_images(self) -> dict:
         """

@@ -15,6 +15,3 @@ for arm in Arm:
 | --- | --- |
 | `left` | The left arm. |
 | `right` | The right arm. |
-
-***
-

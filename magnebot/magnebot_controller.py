@@ -7,7 +7,7 @@ from ikpy.chain import Chain
 from ikpy.link import OriginLink, URDFLink
 from ikpy.utils import geometry
 from tdw.floorplan_controller import FloorplanController
-from tdw.output_data import Version, StaticRobot, SegmentationColors, Bounds, Rigidbodies, Raycast
+from tdw.output_data import Version, StaticRobot, SegmentationColors, Bounds, Rigidbodies
 from tdw.tdw_utils import TDWUtils, QuaternionUtils
 from tdw.object_init_data import AudioInitData
 from tdw.py_impact import PyImpact, ObjectInfo
@@ -79,44 +79,60 @@ class Magnebot(FloorplanController):
 
     """
 
-    # Global forward directional vector.
-    _FORWARD = np.array([0, 0, 1])
+    """:class_var
+    The global forward directional vector.
+    """
+    FORWARD: np.array = np.array([0, 0, 1])
 
     # Load default audio values for objects.
     __OBJECT_AUDIO = PyImpact.get_object_info()
-    # The camera roll, pitch, yaw constraints in degrees.
-    CAMERA_RPY_CONSTRAINTS = [55, 70, 85]
+    """:class_var
+    The camera roll, pitch, yaw constraints in degrees.
+    """
+    CAMERA_RPY_CONSTRAINTS: List[float] = [55, 70, 85]
 
     # The order in which joint angles will be set.
-    JOINT_ORDER: Dict[Arm, List[ArmJoint]] = {Arm.left: [ArmJoint.column,
-                                                         ArmJoint.shoulder_left,
-                                                         ArmJoint.elbow_left,
-                                                         ArmJoint.wrist_left],
-                                              Arm.right: [ArmJoint.column,
-                                                          ArmJoint.shoulder_right,
-                                                          ArmJoint.elbow_right,
-                                                          ArmJoint.wrist_right]}
+    _JOINT_ORDER: Dict[Arm, List[ArmJoint]] = {Arm.left: [ArmJoint.column,
+                                                          ArmJoint.shoulder_left,
+                                                          ArmJoint.elbow_left,
+                                                          ArmJoint.wrist_left],
+                                               Arm.right: [ArmJoint.column,
+                                                           ArmJoint.shoulder_right,
+                                                           ArmJoint.elbow_right,
+                                                           ArmJoint.wrist_right]}
     # The expected joint articulation per joint
-    JOINT_AXES: Dict[ArmJoint, JointType] = {ArmJoint.column: JointType.revolute,
-                                             ArmJoint.shoulder_left: JointType.spherical,
-                                             ArmJoint.elbow_left: JointType.revolute,
-                                             ArmJoint.wrist_left: JointType.spherical,
-                                             ArmJoint.shoulder_right: JointType.spherical,
-                                             ArmJoint.elbow_right: JointType.revolute,
-                                             ArmJoint.wrist_right: JointType.spherical}
-    # Prismatic joint limits for the torso.
-    TORSO_LIMITS = [0.21, 1.5]
-    # The default height of the torso.
-    DEFAULT_TORSO_Y = 1
+    _JOINT_AXES: Dict[ArmJoint, JointType] = {ArmJoint.column: JointType.revolute,
+                                              ArmJoint.shoulder_left: JointType.spherical,
+                                              ArmJoint.elbow_left: JointType.revolute,
+                                              ArmJoint.wrist_left: JointType.spherical,
+                                              ArmJoint.shoulder_right: JointType.spherical,
+                                              ArmJoint.elbow_right: JointType.revolute,
+                                              ArmJoint.wrist_right: JointType.spherical}
+    """:class_var
+    The prismatic joint limits for the torso.
+    """
+    TORSO_LIMITS: List[float] = [0.21, 1.5]
+    """:class_var
+    The default height of the torso.
+    """
+    DEFAULT_TORSO_Y: float = 1
 
-    # The radius of the Magnebot as defined by its longer axis.
-    MAGNEBOT_RADIUS = 0.22
-    # The circumference of the Magnebot.
-    MAGNEBOT_CIRCUMFERENCE = np.pi * 2 * MAGNEBOT_RADIUS
-    # The radius of the Magnebot wheel.
-    WHEEL_RADIUS = 0.1
-    # The circumference of the Magnebot wheel.
-    WHEEL_CIRCUMFERENCE = 2 * np.pi * WHEEL_RADIUS
+    """:class_var
+    The radius of the Magnebot as defined by its longer axis.
+    """
+    MAGNEBOT_RADIUS: float = 0.22
+    """:class_var
+    The circumference of the Magnebot.
+    """
+    MAGNEBOT_CIRCUMFERENCE: float = np.pi * 2 * MAGNEBOT_RADIUS
+    """:class_var
+    The radius of the Magnebot wheel.
+    """
+    WHEEL_RADIUS: float = 0.1
+    """:class_var
+    The circumference of the Magnebot wheel.
+    """
+    WHEEL_CIRCUMFERENCE: float = 2 * np.pi * WHEEL_RADIUS
 
     def __init__(self, port: int = 1071, launch_build: bool = True,
                  screen_width: int = 256, screen_height: int = 256, debug: bool = False):
@@ -142,7 +158,7 @@ class Magnebot(FloorplanController):
         
         This is handled outside of `self.state` because it isn't calculated using output data from the build.
         
-        See: `Magnebot.CAMERA_RPY_CONSTRAINTS` and `Magnebot.rotate_camera()`
+        See: `Magnebot.CAMERA_RPY_CONSTRAINTS` and `self.rotate_camera()`
         """
         self.camera_rpy: np.array([0, 0, 0])
 
@@ -724,13 +740,13 @@ class Magnebot(FloorplanController):
         | pitch | -70 | 70 |
         | yaw | -85 | 85 |
 
-        See `Magnebot.camera_rpy` for the current (roll, pitch, yaw) angles of the camera.
+        See `self.camera_rpy` for the current (roll, pitch, yaw) angles of the camera.
 
         ```python
         from magnebot import Magnebot
 
         m = Magnebot()
-        m.init_test_scene()
+        m.init_scene(scene="2a", layout=1)
         status = m.rotate_camera(roll=-10, pitch=-90, yaw=45)
         print(status) # ActionStatus.clamped_camera_rotation
         print(m.camera_rpy) # [-10 -70 45]
@@ -786,7 +802,7 @@ class Magnebot(FloorplanController):
         from magnebot import Magnebot
 
         m = Magnebot()
-        m.init_test_scene()
+        m.init_scene(scene="2a", layout=1)
         m.rotate_camera(roll=-10, pitch=-90, yaw=45)
         m.reset_camera()
         print(m.camera_rpy) # [0 0 0]
@@ -1040,7 +1056,7 @@ class Magnebot(FloorplanController):
         # Get the initial angles of each joint.
         # The first angle is always 0 (the origin link).
         initial_angles = [0]
-        for j in Magnebot.JOINT_ORDER[arm]:
+        for j in Magnebot._JOINT_ORDER[arm]:
             j_id = self.magnebot_static.arm_joints[j]
             initial_angles.extend(self.state.joint_angles[j_id])
         # Add the magnet.
@@ -1090,8 +1106,8 @@ class Magnebot(FloorplanController):
         i = 0
         joint_order_index = 0
         while i < len(angles):
-            joint_name = Magnebot.JOINT_ORDER[arm][joint_order_index]
-            joint_type = Magnebot.JOINT_AXES[joint_name]
+            joint_name = Magnebot._JOINT_ORDER[arm][joint_order_index]
+            joint_type = Magnebot._JOINT_AXES[joint_name]
             joint_id = self.magnebot_static.arm_joints[joint_name]
             # If this is a revolute joint, the next command includes only the next angle.
             if joint_type == JointType.revolute:
@@ -1132,9 +1148,9 @@ class Magnebot(FloorplanController):
                               "joint_id": self.magnebot_static.arm_joints[ArmJoint.column],
                               "target": 0}])
         # Reset every arm joint after the torso.
-        for joint_name in Magnebot.JOINT_ORDER[arm][1:]:
+        for joint_name in Magnebot._JOINT_ORDER[arm][1:]:
             joint_id = self.magnebot_static.arm_joints[joint_name]
-            joint_type = Magnebot.JOINT_AXES[joint_name]
+            joint_type = Magnebot._JOINT_AXES[joint_name]
             if joint_type == JointType.revolute:
                 # Set the revolute joints to 0 except for the elbow, which should be held at a right angle.
                 commands.append({"$type": "set_revolute_target",
@@ -1285,7 +1301,7 @@ class Magnebot(FloorplanController):
         """
 
         return TDWUtils.rotate_position_around(position=position - state.magnebot_transform.position,
-                                               angle=-TDWUtils.get_angle_between(v1=Magnebot._FORWARD,
+                                               angle=-TDWUtils.get_angle_between(v1=Magnebot.FORWARD,
                                                                                  v2=state.magnebot_transform.forward))
 
 
