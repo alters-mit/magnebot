@@ -14,6 +14,6 @@ if __name__ == "__main__":
     c.init_scene()
     assert_status(c.move_by(0.8))
     assert_status(c.move_by(2))
-    assert_status(c.move_by(-5))
+    assert_status(c.move_by(-3))
     assert_status(c.move_by(0))
     c.end()

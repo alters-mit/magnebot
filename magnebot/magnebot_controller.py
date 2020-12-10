@@ -302,6 +302,9 @@ class Magnebot(FloorplanController):
         self._start_action()
         self._start_move_or_turn()
 
+        if angle > 180:
+            angle -= 360
+
         # Get the angle to the target.
         # The approximate number of iterations required, given the distance and speed.
         num_attempts = int((np.abs(angle) + 1) / 2)
@@ -388,11 +391,9 @@ class Magnebot(FloorplanController):
 
         angle = TDWUtils.get_angle_between(v1=self.state.magnebot_transform.forward,
                                            v2=target - self.state.magnebot_transform.position)
-        if angle > 180:
-            angle -= 360
         return self.turn_by(angle=angle, aligned_at=aligned_at)
 
-    def move_by(self, distance: float, arrived_at: float = 0.1) -> ActionStatus:
+    def move_by(self, distance: float, arrived_at: float = 0.3) -> ActionStatus:
         """
         Move the Magnebot forward or backward by a given distance.
 
@@ -421,14 +422,14 @@ class Magnebot(FloorplanController):
                 print(f"No movement. We're already here: {d}")
             return ActionStatus.success
 
-        # Go until we've traversed the distance.
-        speed = distance * 150
+        # Get the angle that we expect the wheels should turn to in order to move the Magnebot.
+        spin = (distance / Magnebot.WHEEL_CIRCUMFERENCE) * 360
         # The approximately number of iterations required, given the distance and speed.
-        num_attempts = int(np.abs(speed))
+        num_attempts = int(np.abs(distance) * 10)
         attempts = 0
         # We are trying to adjust the distance.
         if self._debug:
-            print(f"num_attempts: {num_attempts}", f"distance: {distance}", f"speed: {speed}")
+            print(f"num_attempts: {num_attempts}", f"distance: {distance}", f"speed: {spin}")
         # The approximately number of iterations required, given the distance and speed.
         # Wait for the wheels to stop turning.
         wheel_state = SceneState(resp=self.communicate([]))
@@ -437,15 +438,15 @@ class Magnebot(FloorplanController):
             commands = []
             for wheel in self.magnebot_static.wheels:
                 # Get the target from the current joint angles. Add or subtract the speed.
-                target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] + speed
+                target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] + spin
                 commands.append({"$type": "set_revolute_target",
                                  "target": target,
                                  "joint_id": self.magnebot_static.wheels[wheel]})
             # Wait for the wheels to stop turning.
             wheel_state = SceneState(resp=self.communicate(commands))
-            wheels_turning = True
-            while wheels_turning:
-                wheels_turning, wheel_state = self._wheels_are_done(state_0=wheel_state)
+            wheels_done = False
+            while not wheels_done:
+                wheels_done, wheel_state = self._wheels_are_done(state_0=wheel_state)
             # Check if we're at the destination.
             p1 = wheel_state.magnebot_transform.position
             d = np.linalg.norm(p1 - p0)
@@ -453,14 +454,14 @@ class Magnebot(FloorplanController):
             # Arrived!
             if np.abs(np.abs(distance) - d) < arrived_at:
                 self._end_action()
+                if self._debug:
+                    print("Move complete!", self.state.magnebot_transform.position)
                 return ActionStatus.success
-            # Overshot. Adjust the speed.
-            if d > np.abs(distance):
-                # Go until we've traversed the distance.
-                speed = np.abs(d - distance) * 225 * (-1 if speed > 0 else 1)
+            # Go until we've traversed the distance.
+            spin = ((distance - d) / Magnebot.WHEEL_CIRCUMFERENCE) * 360
+            if self._debug:
+                print(f"distance: {distance}", f"d: {d}", f"speed: {spin}")
             attempts += 1
-        if self._debug and distance < 0:
-            print(f"distance: {distance}", f"d: {d}", f"speed: {speed}")
         self._end_action()
         p1 = wheel_state.magnebot_transform.position
         d = np.linalg.norm(p1 - p0)
