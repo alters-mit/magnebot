@@ -1,8 +1,9 @@
 import random
 from json import loads
+from typing import List, Dict, Optional, Union, Tuple
+from csv import DictReader
 import numpy as np
 import matplotlib.pyplot
-from typing import List, Dict, Optional, Union, Tuple
 from ikpy.chain import Chain
 from ikpy.link import OriginLink, URDFLink
 from ikpy.utils import geometry
@@ -17,7 +18,7 @@ from magnebot.object_static import ObjectStatic
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.scene_state import SceneState
 from magnebot.action_status import ActionStatus
-from magnebot.paths import SPAWN_POSITIONS_PATH
+from magnebot.paths import SPAWN_POSITIONS_PATH, COLUMN_Y
 from magnebot.arm import Arm
 from magnebot.joint_type import JointType
 from magnebot.arm_joint import ArmJoint
@@ -108,14 +109,16 @@ class Magnebot(FloorplanController):
                                               ArmJoint.shoulder_right: JointType.spherical,
                                               ArmJoint.elbow_right: JointType.revolute,
                                               ArmJoint.wrist_right: JointType.spherical}
-    """:class_var
-    The prismatic joint limits for the torso.
-    """
-    TORSO_LIMITS: List[float] = [0.21, 1.5]
-    """:class_var
-    The default height of the torso.
-    """
-    DEFAULT_TORSO_Y: float = 1
+
+    # The ratio of prisimatic joint y values for the torso vs. worldspace y values.
+    # These aren't always an exact ratio (ok, Unity...), so they're cached here.
+    _TORSO_Y: Dict[float, float] = dict()
+    with COLUMN_Y.open(encoding='utf-8-sig') as f:
+        r = DictReader(f)
+        for row in r:
+            _TORSO_Y[float(row["prismatic"])] = float(row["actual"])
+    # The default height of the torso.
+    _DEFAULT_TORSO_Y: float = 1
 
     """:class_var
     The radius of the Magnebot as defined by its longer axis.
@@ -990,7 +993,7 @@ class Magnebot(FloorplanController):
         # Move the torso up to its default height to prevent anything from dragging.
         self._next_frame_commands.append({"$type": "set_prismatic_target",
                                           "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
-                                          "target": Magnebot.DEFAULT_TORSO_Y,
+                                          "target": Magnebot._DEFAULT_TORSO_Y,
                                           "axis": "y"})
         self._do_arm_motion()
 
@@ -1016,7 +1019,7 @@ class Magnebot(FloorplanController):
             """
 
             # Generate an IK chain, given the current desired torso height.
-            chain = self.__get_ik_chain(arm=arm, torso_y=torso_y)
+            chain = self.__get_ik_chain(arm=arm, torso_y=Magnebot._TORSO_Y[torso_prismatic])
 
             # Get the IK solution.
             ik = chain.inverse_kinematics(target_position=target,
@@ -1070,19 +1073,19 @@ class Magnebot(FloorplanController):
         # We need to do this iteratively because ikpy doesn't support prismatic joints!
         # But it should be ok because there's only one prismatic joint in this robot.
         angles: List[float] = list()
-        torso_y = Magnebot.DEFAULT_TORSO_Y
+        torso_prismatic = Magnebot._DEFAULT_TORSO_Y
         got_solution = False
-        while not got_solution and torso_y >= Magnebot.TORSO_LIMITS[0]:
+        while not got_solution and torso_prismatic > 0.6:
             got_solution, angles = __get_ik_solution()
             if not got_solution:
-                torso_y -= 0.1
+                torso_prismatic -= 0.1
         # If we couldn't find a solution, try to raise the torso.
         if not got_solution:
-            torso_y = Magnebot.DEFAULT_TORSO_Y
-            while not got_solution and torso_y <= Magnebot.TORSO_LIMITS[1]:
+            torso_prismatic = Magnebot._DEFAULT_TORSO_Y
+            while not got_solution and torso_prismatic <= 1.5:
                 got_solution, angles = __get_ik_solution()
                 if not got_solution:
-                    torso_y += 0.1
+                    torso_prismatic += 0.1
         # If we couldn't find a solution at any torso height, then there isn't a solution.
         if not got_solution:
             return ActionStatus.cannot_reach
@@ -1101,7 +1104,7 @@ class Magnebot(FloorplanController):
         # Slide the torso to the desired height.
         commands = [{"$type": "set_prismatic_target",
                      "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
-                     "target": torso_y,
+                     "target": torso_prismatic,
                      "axis": "y"}]
         i = 0
         joint_order_index = 0
@@ -1142,7 +1145,7 @@ class Magnebot(FloorplanController):
         if reset_torso:
             commands.extend([{"$type": "set_prismatic_target",
                               "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
-                              "target": Magnebot.DEFAULT_TORSO_Y,
+                              "target": Magnebot._DEFAULT_TORSO_Y,
                               "axis": "y"},
                              {"$type": "set_revolute_target",
                               "joint_id": self.magnebot_static.arm_joints[ArmJoint.column],
@@ -1202,7 +1205,7 @@ class Magnebot(FloorplanController):
         return Chain(name=arm.name, links=[
             OriginLink(),
             URDFLink(name="column",
-                     translation_vector=[0, 0.159 + (torso_y / (1.5 + 0.21)), 0],
+                     translation_vector=[0, torso_y, 0],
                      orientation=[0, 0, 0],
                      rotation=[0, 1, 0],
                      bounds=(np.deg2rad(-179), np.deg2rad(179))),
