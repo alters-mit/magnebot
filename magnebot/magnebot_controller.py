@@ -23,7 +23,7 @@ from magnebot.paths import SPAWN_POSITIONS_PATH, COLUMN_Y, OCCUPANCY_MAPS_DIRECT
 from magnebot.arm import Arm
 from magnebot.joint_type import JointType
 from magnebot.arm_joint import ArmJoint
-from magnebot.constants import MAGNEBOT_RADIUS, OCCUPANCY_CELL_SIZE
+from magnebot.constants import MAGNEBOT_RADIUS, OCCUPANCY_CELL_SIZE, RUGS
 
 
 class Magnebot(FloorplanController):
@@ -357,6 +357,19 @@ class Magnebot(FloorplanController):
         self._scene_bounds = loads(SCENE_BOUNDS_PATH.read_text())[scene[0]]
 
         commands = self.get_scene_init_commands(scene=scene, layout=layout, audio=True)
+
+        # Remove all rugs from the initialization recipe.
+        # Otherwise, the Magnebot can glitch when spawning on a rug.
+        rugs = []
+        for cmd in commands:
+            if cmd["$type"] == "add_object" and cmd["name"] in RUGS:
+                rugs.append(cmd["id"])
+        temp = []
+        for cmd in commands:
+            if "id" in cmd and cmd["id"] in rugs:
+                continue
+            temp.append(cmd)
+        commands = temp
 
         # Spawn the Magnebot in the center of a room.
         rooms = loads(SPAWN_POSITIONS_PATH.read_text())[scene[0]][str(layout)]
@@ -1426,7 +1439,6 @@ class Magnebot(FloorplanController):
                                                           mass=rigidbodies.get_mass(i))
         # Cache the static robot data.
         self.magnebot_static = MagnebotStatic(static_robot=get_data(resp=resp, d_type=StaticRobot))
-        self._end_action()
 
     @staticmethod
     def _absolute_to_relative(position: np.array, state: SceneState) -> np.array:
