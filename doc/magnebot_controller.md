@@ -78,7 +78,7 @@ print(Arm.left)
 | --- | --- | --- |
 | `FORWARD` | np.array | The global forward directional vector. |
 | `CAMERA_RPY_CONSTRAINTS` | List[float] | The camera roll, pitch, yaw constraints in degrees. |
-| `THIRD_PERSON_CAMERA_ID` | str | If there is a third-person camera in the scene, this is its ID (i.e. the avatar ID). See: `add_third_person_camera()`. |
+| `THIRD_PERSON_CAMERA_ID` | str | If there is a third-person camera in the scene, this is its ID (i.e. the avatar ID). See: `add_camera()`. |
 
 ***
 
@@ -448,13 +448,13 @@ _Returns:_  An `ActionStatus` indicating if the arms reset and if not, why.
 
 ### Camera
 
-_These commands rotate the Magnebot's camera._
+_These commands rotate the Magnebot's camera or add additional camera to the scene._
 
 #### rotate_camera
 
 **`self.rotate_camera(roll, pitch, yaw)`**
 
-Rotate the camera by the (roll, pitch, yaw) axes. This action takes exactly 1 frame.
+Rotate the Magnebot's camera by the (roll, pitch, yaw) axes. This action takes exactly 1 frame.
 
 Each axis of rotation is constrained (see `Magnebot.CAMERA_RPY_CONSTRAINTS`).
 
@@ -512,20 +512,13 @@ Possible [return values](action_status.md):
 
 _Returns:_  An `ActionStatus` (always `success`).
 
-***
+#### add_camera
 
-### Misc.
+**`self.add_camera(position, rotation, look_at, follow)`**
 
-_These are utility functions that won't advance the simulation by any frames._
+Add a third person camera (i.e. a camera not attached to the any object) to the scene. This camera will render concurrently with the camera attached to the Magnebot and will output images at the end of every action (see [`SceneState.third_person_images`](scene_state.md)).
 
-#### add_third_person_camera
-
-**`self.add_third_person_camera(position)`**
-
-Add a third person camera (i.e. a camera not attached to the any object) to the scene.
-This camera will output images at the end of every action (see [`SceneState.third_person_images`](scene_state.md)).
-
-The camera will always point at the Magnebot.
+This should only be sent per `init_scene()` call. When `init_scene()` is called to reset the simulation, you'll need to send `add_camera()` again too.
 
 _Backend developers:_ For the ID of the camera, see: `Magnebot.THIRD_PERSON_CAMERA_ID`.
 
@@ -534,12 +527,20 @@ Possible [return values](action_status.md):
 - `success`
 
 
-
 | Parameter | Type | Description |
 | --- | --- | --- |
-| position |  Dict[str, float] | The position of the camera. The camera will never move from this position but it will rotate to look at the Magnebot. |
+| position |  Dict[str, float] | The initial position of the camera. If `follow == True`, this is relative to the Magnebot. If `follow == False`, this is in absolute worldspace coordinates. |
+| rotation |  Dict[str, float] | The initial rotation of the camera in Euler angles. If None, the rotation is `{"x": 0, "y": 0, "z": 0}`. |
+| look_at |  bool  | If True, on every frame, the camera will rotate to look at the Magnebot. |
+| follow |  bool  | If True, on every frame, the camera will follow the Magnebot, maintaining a constant relative position and rotation. |
 
 _Returns:_  An `ActionStatus` (always `success`).
+
+***
+
+### Misc.
+
+_These are utility functions that won't advance the simulation by any frames._
 
 #### get_occupancy_position
 

@@ -18,12 +18,12 @@
       "functions": ["reach_for", "grasp", "drop", "drop_all", "reset_arm", "reset_arms"]
     },
     "Camera": {
-      "description": "These commands rotate the Magnebot's camera.",
-      "functions": ["rotate_camera", "reset_camera"]
+      "description": "These commands rotate the Magnebot's camera or add additional camera to the scene.",
+      "functions": ["rotate_camera", "reset_camera", "add_camera"]
     },
     "Misc.": {
       "description": "These are utility functions that won't advance the simulation by any frames.",
-      "functions": ["add_third_person_camera", "get_occupancy_position", "end"]
+      "functions": ["get_occupancy_position", "end"]
     },
     "Low-level": {
       "description": "These are low-level functions that you are unlikely to ever need to use.",

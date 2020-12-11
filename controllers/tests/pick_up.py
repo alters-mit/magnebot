@@ -28,7 +28,7 @@ if __name__ == "__main__":
     m = PickUp()
     m.init_scene()
 
-    m.add_third_person_camera(position={"x": -2.36, "y": 2, "z": -2.27})
+    m.add_camera(position={"x": -2.36, "y": 2, "z": -2.27}, look_at=True)
 
     # Grasp the first object.
     status = m.grasp(target=m.target_object_0, arm=Arm.left)
