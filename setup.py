@@ -3,10 +3,10 @@ from setuptools import setup, find_packages
 
 setup(
     name='magnebot',
-    version="0.0.1",
+    version="0.1.0",
     description='High-level API for the Magnebot in TDW.',
     long_description='High-level API for the Magnebot in TDW.',
-    url='???',
+    url='https://github.com/alters-mit/magnebot',
     author='Seth Alter',
     license='MIT',
     classifiers=[
