@@ -19,11 +19,11 @@ from magnebot.object_static import ObjectStatic
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.scene_state import SceneState
 from magnebot.action_status import ActionStatus
-from magnebot.paths import SPAWN_POSITIONS_PATH, COLUMN_Y
+from magnebot.paths import SPAWN_POSITIONS_PATH, COLUMN_Y, OCCUPANCY_MAPS_DIRECTORY, SCENE_BOUNDS_PATH
 from magnebot.arm import Arm
 from magnebot.joint_type import JointType
 from magnebot.arm_joint import ArmJoint
-from magnebot.constants import MAGNEBOT_RADIUS
+from magnebot.constants import MAGNEBOT_RADIUS, OCCUPANCY_CELL_SIZE
 
 
 class Magnebot(FloorplanController):
@@ -239,6 +239,45 @@ class Magnebot(FloorplanController):
         """
         self.magnebot_static: Optional[MagnebotStatic] = None
 
+        """:field
+        A numpy array of the occupancy map. This is None until you call `init_scene()`
+        
+        Shape = `(1, width, length)` where `width` and `length` are the number of cells in the grid. Each grid cell has a radius of 0.245. To convert from occupancy map `(x, y)` coordinates to worldspace `(x, z)` coordinates, see: `get_occupancy_position()`.
+        
+        Each element is an integer describing the occupancy at that position.
+        
+        | Value | Meaning |
+        | --- | --- |
+        | -1 | This position is outside of the scene. |
+        | 0 | Unoccupied and navigable; the Magnebot can go here. |
+        | 1 | This position is occupied by an object(s) or a wall. |
+        | 2 | This position is free but not navigable (usually because there are objects in the way. |
+        
+        ```python
+        from magnebot import Magnebot
+
+        m = Magnebot(launch_build=False)
+        m.init_scene(scene="1a", layout=0)
+        x = 30
+        y = 16
+        print(m.occupancy_map[x][y]) # 0 (free and navigable position)
+        print(m.get_occupancy_position(x, y)) # (1.1157886505126946, 2.2528389358520506)
+        ```
+        
+        Images of occupancy maps can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/occupancy_maps). The blue squares are free navigable positions. Images are named `scene_layout.jpg` (there aren't any letters in the scene name because the difference between lettered variants is purely aesthetic and the room maps are identical).
+        
+        The occupancy map is static, meaning that it won't update when objects are moved.
+
+        Note that it is possible for the Magnebot to go to positions that aren't "free". Reasons for this include:
+        
+        - The Magnebot's base is a rectangle that is longer on the sides than the front and back. The occupancy grid cell size is defined by the longer axis, so it is possible for the Magnebot to move forward and squeeze into a smaller space.
+        - The Magnebot can push, lift, or otherwise move objects out of its way.
+        """
+        self.occupancy_map: Optional[np.array] = None
+
+        # The scene bounds. This is used along with the occupancy map to get (x, z) worldspace positions.
+        self._scene_bounds: Optional[dict] = None
+
         # Commands that will be sent on the next frame.
         self._next_frame_commands: List[dict] = list()
 
@@ -296,9 +335,9 @@ class Magnebot(FloorplanController):
         | 4a, 4b, 4c | 0, 1, 2 | 0, 1, 2, 3, 4, 5, 6, 7 |
         | 5a, 5b, 5c | 0, 1, 2 | 0, 1, 2, 3 |
 
-        Images of each scene+layout combination can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/floorplans).
+        Images of each scene+layout combination can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/floorplans). Images are named `scene_layout.jpg`.
 
-        Images of where each room in a scene is can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/rooms).
+        Images of where each room in a scene is can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/rooms). Images are named `scene_layout.jpg` (there aren't any letters in the scene name because the difference between lettered variants is purely aesthetic and the room maps are identical).
 
         You can call `init_scene()` more than once to reset the simulation.
 
@@ -312,12 +351,23 @@ class Magnebot(FloorplanController):
         :param room: The index of the room that the Magnebot will spawn in the center of. If None, the room will be chosen randomly.
         """
 
+        # Load the occupancy map.
+        self.occupancy_map = np.load(str(OCCUPANCY_MAPS_DIRECTORY.joinpath(f"{scene[0]}_{layout}.npy").resolve()))
+        # Get the scene bounds.
+        self._scene_bounds = loads(SCENE_BOUNDS_PATH.read_text())[scene[0]]
+
         commands = self.get_scene_init_commands(scene=scene, layout=layout, audio=True)
+
+        # Spawn the Magnebot in the center of a room.
         rooms = loads(SPAWN_POSITIONS_PATH.read_text())[scene[0]][str(layout)]
+        room_keys = list(rooms.keys())
         if room is None:
-            room = random.randint(0, len(rooms) - 1)
-        assert 0 <= room < len(rooms), f"Invalid room: {room}"
+            room = random.choice(room_keys)
+        else:
+            room = str(room)
+            assert room in room_keys, f"Invalid room: {room}; valid rooms are: {room_keys}"
         commands.extend(self._get_scene_init_commands(magnebot_position=rooms[room]))
+
         resp = self.communicate(commands)
         self._cache_static_data(resp=resp)
         # Wait for the Magnebot to reset to its neutral position.
@@ -879,6 +929,31 @@ class Magnebot(FloorplanController):
                                          "avatar_id": Magnebot.THIRD_PERSON_CAMERA_ID})
         self._end_action()
         return ActionStatus.success
+
+    def get_occupancy_position(self, i: int, j: int) -> Tuple[float, float]:
+        """
+        Converts the position `(i, j)` in the occupancy map to `(x, z)` worldspace coordinates.
+
+        ```python
+        from magnebot import Magnebot
+
+        m = Magnebot(launch_build=False)
+        m.init_scene(scene="1a", layout=0)
+        x = 30
+        y = 16
+        print(m.occupancy_map[x][y]) # 0 (free and navigable position)
+        print(m.get_occupancy_position(x, y)) # (1.1157886505126946, 2.2528389358520506)
+        ```
+
+        :param i: The i coordinate in the occupancy map.
+        :param j: The j coordinate in the occupancy map.
+
+        :return: Tuple: (x coordinate; z coordinate) of the corresponding worldspace position.
+        """
+
+        x = self._scene_bounds["x_min"] + (i * OCCUPANCY_CELL_SIZE)
+        z = self._scene_bounds["z_min"] + (j * OCCUPANCY_CELL_SIZE)
+        return x, z
 
     def end(self) -> None:
         """

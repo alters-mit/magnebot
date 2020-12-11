@@ -131,6 +131,39 @@ m.init_scene(scene="2a", layout=1)
 print(m.magnebot_static.magnets)
 ```
 
+- `occupancy_map` A numpy array of the occupancy map. This is None until you call `init_scene()`
+
+Shape = `(1, width, length)` where `width` and `length` are the number of cells in the grid. Each grid cell has a radius of 0.245. To convert from occupancy map `(x, y)` coordinates to worldspace `(x, z)` coordinates, see: `get_occupancy_position()`.
+
+Each element is an integer describing the occupancy at that position.
+
+| Value | Meaning |
+| --- | --- |
+| -1 | This position is outside of the scene. |
+| 0 | Unoccupied and navigable; the Magnebot can go here. |
+| 1 | This position is occupied by an object(s) or a wall. |
+| 2 | This position is free but not navigable (usually because there are objects in the way. |
+
+```python
+from magnebot import Magnebot
+
+m = Magnebot(launch_build=False)
+m.init_scene(scene="1a", layout=0)
+x = 30
+y = 16
+print(m.occupancy_map[x][y]) # 0 (free and navigable position)
+print(m.get_occupancy_position(x, y)) # (1.1157886505126946, 2.2528389358520506)
+```
+
+Images of occupancy maps can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/occupancy_maps). The blue squares are free navigable positions. Images are named `scene_layout.jpg` (there aren't any letters in the scene name because the difference between lettered variants is purely aesthetic and the room maps are identical).
+
+The occupancy map is static, meaning that it won't update when objects are moved.
+
+Note that it is possible for the Magnebot to go to positions that aren't "free". Reasons for this include:
+
+- The Magnebot's base is a rectangle that is longer on the sides than the front and back. The occupancy grid cell size is defined by the longer axis, so it is possible for the Magnebot to move forward and squeeze into a smaller space.
+- The Magnebot can push, lift, or otherwise move objects out of its way.
+
 ***
 
 ## Functions
@@ -183,9 +216,9 @@ Valid scenes, layouts, and rooms:
 | 4a, 4b, 4c | 0, 1, 2 | 0, 1, 2, 3, 4, 5, 6, 7 |
 | 5a, 5b, 5c | 0, 1, 2 | 0, 1, 2, 3 |
 
-Images of each scene+layout combination can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/floorplans).
+Images of each scene+layout combination can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/floorplans). Images are named `scene_layout.jpg`.
 
-Images of where each room in a scene is can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/rooms).
+Images of where each room in a scene is can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/rooms). Images are named `scene_layout.jpg` (there aren't any letters in the scene name because the difference between lettered variants is purely aesthetic and the room maps are identical).
 
 You can call `init_scene()` more than once to reset the simulation.
 
@@ -507,6 +540,31 @@ Possible [return values](action_status.md):
 | position |  Dict[str, float] | The position of the camera. The camera will never move from this position but it will rotate to look at the Magnebot. |
 
 _Returns:_  An `ActionStatus` (always `success`).
+
+#### get_occupancy_position
+
+**`self.get_occupancy_position(i, j)`**
+
+Converts the position `(i, j)` in the occupancy map to `(x, z)` worldspace coordinates.
+
+```python
+from magnebot import Magnebot
+
+m = Magnebot(launch_build=False)
+m.init_scene(scene="1a", layout=0)
+x = 30
+y = 16
+print(m.occupancy_map[x][y]) # 0 (free and navigable position)
+print(m.get_occupancy_position(x, y)) # (1.1157886505126946, 2.2528389358520506)
+```
+
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| i |  int | The i coordinate in the occupancy map. |
+| j |  int | The j coordinate in the occupancy map. |
+
+_Returns:_  Tuple: (x coordinate; z coordinate) of the corresponding worldspace position.
 
 #### end
 
