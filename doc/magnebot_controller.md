@@ -62,10 +62,6 @@ print(Arm.left)
 | --- | --- | --- |
 | `FORWARD` | np.array | The global forward directional vector. |
 | `CAMERA_RPY_CONSTRAINTS` | List[float] | The camera roll, pitch, yaw constraints in degrees. |
-| `MAGNEBOT_RADIUS` | float | The radius of the Magnebot as defined by its longer axis. |
-| `MAGNEBOT_CIRCUMFERENCE` | float | The circumference of the Magnebot. |
-| `WHEEL_RADIUS` | float | The radius of the Magnebot wheel. |
-| `WHEEL_CIRCUMFERENCE` | float | The circumference of the Magnebot wheel. |
 | `THIRD_PERSON_CAMERA_ID ` |  | If there is a third-person camera in the scene, this is its ID (i.e. the avatar ID).
     See: `add_third_person_camera()` |
 
@@ -162,9 +158,11 @@ Valid scenes, layouts, and rooms:
 | 4a, 4b, 4c | 0, 1, 2 | 0, 1, 2, 3, 4, 5, 6, 7 |
 | 5a, 5b, 5c | 0, 1, 2 | 0, 1, 2, 3 |
 
-Images of each scene+layout combination can be found [here](https://github.com/alters-mit/magnebot/tree/master/Documentation/images/floorplans).
+Images of each scene+layout combination can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/floorplans).
 
-You can safely call `init_scene()` more than once to reset the simulation.
+Images of where each room in a scene is can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/rooms).
+
+You can call `init_scene()` more than once to reset the simulation.
 
 Possible [return values](action_status.md):
 
@@ -175,7 +173,7 @@ Possible [return values](action_status.md):
 | --- | --- | --- |
 | scene |  str | The name of an interior floorplan scene. Each number (1, 2, etc.) has a different shape, different rooms, etc. Each letter (a, b, c) is a cosmetically distinct variant with the same floorplan. |
 | layout |  int | The furniture layout of the floorplan. Each number (0, 1, 2) will populate the floorplan with different furniture in different positions. |
-| room |  int  | The index of the room that the Magnebot will spawn in the center of. If `room == -1` the room will be chosen randomly. |
+| room |  int  | The index of the room that the Magnebot will spawn in the center of. If None, the room will be chosen randomly. |
 
 ***
 
