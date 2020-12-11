@@ -16,9 +16,11 @@ m.init_scene(scene="2a", layout=1)
 
 ## Parameter types
 
+The types `Dict`, `Union`, and `List` are in the [`typing` module](https://docs.python.org/3/library/typing.html).
+
 #### Dict[str, float]
 
-All parameters of type `Dict[str, float]` are Vector3 dictionaries formatted like this:
+Parameters of type `Dict[str, float]` are Vector3 dictionaries formatted like this:
 
 ```json
 {"x": -0.2, "y": 0.21, "z": 0.385}
@@ -38,9 +40,9 @@ target = TDWUtils.array_to_vector3(target)
 print(target) # {'x': 1.0, 'y': 0.0, 'z': 0.0}
 ```
 
-A parameter of type `Union[Dict[str, float], int]]` can be either a Vector3 or an integer (an object ID).
+#### Union[Dict[str, float], int]]
 
-The types `Dict`, `Union`, and `List` are in the [`typing` module](https://docs.python.org/3/library/typing.html).
+Parameters of type `Union[Dict[str, float], int]]` can be either a Vector3 or an integer (an object ID).
 
 #### Arm
 
