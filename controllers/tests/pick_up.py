@@ -14,7 +14,7 @@ class PickUp(TestController):
         self.target_object_1: int = -1
         self.box: int = -1
 
-    def init_scene(self, scene: str = None, layout: int = None, room: int = -1) -> ActionStatus:
+    def init_scene(self, scene: str = None, layout: int = None, room: int = None) -> ActionStatus:
         # Add some objects to an empty room. Record their object IDs.
         self.target_object_0 = self._add_object("jug05", position={"x": -0.408, "y": 0, "z": 0.428})
         self.target_object_1 = self._add_object("jug05", position={"x": -1.76, "y": 0, "z": -1.08})

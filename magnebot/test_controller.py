@@ -14,7 +14,7 @@ class TestController(Magnebot):
         super().__init__(port=port, launch_build=False, screen_height=screen_height, screen_width=screen_width,
                          debug=True)
 
-    def init_scene(self, scene: str = None, layout: int = None, room: int = -1) -> ActionStatus:
+    def init_scene(self, scene: str = None, layout: int = None, room: int = None) -> ActionStatus:
         """
         Initialize an empty test room with a Magnebot. The simulation will advance through frames until the Magnebot's body is in its neutral position.
 

@@ -1,7 +1,8 @@
 from py_md_doc import PyMdDoc
-
+from os import chdir
 
 if __name__ == "__main__":
+    chdir("..")
     files = ["action_status.py",
              "arm.py",
              "arm_joint.py",

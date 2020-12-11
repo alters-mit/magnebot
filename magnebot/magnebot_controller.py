@@ -23,6 +23,7 @@ from magnebot.paths import SPAWN_POSITIONS_PATH, COLUMN_Y
 from magnebot.arm import Arm
 from magnebot.joint_type import JointType
 from magnebot.arm_joint import ArmJoint
+from magnebot.constants import MAGNEBOT_RADIUS
 
 
 class Magnebot(FloorplanController):
@@ -121,22 +122,12 @@ class Magnebot(FloorplanController):
     # The default height of the torso.
     _DEFAULT_TORSO_Y: float = 1
 
-    """:class_var
-    The radius of the Magnebot as defined by its longer axis.
-    """
-    MAGNEBOT_RADIUS: float = 0.22
-    """:class_var
-    The circumference of the Magnebot.
-    """
-    MAGNEBOT_CIRCUMFERENCE: float = np.pi * 2 * MAGNEBOT_RADIUS
-    """:class_var
-    The radius of the Magnebot wheel.
-    """
-    WHEEL_RADIUS: float = 0.1
-    """:class_var
-    The circumference of the Magnebot wheel.
-    """
-    WHEEL_CIRCUMFERENCE: float = 2 * np.pi * WHEEL_RADIUS
+    # The circumference of the Magnebot.
+    _MAGNEBOT_CIRCUMFERENCE: float = np.pi * 2 * MAGNEBOT_RADIUS
+    # The radius of the Magnebot wheel.
+    _WHEEL_RADIUS: float = 0.1
+    # The circumference of the Magnebot wheel.
+    _WHEEL_CIRCUMFERENCE: float = 2 * np.pi * _WHEEL_RADIUS
 
     """:class_var
     If there is a third-person camera in the scene, this is its ID (i.e. the avatar ID).
@@ -250,8 +241,6 @@ class Magnebot(FloorplanController):
                                   "value": False},
                                  {"$type": "set_render_quality",
                                   "render_quality": 5},
-                                 {"$type": "set_physics_solver_iterations",
-                                  "iterations": 16},
                                  {"$type": "set_vignette",
                                   "enabled": False},
                                  {"$type": "set_shadow_strength",
@@ -270,7 +259,7 @@ class Magnebot(FloorplanController):
                 print(f"Your installed version of tdw ({python_version}) doesn't match the version of the build "
                       f"{build_version}. This might cause errors!")
 
-    def init_scene(self, scene: str, layout: int, room: int = -1) -> ActionStatus:
+    def init_scene(self, scene: str, layout: int, room: int = None) -> ActionStatus:
         """
         Initialize a scene, populate it with objects, and add the Magnebot. The simulation will advance through frames until the Magnebot's body is in its neutral position.
 
@@ -296,9 +285,11 @@ class Magnebot(FloorplanController):
         | 4a, 4b, 4c | 0, 1, 2 | 0, 1, 2, 3, 4, 5, 6, 7 |
         | 5a, 5b, 5c | 0, 1, 2 | 0, 1, 2, 3 |
 
-        Images of each scene+layout combination can be found [here](https://github.com/alters-mit/magnebot/tree/master/Documentation/images/floorplans).
+        Images of each scene+layout combination can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/floorplans).
 
-        You can safely call `init_scene()` more than once to reset the simulation.
+        Images of where each room in a scene is can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/rooms).
+
+        You can call `init_scene()` more than once to reset the simulation.
 
         Possible [return values](action_status.md):
 
@@ -307,12 +298,12 @@ class Magnebot(FloorplanController):
 
         :param scene: The name of an interior floorplan scene. Each number (1, 2, etc.) has a different shape, different rooms, etc. Each letter (a, b, c) is a cosmetically distinct variant with the same floorplan.
         :param layout: The furniture layout of the floorplan. Each number (0, 1, 2) will populate the floorplan with different furniture in different positions.
-        :param room: The index of the room that the Magnebot will spawn in the center of. If `room == -1` the room will be chosen randomly.
+        :param room: The index of the room that the Magnebot will spawn in the center of. If None, the room will be chosen randomly.
         """
 
         commands = self.get_scene_init_commands(scene=scene, layout=layout, audio=True)
         rooms = loads(SPAWN_POSITIONS_PATH.read_text())[scene[0]][str(layout)]
-        if room == -1:
+        if room is None:
             room = random.randint(0, len(rooms) - 1)
         assert 0 <= room < len(rooms), f"Invalid room: {room}"
         commands.extend(self._get_scene_init_commands(magnebot_position=rooms[room]))
@@ -364,9 +355,9 @@ class Magnebot(FloorplanController):
             # Source: https://answers.unity.com/questions/1120115/tank-wheels-and-treads.html
             # Source: return ActionStatus.failed_to_turn
             # The distance that the Magnebot needs to travel, defined as a fraction of its circumference.
-            d = (delta_angle / 360.0) * Magnebot.MAGNEBOT_CIRCUMFERENCE
+            d = (delta_angle / 360.0) * Magnebot._MAGNEBOT_CIRCUMFERENCE
             # The 3 is a magic number. Who knows what it means??
-            spin = (d / Magnebot.WHEEL_CIRCUMFERENCE) * 360 * 3
+            spin = (d / Magnebot._WHEEL_CIRCUMFERENCE) * 360 * 3
             # Set the direction of the wheels for the turn and send commands.
             commands = []
             for wheel in self.magnebot_static.wheels:
@@ -466,7 +457,7 @@ class Magnebot(FloorplanController):
             return ActionStatus.success
 
         # Get the angle that we expect the wheels should turn to in order to move the Magnebot.
-        spin = (distance / Magnebot.WHEEL_CIRCUMFERENCE) * 360
+        spin = (distance / Magnebot._WHEEL_CIRCUMFERENCE) * 360
         # The approximately number of iterations required, given the distance and speed.
         num_attempts = int(np.abs(distance) * 10)
         attempts = 0
@@ -501,7 +492,7 @@ class Magnebot(FloorplanController):
                     print("Move complete!", self.state.magnebot_transform.position)
                 return ActionStatus.success
             # Go until we've traversed the distance.
-            spin = ((distance - d) / Magnebot.WHEEL_CIRCUMFERENCE) * 360
+            spin = ((distance - d) / Magnebot._WHEEL_CIRCUMFERENCE) * 360
             if self._debug:
                 print(f"distance: {distance}", f"d: {d}", f"speed: {spin}")
             attempts += 1

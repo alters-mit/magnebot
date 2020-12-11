@@ -17,3 +17,7 @@ COLUMN_Y = OBJECT_DATA_DIRECTORY.joinpath("column_y.csv")
 SCENE_DATA_DIRECTORY = DATA_DIRECTORY.joinpath("scenes")
 # The path to the dictionary of where the robot can spawn.
 SPAWN_POSITIONS_PATH = SCENE_DATA_DIRECTORY.joinpath("spawn_positions.json")
+# The directory for occupancy maps.
+OCCUPANCY_MAPS_DIRECTORY = SCENE_DATA_DIRECTORY.joinpath("occupancy_maps")
+# The directory for room maps.
+ROOM_MAPS_DIRECTORY = SCENE_DATA_DIRECTORY.joinpath("room_maps")
