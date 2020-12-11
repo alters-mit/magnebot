@@ -2,14 +2,28 @@
 
 `from magnebot import Magnebot`
 
-[TDW controller](https://github.com/threedworld-mit/tdw) for Magnebots.
+[TDW controller](https://github.com/threedworld-mit/tdw) for Magnebots. This high-level API supports:
+
+- Creating a complex interior environment
+- Directional movement
+- Turning
+- Arm articulation via inverse kinematics (IK)
+- Grasping and dropping objects
+- Image rendering
+- Scene state metadata
+
+Unless otherwise stated, each of these functions is an "action" that the Magnebot can do. Each action advances the simulation by at least 1 physics frame, returns an [`ActionStatus`](action_status.md), and updates the `state` field.
 
 ```python
 from magnebot import Magnebot
 
 m = Magnebot()
 # Initializes the scene.
-m.init_scene(scene="2a", layout=1)
+status = m.init_scene(scene="2a", layout=1)
+print(status) # ActionStatus.success
+
+# Prints the current position of the Magnebot.
+print(m.state.magnebot_transform.position)
 ```
 
 ***
@@ -64,8 +78,7 @@ print(Arm.left)
 | --- | --- | --- |
 | `FORWARD` | np.array | The global forward directional vector. |
 | `CAMERA_RPY_CONSTRAINTS` | List[float] | The camera roll, pitch, yaw constraints in degrees. |
-| `THIRD_PERSON_CAMERA_ID ` |  | If there is a third-person camera in the scene, this is its ID (i.e. the avatar ID).
-    See: `add_third_person_camera()` |
+| `THIRD_PERSON_CAMERA_ID` | str | If there is a third-person camera in the scene, this is its ID (i.e. the avatar ID). See: `add_third_person_camera()`. |
 
 ***
 
@@ -77,13 +90,23 @@ print(Arm.left)
 
 - `images_directory` The output directory for images if `auto_save_images == True`. This is a [`Path` object from `pathlib`](https://docs.python.org/3/library/pathlib.html).
 
-- `camera_rpy` The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees.
+- `camera_rpy` The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees as a numpy array. This is handled outside of `self.state` because it isn't calculated using output data from the build. See: `Magnebot.CAMERA_RPY_CONSTRAINTS` and `self.rotate_camera()`
 
-This is handled outside of `self.state` because it isn't calculated using output data from the build.
+- `objects_static` Data for all objects in the scene that that doesn't change between frames, such as object IDs, mass, etc. Key = the ID of the object. [Read the full API here](object_static.md).
 
-See: `Magnebot.CAMERA_RPY_CONSTRAINTS` and `self.rotate_camera()`
+```python
+from magnebot import Magnebot
 
-- `segmentation_color_to_id` A dictionary. Key = a hashable representation of the object's segmentation color. Value = The object ID. See `static_object_info` for a dictionary mapped to object ID with additional data.
+m = Magnebot()
+m.init_scene(scene="2a", layout=1)
+
+# Print each object ID and segmentation color.     
+for object_id in m.objects_static:
+    o = m.objects_static[object_id]
+    print(object_id, o.segmentation_color)
+```
+
+- `segmentation_color_to_id` A dictionary. Key = a hashable representation of the object's segmentation color. Value = The object ID. See `objects_static` for a dictionary mapped to object ID with additional data.
 
 ```python
 from tdw.tdw_utils import TDWUtils
@@ -98,7 +121,7 @@ for hashable_color in m.segmentation_color_to_id:
     color = TDWUtils.hashable_to_color(hashable_color)
 ```
 
-- `magnebot_static` Static data for the Magnebot that doesn't change between frames. [Read this for a full API](magnebot_static.md)
+- `magnebot_static` Data for the Magnebot that doesn't change between frames. [Read this for a full API](magnebot_static.md)
 
 ```python
 from magnebot import Magnebot
