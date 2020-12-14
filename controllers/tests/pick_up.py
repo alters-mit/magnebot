@@ -1,3 +1,4 @@
+from typing import Dict, List
 from tdw.tdw_utils import TDWUtils
 from magnebot import TestController, Arm
 from magnebot.action_status import ActionStatus
@@ -22,6 +23,15 @@ class PickUp(TestController):
                                     scale={"x": 1, "y": 0.4, "z": 1})
 
         return super().init_scene()
+
+    def _get_scene_init_commands(self, magnebot_position: Dict[str, float]) -> List[dict]:
+        commands = super()._get_scene_init_commands(magnebot_position=magnebot_position)
+        commands.extend([self.get_add_material("parquet_long_horizontal_clean", library="materials_high.json"),
+                         {"$type": "set_proc_gen_floor_material",
+                          "name": "parquet_long_horizontal_clean"},
+                         {"$type": "set_proc_gen_floor_texture_scale",
+                          "scale": {"x": 8, "y": 8}}])
+        return commands
 
 
 if __name__ == "__main__":

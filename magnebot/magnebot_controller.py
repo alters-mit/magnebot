@@ -447,10 +447,16 @@ class Magnebot(FloorplanController):
                                  "target": target,
                                  "joint_id": self.magnebot_static.wheels[wheel]})
             # Wait until the wheels are done turning.
-            wheels_done = False
-            wheel_state = SceneState(resp=self.communicate(commands))
-            while not wheels_done:
-                wheels_done, wheel_state = self._wheels_are_done(state_0=wheel_state)
+            state_0 = SceneState(resp=self.communicate(commands))
+            turn_done = False
+            while not turn_done:
+                state_1 = SceneState(resp=self.communicate([]))
+                dt = QuaternionUtils.get_y_angle(state_0.magnebot_transform.rotation,
+                                                 state_1.magnebot_transform.rotation)
+                if np.abs(dt) < 0.001:
+                    turn_done = True
+                state_0 = state_1
+            wheel_state = state_0
             # Get the change in angle from the initial rotation.
             theta = QuaternionUtils.get_y_angle(self.state.magnebot_transform.rotation,
                                                 wheel_state.magnebot_transform.rotation)
@@ -523,8 +529,9 @@ class Magnebot(FloorplanController):
 
         # The initial position of the robot.
         p0 = self.state.magnebot_transform.position
-        p1 = self.state.magnebot_transform.position + (self.state.magnebot_transform.forward * distance)
-        d = np.linalg.norm(p1 - p0)
+        target_position = self.state.magnebot_transform.position + (self.state.magnebot_transform.forward * distance)
+        d = np.linalg.norm(target_position - p0)
+        d_0 = d
         # We're already here.
         if d < arrived_at:
             self._end_action()
@@ -537,13 +544,15 @@ class Magnebot(FloorplanController):
         # The approximately number of iterations required, given the distance and speed.
         num_attempts = int(np.abs(distance) * 10)
         attempts = 0
-        # We are trying to adjust the distance.
         if self._debug:
-            print(f"num_attempts: {num_attempts}", f"distance: {distance}", f"speed: {spin}")
+            print(f"move_by: {distance}")
         # The approximately number of iterations required, given the distance and speed.
         # Wait for the wheels to stop turning.
         wheel_state = SceneState(resp=self.communicate([]))
         while attempts < num_attempts:
+            # We are trying to adjust the distance.
+            if self._debug:
+                print(f"num_attempts: {num_attempts}", f"distance: {distance}", f"spin: {spin}")
             # Move forward a bit and see if we've arrived.
             commands = []
             for wheel in self.magnebot_static.wheels:
@@ -553,22 +562,31 @@ class Magnebot(FloorplanController):
                                  "target": target,
                                  "joint_id": self.magnebot_static.wheels[wheel]})
             # Wait for the wheels to stop turning.
-            wheel_state = SceneState(resp=self.communicate(commands))
-            wheels_done = False
-            while not wheels_done:
-                wheels_done, wheel_state = self._wheels_are_done(state_0=wheel_state)
+            move_state_0 = SceneState(resp=self.communicate(commands))
+            move_done = False
+            while not move_done:
+                move_state_1 = SceneState(resp=self.communicate(commands))
+                dt = np.linalg.norm(move_state_1.magnebot_transform.position - move_state_0.magnebot_transform.position)
+                if dt < 0.001:
+                    move_done = True
+                move_state_0 = move_state_1
+            wheel_state = move_state_0
             # Check if we're at the destination.
             p1 = wheel_state.magnebot_transform.position
-            d = np.linalg.norm(p1 - p0)
+            d = np.linalg.norm(target_position - p1)
 
             # Arrived!
-            if np.abs(np.abs(distance) - d) < arrived_at:
+            if d < arrived_at:
                 self._end_action()
                 if self._debug:
-                    print("Move complete!", self.state.magnebot_transform.position)
+                    print("Move complete!", TDWUtils.array_to_vector3(self.state.magnebot_transform.position), d)
                 return ActionStatus.success
             # Go until we've traversed the distance.
-            spin = ((distance - d) / Magnebot._WHEEL_CIRCUMFERENCE) * 360
+            # 0.5 is a magic number.
+            spin = (d / Magnebot._WHEEL_CIRCUMFERENCE) * 360 * 0.5
+            d_total = np.linalg.norm(p1 - p0)
+            if d_total > d_0:
+                spin *= -1
             if self._debug:
                 print(f"distance: {distance}", f"d: {d}", f"speed: {spin}")
             attempts += 1
@@ -619,7 +637,7 @@ class Magnebot(FloorplanController):
             self._end_action()
             return status
 
-    def reach_for(self, target: Dict[str, float], arm: Arm, absolute: bool = False, arrived_at: float = 0.125) -> ActionStatus:
+    def reach_for(self, target: Dict[str, float], arm: Arm, absolute: bool = True, arrived_at: float = 0.125) -> ActionStatus:
         """
         Reach for a target position.
 
@@ -1074,23 +1092,6 @@ class Magnebot(FloorplanController):
         if self.auto_save_images:
             self.state.save_images(output_directory=self.images_directory)
 
-    def _wheels_are_done(self, state_0: SceneState) -> Tuple[bool, SceneState]:
-        """
-        Advances one frame and then determines if the wheels are still turning.
-
-        :param state_0: The scene state from the previous frame.
-
-        :return: True if none of the wheels are turning.
-        """
-
-        resp = self.communicate([])
-        state_1 = SceneState(resp=resp)
-        for w_id in self.magnebot_static.wheels.values():
-            if np.linalg.norm(state_0.joint_angles[w_id][0] -
-                              state_1.joint_angles[w_id][0]) > 0.1:
-                return False, state_1
-        return True, state_1
-
     def _get_scene_init_commands(self, magnebot_position: Dict[str, float]) -> List[dict]:
         """
         :param magnebot_position: The position of the Magnebot.
@@ -1150,8 +1151,6 @@ class Magnebot(FloorplanController):
 
         self._next_frame_commands.append({"$type": "enable_image_sensor",
                                           "enable": False})
-        if self._debug:
-            self._next_frame_commands.append({"$type": "remove_position_markers"})
 
     def _start_move_or_turn(self) -> None:
         """
@@ -1187,7 +1186,7 @@ class Magnebot(FloorplanController):
             """
 
             # Generate an IK chain, given the current desired torso height.
-            chain = self.__get_ik_chain(arm=arm, torso_y=Magnebot._TORSO_Y[torso_prismatic])
+            chain = self.__get_ik_chain(arm=arm, torso_y=Magnebot._TORSO_Y[round(torso_prismatic, 2)])
 
             # Get the IK solution.
             ik = chain.inverse_kinematics(target_position=target,
@@ -1242,14 +1241,19 @@ class Magnebot(FloorplanController):
         # But it should be ok because there's only one prismatic joint in this robot.
         angles: List[float] = list()
         torso_prismatic = Magnebot._DEFAULT_TORSO_Y
+        torso_actual = self._TORSO_Y[torso_prismatic]
+        # Raise the torso above the target.
+        while torso_actual < target[1] and torso_prismatic in self._TORSO_Y:
+            torso_prismatic += 0.1
+            torso_prismatic = round(torso_prismatic, 2)
+            torso_actual = self._TORSO_Y[torso_prismatic]
         got_solution = False
         while not got_solution and torso_prismatic > 0.6:
             got_solution, angles = __get_ik_solution()
             if not got_solution:
                 torso_prismatic -= 0.1
-        # If we couldn't find a solution, try to raise the torso.
         if not got_solution:
-            torso_prismatic = Magnebot._DEFAULT_TORSO_Y
+            torso_prismatic = self._DEFAULT_TORSO_Y
             while not got_solution and torso_prismatic <= 1.5:
                 got_solution, angles = __get_ik_solution()
                 if not got_solution:
@@ -1268,12 +1272,15 @@ class Magnebot(FloorplanController):
         self.communicate({"$type": "set_immovable",
                           "immovable": True})
 
-        # Convert the IK solution into TDW commands, using the expected joint and axis order.
         # Slide the torso to the desired height.
-        commands = [{"$type": "set_prismatic_target",
-                     "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
-                     "target": torso_prismatic,
-                     "axis": "y"}]
+        self.communicate({"$type": "set_prismatic_target",
+                          "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
+                          "target": torso_prismatic,
+                          "axis": "y"})
+        self._do_arm_motion()
+
+        # Convert the IK solution into TDW commands, using the expected joint and axis order.
+        commands = []
         i = 0
         joint_order_index = 0
         while i < len(angles):

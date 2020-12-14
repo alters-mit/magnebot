@@ -1,7 +1,6 @@
 import numpy as np
 from typing import Dict, List, Union
 from pathlib import Path
-from bresenham import bresenham
 from tdw.output_data import NavMeshPath
 from tdw.tdw_utils import TDWUtils
 from tdw.output_data import OutputData, Images
@@ -24,13 +23,14 @@ class DemoController(Magnebot):
     - `navigate()` isn't sufficiently reliable (see notes below).
     """
 
-    def __init__(self, port: int = 1071, launch_build: bool = True, screen_width: int = 256, screen_height: int = 256,
-                 debug: bool = False, images_directory: str = "images"):
+    def __init__(self, port: int = 1071, launch_build: bool = True, screen_width: int = 1024, screen_height: int = 1024,
+                 debug: bool = False, images_directory: str = "images", image_pass_only: bool = False):
         super().__init__(port=port, launch_build=launch_build, screen_width=screen_width, screen_height=screen_height,
                          auto_save_images=False, debug=debug, images_directory=images_directory)
 
         self._image_directories: Dict[str, Path] = dict()
         self._create_images_directory(avatar_id="a")
+        self.image_pass_only = image_pass_only
 
         self._image_count = 0
 
@@ -46,9 +46,10 @@ class DemoController(Magnebot):
         status = super().add_camera(position=position, rotation=rotation, look_at=look_at, follow=follow,
                                     camera_id=camera_id)
         # Always save images.
-        self._per_frame_commands.extend([{"$type": "enable_image_sensor",
-                                          "enable": True},
-                                         {"$type": "send_images"}])
+        if not self._debug:
+            self._per_frame_commands.extend([{"$type": "enable_image_sensor",
+                                              "enable": True},
+                                             {"$type": "send_images"}])
         return status
 
     def communicate(self, commands: Union[dict, List[dict]]) -> List[bytes]:
@@ -59,18 +60,22 @@ class DemoController(Magnebot):
         """
 
         resp = super().communicate(commands=commands)
-        # Save all images.
-        for i in range(len(resp) - 1):
-            r_id = OutputData.get_data_type_id(resp[i])
-            if r_id == "imag":
-                images = Images(resp[i])
-                TDWUtils.save_images(filename=TDWUtils.zero_padding(self._image_count, 8),
-                                     output_directory=self._image_directories[images.get_avatar_id()],
-                                     images=images)
-        self._image_count += 1
+        if not self._debug:
+            # Save all images.
+            got_images = False
+            for i in range(len(resp) - 1):
+                r_id = OutputData.get_data_type_id(resp[i])
+                if r_id == "imag":
+                    got_images = True
+                    images = Images(resp[i])
+                    TDWUtils.save_images(filename=TDWUtils.zero_padding(self._image_count, 8),
+                                         output_directory=self._image_directories[images.get_avatar_id()],
+                                         images=images)
+            if got_images:
+                self._image_count += 1
         return resp
 
-    def navigate(self, target: Dict[str, float]) -> ActionStatus:
+    def navigate(self, target: Dict[str, float], arrived_at: float = 0.1, aligned_at: float = 3) -> ActionStatus:
         """
         Navigate to the target position by following a path of waypoints.
 
@@ -92,6 +97,8 @@ class DemoController(Magnebot):
         - `no_path`
 
         :param target: The target destination.
+        :param arrived_at: While moving, if at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
+        :param aligned_at: While turning, if the different between the current angle and the target angle is less than this value, then the action is successful.
 
         :return: An `ActionStatus` indicating if the Magnebot arrived at the destination and if not, why.
         """
@@ -105,6 +112,7 @@ class DemoController(Magnebot):
                                   "origin": origin,
                                   "destination": target}])
         nav_mesh_path = get_data(resp=resp, d_type=NavMeshPath).get_path()
+        print(len(nav_mesh_path))
         path: List[Dict[str, float]] = list()
         occupancy_path: List[np.array] = list()
         # For every node on the path, constrain it to the nearest position on the occupancy map.
@@ -116,17 +124,6 @@ class DemoController(Magnebot):
             for ix, iy in np.ndindex(self.occupancy_map.shape):
                 if self.occupancy_map[ix][iy] != 0:
                     continue
-                # Draw a line from the position to the target.
-                # If there are any obstacles in the way, ignore this position.
-                if nav_mesh_path[i - 1] is not None and len(occupancy_path) > 0:
-                    ignore = False
-                    # Draw a line from the previous waypoint to this waypoint.
-                    for line_node in bresenham(occupancy_path[i - 1][0], occupancy_path[i - 1][1], ix, iy):
-                        if self.occupancy_map[line_node[0]][line_node[1]] != 0:
-                            ignore = True
-                            break
-                    if ignore:
-                        continue
                 # Get the distance to this position. If it is the closest to `position`, mark it as such.
                 x, z = self.get_occupancy_position(ix, iy)
                 p = np.array([x, 0, z])
@@ -148,9 +145,18 @@ class DemoController(Magnebot):
         if len(path) == 0:
             self._end_action()
             return ActionStatus.success
+
+        if self._debug:
+            commands = []
+            for waypoint in path:
+                commands.append({"$type": "add_position_marker",
+                                 "position": waypoint,
+                                 "scale": 0.35})
+            self._next_frame_commands.extend(commands)
+
         # Go to each waypoint.
         for waypoint in path:
-            status = self.move_to(target=waypoint)
+            status = self.move_to(target=waypoint, aligned_at=aligned_at, arrived_at=arrived_at)
             if status != ActionStatus.success:
                 return status
         return ActionStatus.success
@@ -160,6 +166,9 @@ class DemoController(Magnebot):
         # Hide the roof.
         commands.append({"$type": "set_floorplan_roof",
                          "show": False})
+        if self.image_pass_only:
+            commands.append({"$type": "set_pass_masks",
+                             "pass_masks": ["_img"]})
         # Create NavMesh obstacles from all non-kinematic objects.
         obstacle_commands: List[dict] = list()
         for cmd in commands:
