@@ -31,3 +31,4 @@ If the Magnebot _didn't try_ to do something, the action failed without advancin
 | `not_holding` | The Magnebot didn't try to drop the object(s) because it isn't holding them. |
 | `clamped_camera_rotation` | The Magnebot rotated its camera but at least one angle of rotation was clamped. |
 | `failed_to_bend` | The Magnebot tried to bend its arm but failed to bend it all the way. |
+| `no_path` | The Magnebot failed to navigate (see [`DemoController`](demo_controller.md)) because it couldn't find a path. |

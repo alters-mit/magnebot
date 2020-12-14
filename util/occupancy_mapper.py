@@ -272,9 +272,10 @@ class OccupancyMapper(FloorplanController):
                     position_ids = list()
                     # Remove the position markers.
                     # Disable physics. We'll use cube primitives for our markers and we don't want them to jostle.
-                    commands = [{"$type": "remove_position_markers"},
-                                {"$type": "simulate_physics",
-                                 "value": False}]
+                    self.communicate([{"$type": "remove_position_markers"},
+                                      {"$type": "simulate_physics",
+                                       "value": False}])
+                    commands = []
                     for i in range(len(scene_env.rooms)):
                         position = TDWUtils.array_to_vector3(scene_env.rooms[i].center)
                         # Create a cube per room. Set the position and scale to match the room center and bounds.
@@ -318,7 +319,7 @@ class OccupancyMapper(FloorplanController):
                              screen_height - screen_positions[position_id][1] - (font_size / 2))
                         draw.text(p, str(position_id), font=font, anchor="mb")
                     # Save the room image.
-                    pil_image.save(str(room_images_dir.joinpath(save_filename + ".jpg")), "JPEG")
+                    pil_image.save(str(room_images_dir.joinpath(scene_key + ".jpg")), "JPEG")
 
                 # Get the spawn positions for each room.
                 room_id = 0

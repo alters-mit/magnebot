@@ -32,3 +32,4 @@ class ActionStatus(Enum):
     not_holding = 7  # The Magnebot didn't try to drop the object(s) because it isn't holding them.
     clamped_camera_rotation = 8  # The Magnebot rotated its camera but at least one angle of rotation was clamped.
     failed_to_bend = 9  # The Magnebot tried to bend its arm but failed to bend it all the way.
+    no_path = 10  # The Magnebot failed to navigate (see [`DemoController`](demo_controller.md)) because it couldn't find a path.

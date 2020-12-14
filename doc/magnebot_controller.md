@@ -78,7 +78,6 @@ print(Arm.left)
 | --- | --- | --- |
 | `FORWARD` | np.array | The global forward directional vector. |
 | `CAMERA_RPY_CONSTRAINTS` | List[float] | The camera roll, pitch, yaw constraints in degrees. |
-| `THIRD_PERSON_CAMERA_ID` | str | If there is a third-person camera in the scene, this is its ID (i.e. the avatar ID). See: `add_camera()`. |
 
 ***
 
@@ -218,7 +217,7 @@ Valid scenes, layouts, and rooms:
 
 Images of each scene+layout combination can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/floorplans). Images are named `scene_layout.jpg`.
 
-Images of where each room in a scene is can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/rooms). Images are named `scene_layout.jpg` (there aren't any letters in the scene name because the difference between lettered variants is purely aesthetic and the room maps are identical).
+Images of where each room in a scene is can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/rooms). Images are named `scene.jpg` (there aren't any letters in the scene name because the difference between lettered variants is purely aesthetic and the room maps are identical).
 
 You can call `init_scene()` more than once to reset the simulation.
 
@@ -514,13 +513,11 @@ _Returns:_  An `ActionStatus` (always `success`).
 
 #### add_camera
 
-**`self.add_camera(position, rotation, look_at, follow)`**
+**`self.add_camera(position, rotation, look_at, follow, camera_id)`**
 
 Add a third person camera (i.e. a camera not attached to the any object) to the scene. This camera will render concurrently with the camera attached to the Magnebot and will output images at the end of every action (see [`SceneState.third_person_images`](scene_state.md)).
 
 This should only be sent per `init_scene()` call. When `init_scene()` is called to reset the simulation, you'll need to send `add_camera()` again too.
-
-_Backend developers:_ For the ID of the camera, see: `Magnebot.THIRD_PERSON_CAMERA_ID`.
 
 Possible [return values](action_status.md):
 
@@ -533,6 +530,7 @@ Possible [return values](action_status.md):
 | rotation |  Dict[str, float] | The initial rotation of the camera in Euler angles. If None, the rotation is `{"x": 0, "y": 0, "z": 0}`. |
 | look_at |  bool  | If True, on every frame, the camera will rotate to look at the Magnebot. |
 | follow |  bool  | If True, on every frame, the camera will follow the Magnebot, maintaining a constant relative position and rotation. |
+| camera_id |  str  | The ID of this camera. |
 
 _Returns:_  An `ActionStatus` (always `success`).
 

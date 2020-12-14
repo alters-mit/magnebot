@@ -145,11 +145,6 @@ class Magnebot(FloorplanController):
     # The circumference of the Magnebot wheel.
     _WHEEL_CIRCUMFERENCE: float = 2 * np.pi * _WHEEL_RADIUS
 
-    """:class_var
-    If there is a third-person camera in the scene, this is its ID (i.e. the avatar ID). See: `add_camera()`.
-    """
-    THIRD_PERSON_CAMERA_ID: str = "c"
-
     def __init__(self, port: int = 1071, launch_build: bool = True, screen_width: int = 256, screen_height: int = 256,
                  debug: bool = False, auto_save_images: bool = False, images_directory: str = "images"):
         """
@@ -339,7 +334,7 @@ class Magnebot(FloorplanController):
 
         Images of each scene+layout combination can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/floorplans). Images are named `scene_layout.jpg`.
 
-        Images of where each room in a scene is can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/rooms). Images are named `scene_layout.jpg` (there aren't any letters in the scene name because the difference between lettered variants is purely aesthetic and the room maps are identical).
+        Images of where each room in a scene is can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/rooms). Images are named `scene.jpg` (there aren't any letters in the scene name because the difference between lettered variants is purely aesthetic and the room maps are identical).
 
         You can call `init_scene()` more than once to reset the simulation.
 
@@ -921,13 +916,12 @@ class Magnebot(FloorplanController):
         self._end_action()
         return ActionStatus.success
 
-    def add_camera(self, position: Dict[str, float], rotation: Dict[str, float] = None, look_at: bool = True, follow: bool = False) -> ActionStatus:
+    def add_camera(self, position: Dict[str, float], rotation: Dict[str, float] = None, look_at: bool = True,
+                   follow: bool = False, camera_id: str = "c") -> ActionStatus:
         """
         Add a third person camera (i.e. a camera not attached to the any object) to the scene. This camera will render concurrently with the camera attached to the Magnebot and will output images at the end of every action (see [`SceneState.third_person_images`](scene_state.md)).
 
         This should only be sent per `init_scene()` call. When `init_scene()` is called to reset the simulation, you'll need to send `add_camera()` again too.
-
-        _Backend developers:_ For the ID of the camera, see: `Magnebot.THIRD_PERSON_CAMERA_ID`.
 
         Possible [return values](action_status.md):
 
@@ -937,6 +931,7 @@ class Magnebot(FloorplanController):
         :param rotation: The initial rotation of the camera in Euler angles. If None, the rotation is `{"x": 0, "y": 0, "z": 0}`.
         :param look_at: If True, on every frame, the camera will rotate to look at the Magnebot.
         :param follow: If True, on every frame, the camera will follow the Magnebot, maintaining a constant relative position and rotation.
+        :param camera_id: The ID of this camera.
 
         :return: An `ActionStatus` (always `success`).
         """
@@ -944,15 +939,15 @@ class Magnebot(FloorplanController):
         self._next_frame_commands.extend(TDWUtils.create_avatar(avatar_id="c"))
         self._next_frame_commands.append({"$type": "set_pass_masks",
                                           "pass_masks": ["_img"],
-                                          "avatar_id": Magnebot.THIRD_PERSON_CAMERA_ID})
+                                          "avatar_id": camera_id})
 
         if follow:
             self._next_frame_commands.append({"$type": "parent_avatar_to_robot",
-                                              "avatar_id": Magnebot.THIRD_PERSON_CAMERA_ID,
+                                              "avatar_id": camera_id,
                                               "position": position})
         else:
             self._next_frame_commands.append({"$type": "teleport_avatar_to",
-                                              "avatar_id": Magnebot.THIRD_PERSON_CAMERA_ID,
+                                              "avatar_id": camera_id,
                                               "position": position})
         # Set the initial rotation.
         if rotation is not None:
@@ -960,10 +955,10 @@ class Magnebot(FloorplanController):
                 self._next_frame_commands.append({"$type": "rotate_sensor_container_by",
                                                   "axis": axis,
                                                   "angle": rotation[angle],
-                                                  "avatar_id": Magnebot.THIRD_PERSON_CAMERA_ID})
+                                                  "avatar_id": camera_id})
         if look_at:
             self._per_frame_commands.append({"$type": "look_at_robot",
-                                             "avatar_id": Magnebot.THIRD_PERSON_CAMERA_ID})
+                                             "avatar_id": camera_id})
 
         self._end_action()
         return ActionStatus.success
