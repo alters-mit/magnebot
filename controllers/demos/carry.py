@@ -39,8 +39,6 @@ class Carry(DemoController):
         self.navigate(target={"x": 8.557, "y": 0, "z": 1.31}, aligned_at=0.35)
         # Drop the objects.
         self.drop_all()
-        # Back away.
-        self.move_by(-1)
         self.end()
 
     def _get_scene_init_commands(self, magnebot_position: Dict[str, float]) -> List[dict]:
@@ -53,5 +51,5 @@ class Carry(DemoController):
 
 
 if __name__ == "__main__":
-    m = Carry(launch_build=False, images_directory="D:/magnebot/carry", debug=False)
+    m = Carry(launch_build=False, images_directory="D:/magnebot/carry")
     m.run()

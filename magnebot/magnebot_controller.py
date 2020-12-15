@@ -793,7 +793,7 @@ class Magnebot(FloorplanController):
             for object_id in self.state.held[arm]:
                 self._next_frame_commands.append({"$type": "drop_from_magnet",
                                                   "arm": arm.name,
-                                                  "object_id": object_id})
+                                                  "object_id": int(object_id)})
         self._end_action()
         return ActionStatus.success
 
