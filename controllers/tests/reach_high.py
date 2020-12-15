@@ -16,11 +16,6 @@ class ReachHigh(TestController):
         self.target_id = self._add_object(model_name="jug05",
                                           position={"x": -0.231, "y": 0.9215012, "z": 0.8119997})
         commands = super()._get_scene_init_commands(magnebot_position=magnebot_position)
-        commands.extend([self.get_add_material("parquet_long_horizontal_clean", library="materials_high.json"),
-                         {"$type": "set_proc_gen_floor_material",
-                          "name": "parquet_long_horizontal_clean"},
-                         {"$type": "set_proc_gen_floor_texture_scale",
-                          "scale": {"x": 8, "y": 8}}])
         return commands
 
 

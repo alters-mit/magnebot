@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='magnebot',
-    version="0.1.0",
+    version="0.1.1",
     description='High-level API for the Magnebot in TDW.',
     long_description='High-level API for the Magnebot in TDW.',
     url='https://github.com/alters-mit/magnebot',
@@ -20,5 +20,5 @@ setup(
     ],
     keywords='unity simulation tdw',
     packages=find_packages(),
-    install_requires=['tdw', 'numpy', 'ikpy', 'matplotlib', 'pillow', "py_md_doc", "bresenham"],
+    install_requires=['tdw', 'numpy', 'ikpy', 'matplotlib', 'pillow', "py_md_doc"],
 )
