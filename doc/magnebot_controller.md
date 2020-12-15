@@ -169,17 +169,19 @@ Note that it is possible for the Magnebot to go to positions that aren't "free".
 
 #### \_\_init\_\_
 
-**`Magnebot(port, launch_build, screen_width, screen_height, auto_save_images, images_directory, debug)`**
+**`Magnebot()`**
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| port |  int  | The socket port. [Read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md#command-line-arguments) for more information. |
-| launch_build |  bool  | If True, the build will launch automatically on the default port (1071). If False, you will need to launch the build yourself (for example, from a Docker container). |
-| screen_width |  int  | The width of the screen in pixels. |
-| screen_height |  int  | The height of the screen in pixels. |
-| auto_save_images |  bool  | If True, automatically save images to `images_directory` at the end of every action. |
-| images_directory |  str  | The output directory for images if `auto_save_images == True`. |
-| debug |  bool  | If True, enable debug mode and output debug messages to the console. |
+**`Magnebot(port=1071, launch_build=True, screen_width=256, screen_height=256, auto_save_images=False, images_directory="images", debug=False)`**
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| port |  int  | 1071 | The socket port. [Read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md#command-line-arguments) for more information. |
+| launch_build |  bool  | True | If True, the build will launch automatically on the default port (1071). If False, you will need to launch the build yourself (for example, from a Docker container). |
+| screen_width |  int  | 256 | The width of the screen in pixels. |
+| screen_height |  int  | 256 | The height of the screen in pixels. |
+| auto_save_images |  bool  | False | If True, automatically save images to `images_directory` at the end of every action. |
+| images_directory |  str  | "images" | The output directory for images if `auto_save_images == True`. |
+| debug |  bool  | False | If True, enable debug mode and output debug messages to the console. |
 
 ***
 
@@ -189,7 +191,9 @@ _These functions should be sent at the start of the simulation._
 
 #### init_scene
 
-**`self.init_scene(scene, layout, room)`**
+**`self.init_scene(scene, layout)`**
+
+**`self.init_scene(scene, layout, room=None)`**
 
 Initialize a scene, populate it with objects, and add the Magnebot. The simulation will advance through frames until the Magnebot's body is in its neutral position.
 
@@ -226,11 +230,11 @@ Possible [return values](action_status.md):
 - `success`
 - `failed_to_bend` (Technically this is _possible_, but it shouldn't ever happen.)
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| scene |  str | The name of an interior floorplan scene. Each number (1, 2, etc.) has a different shape, different rooms, etc. Each letter (a, b, c) is a cosmetically distinct variant with the same floorplan. |
-| layout |  int | The furniture layout of the floorplan. Each number (0, 1, 2) will populate the floorplan with different furniture in different positions. |
-| room |  int  | The index of the room that the Magnebot will spawn in the center of. If None, the room will be chosen randomly. |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| scene |  str |  | The name of an interior floorplan scene. Each number (1, 2, etc.) has a different shape, different rooms, etc. Each letter (a, b, c) is a cosmetically distinct variant with the same floorplan. |
+| layout |  int |  | The furniture layout of the floorplan. Each number (0, 1, 2) will populate the floorplan with different furniture in different positions. |
+| room |  int  | None | The index of the room that the Magnebot will spawn in the center of. If None, the room will be chosen randomly. |
 
 ***
 
@@ -240,7 +244,9 @@ _These functions move or turn the Magnebot._
 
 #### turn_by
 
-**`self.turn_by(angle, aligned_at)`**
+**`self.turn_by(angle)`**
+
+**`self.turn_by(angle, aligned_at=3)`**
 
 Turn the Magnebot by an angle.
 
@@ -254,16 +260,18 @@ Possible [return values](action_status.md):
 - `failed_to_turn`
 
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| angle |  float | The target angle in degrees. Positive value = clockwise turn. |
-| aligned_at |  float  | If the different between the current angle and the target angle is less than this value, then the action is successful. |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| angle |  float |  | The target angle in degrees. Positive value = clockwise turn. |
+| aligned_at |  float  | 3 | If the different between the current angle and the target angle is less than this value, then the action is successful. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
 
 #### turn_to
 
-**`self.turn_to(target, aligned_at)`**
+**`self.turn_to(target)`**
+
+**`self.turn_to(target, aligned_at=3)`**
 
 Turn the Magnebot to face a target object or position.
 
@@ -277,16 +285,18 @@ Possible [return values](action_status.md):
 - `failed_to_turn`
 
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| target |  Union[int, Dict[str, float] | Either the ID of an object or a Vector3 position. |
-| aligned_at |  float  | If the different between the current angle and the target angle is less than this value, then the action is successful. |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| target |  Union[int, Dict[str, float] |  | Either the ID of an object or a Vector3 position. |
+| aligned_at |  float  | 3 | If the different between the current angle and the target angle is less than this value, then the action is successful. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
 
 #### move_by
 
-**`self.move_by(distance, arrived_at)`**
+**`self.move_by(distance)`**
+
+**`self.move_by(distance, arrived_at=0.3)`**
 
 Move the Magnebot forward or backward by a given distance.
 
@@ -296,16 +306,18 @@ Possible [return values](action_status.md):
 - `failed_to_move`
 
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| distance |  float | The target distance. If less than zero, the Magnebot will move backwards. |
-| arrived_at |  float  | If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| distance |  float |  | The target distance. If less than zero, the Magnebot will move backwards. |
+| arrived_at |  float  | 0.3 | If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot moved by `distance` and if not, why.
 
 #### move_to
 
-**`self.move_to(target, arrived_at, aligned_at)`**
+**`self.move_to(target)`**
+
+**`self.move_to(target, arrived_at=0.3, aligned_at=3)`**
 
 Move the Magnebot to a target object or position.
 
@@ -318,11 +330,11 @@ Possible [return values](action_status.md):
 - `failed_to_turn`
 
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| target |  Union[int, Dict[str, float] | Either the ID of an object or a Vector3 position. |
-| arrived_at |  float  | While moving, if at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
-| aligned_at |  float  | While turning, if the different between the current angle and the target angle is less than this value, then the action is successful. |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| target |  Union[int, Dict[str, float] |  | Either the ID of an object or a Vector3 position. |
+| arrived_at |  float  | 0.3 | While moving, if at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
+| aligned_at |  float  | 3 | While turning, if the different between the current angle and the target angle is less than this value, then the action is successful. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot moved to the target and if not, why.
 
@@ -334,7 +346,9 @@ _These functions move and bend the joints of the Magnebots's arms._
 
 #### reach_for
 
-**`self.reach_for(target, arm, absolute, arrived_at)`**
+**`self.reach_for(target, arm)`**
+
+**`self.reach_for(target, arm, absolute=True, arrived_at=0.125)`**
 
 Reach for a target position.
 
@@ -347,12 +361,12 @@ Possible [return values](action_status.md):
 - `failed_to_reach`
 
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| target |  Dict[str, float] | The target position for the magnet at the arm to reach. |
-| arm |  Arm | The arm that will reach for the target. |
-| absolute |  bool  | If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot. |
-| arrived_at |  float  | If the magnet is this distance or less from `target`, then the action is successful. |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| target |  Dict[str, float] |  | The target position for the magnet at the arm to reach. |
+| arm |  Arm |  | The arm that will reach for the target. |
+| absolute |  bool  | True | If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot. |
+| arrived_at |  float  | 0.125 | If the magnet is this distance or less from `target`, then the action is successful. |
 
 _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` is at the `target` and if not, why.
 
@@ -370,10 +384,10 @@ Possible [return values](action_status.md):
 - `failed_to_grasp`
 
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| target |  int | The ID of the target object. |
-| arm |  Arm | The arm of the magnet that will try to grasp the object. |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| target |  int |  | The ID of the target object. |
+| arm |  Arm |  | The arm of the magnet that will try to grasp the object. |
 
 _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` is holding the `target` and if not, why.
 
@@ -391,10 +405,10 @@ Possible [return values](action_status.md):
 - `not_holding`
 
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| target |  int | The ID of the object currently held by the magnet. |
-| arm |  Arm | The arm of the magnet holding the object. |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| target |  int |  | The ID of the object currently held by the magnet. |
+| arm |  Arm |  | The arm of the magnet holding the object. |
 
 _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` dropped the `target`.
 
@@ -413,7 +427,9 @@ _Returns:_  An `ActionStatus` if the Magnebot dropped any objects.
 
 #### reset_arm
 
-**`self.reset_arm(arm, reset_torso)`**
+**`self.reset_arm(arm)`**
+
+**`self.reset_arm(arm, reset_torso=True)`**
 
 Reset an arm to its neutral position. If the arm is holding any objects, it will continue to do so.
 
@@ -423,10 +439,10 @@ Possible [return values](action_status.md):
 - `failed_to_bend`
 
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| arm |  Arm | The arm that will be reset. |
-| reset_torso |  bool  | If True, rotate and slide the torso to its neutral rotation and height. |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| arm |  Arm |  | The arm that will be reset. |
+| reset_torso |  bool  | True | If True, rotate and slide the torso to its neutral rotation and height. |
 
 _Returns:_  An `ActionStatus` indicating if the arm reset and if not, why.
 
@@ -451,7 +467,9 @@ _These commands rotate the Magnebot's camera or add additional camera to the sce
 
 #### rotate_camera
 
-**`self.rotate_camera(roll, pitch, yaw)`**
+**`self.rotate_camera()`**
+
+**`self.rotate_camera(roll=0, pitch=0, yaw=0)`**
 
 Rotate the Magnebot's camera by the (roll, pitch, yaw) axes. This action takes exactly 1 frame.
 
@@ -481,11 +499,11 @@ Possible [return values](action_status.md):
 - `clamped_camera_rotation`
 
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| roll |  float  | The roll angle in degrees. |
-| pitch |  float  | The pitch angle in degrees. |
-| yaw |  float  | The yaw angle in degrees. |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| roll |  float  | 0 | The roll angle in degrees. |
+| pitch |  float  | 0 | The pitch angle in degrees. |
+| yaw |  float  | 0 | The yaw angle in degrees. |
 
 _Returns:_  An `ActionStatus` indicating if the camera rotated fully or if the rotation was clamped..
 
@@ -513,7 +531,9 @@ _Returns:_  An `ActionStatus` (always `success`).
 
 #### add_camera
 
-**`self.add_camera(position, rotation, look_at, follow, camera_id)`**
+**`self.add_camera(position)`**
+
+**`self.add_camera(position, roll=0, pitch=0, yaw=0, look_at=True, follow=False, camera_id="c")`**
 
 Add a third person camera (i.e. a camera not attached to the any object) to the scene. This camera will render concurrently with the camera attached to the Magnebot and will output images at the end of every action (see [`SceneState.third_person_images`](scene_state.md)).
 
@@ -524,13 +544,15 @@ Possible [return values](action_status.md):
 - `success`
 
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| position |  Dict[str, float] | The initial position of the camera. If `follow == True`, this is relative to the Magnebot. If `follow == False`, this is in absolute worldspace coordinates. |
-| rotation |  Dict[str, float] | The initial rotation of the camera in Euler angles. If None, the rotation is `{"x": 0, "y": 0, "z": 0}`. |
-| look_at |  bool  | If True, on every frame, the camera will rotate to look at the Magnebot. |
-| follow |  bool  | If True, on every frame, the camera will follow the Magnebot, maintaining a constant relative position and rotation. |
-| camera_id |  str  | The ID of this camera. |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| position |  Dict[str, float] |  | The initial position of the camera. If `follow == True`, this is relative to the Magnebot. If `follow == False`, this is in absolute worldspace coordinates. |
+| roll |  float  | 0 | The initial roll of the camera in degrees. |
+| pitch |  float  | 0 | The initial pitch of the camera in degrees. |
+| yaw |  float  | 0 | The initial yaw of the camera in degrees. |
+| look_at |  bool  | True | If True, on every frame, the camera will rotate to look at the Magnebot. |
+| follow |  bool  | False | If True, on every frame, the camera will follow the Magnebot, maintaining a constant relative position and rotation. |
+| camera_id |  str  | "c" | The ID of this camera. |
 
 _Returns:_  An `ActionStatus` (always `success`).
 
@@ -558,10 +580,10 @@ print(m.get_occupancy_position(x, y)) # (1.1157886505126946, 2.2528389358520506)
 ```
 
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| i |  int | The i coordinate in the occupancy map. |
-| j |  int | The j coordinate in the occupancy map. |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| i |  int |  | The i coordinate in the occupancy map. |
+| j |  int |  | The j coordinate in the occupancy map. |
 
 _Returns:_  Tuple: (x coordinate; z coordinate) of the corresponding worldspace position.
 
@@ -586,9 +608,9 @@ Use this function to send low-level TDW API commands and receive low-level outpu
 You shouldn't ever need to use this function, but you might see it in some of the example controllers because they might require a custom scene setup.
 
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| commands |  Union[dict, List[dict] | Commands to send to the build. See: [Command API](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md). |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| commands |  Union[dict, List[dict] |  | Commands to send to the build. See: [Command API](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md). |
 
 _Returns:_  The response from the build as a list of byte arrays. See: [Output Data](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/output_data.md).
 

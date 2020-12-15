@@ -24,8 +24,8 @@ Static data for a joint the Magnebot.
 
 **`JointStatic(sr, index)`**
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| sr |  StaticRobot | The static robot output data. |
-| index |  int | The index of this body part in `sr`. |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| sr |  StaticRobot |  | The static robot output data. |
+| index |  int |  | The index of this body part in `sr`. |
 

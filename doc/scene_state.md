@@ -114,9 +114,9 @@ id_pass = m.state.images["id"]
 
 **`SceneState(resp)`**
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| resp |  List[bytes] | The response from the build. |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| resp |  List[bytes] |  | The response from the build. |
 
 #### save_images
 
@@ -127,9 +127,9 @@ Images will be named: `[frame_number]_[pass_name].[extension]`
 For example, the depth pass on the first frame will be named: `00000000_depth.png`
 The image pass is a jpg file and the other passes are png files.
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| output_directory |  Union[str, Path] | The directory that the images will be saved to. |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| output_directory |  Union[str, Path] |  | The directory that the images will be saved to. |
 
 #### get_pil_images
 

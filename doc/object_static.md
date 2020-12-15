@@ -42,11 +42,11 @@ for object_id in m.objects_static:
 
 **`ObjectStatic(name, object_id, mass, segmentation_color, size)`**
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| name |  str | The name of the object. |
-| object_id |  int | The unique ID of the object. |
-| mass |  float | The mass of the object. |
-| segmentation_color |  np.array | The segmentation color of the object. |
-| size |  np.array | The size of the object. |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| name |  str |  | The name of the object. |
+| object_id |  int |  | The unique ID of the object. |
+| mass |  float |  | The mass of the object. |
+| segmentation_color |  np.array |  | The segmentation color of the object. |
+| size |  np.array |  | The size of the object. |
 

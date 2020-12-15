@@ -600,7 +600,7 @@ class Magnebot(FloorplanController):
         else:
             return ActionStatus.failed_to_move
 
-    def move_to(self, target: Union[int, Dict[str, float]], arrived_at: float = 0.1,
+    def move_to(self, target: Union[int, Dict[str, float]], arrived_at: float = 0.3,
                 aligned_at: float = 3) -> ActionStatus:
         """
         Move the Magnebot to a target object or position.
@@ -934,8 +934,8 @@ class Magnebot(FloorplanController):
         self._end_action()
         return ActionStatus.success
 
-    def add_camera(self, position: Dict[str, float], rotation: Dict[str, float] = None, look_at: bool = True,
-                   follow: bool = False, camera_id: str = "c") -> ActionStatus:
+    def add_camera(self, position: Dict[str, float], roll: float = 0, pitch: float = 0, yaw: float = 0,
+                   look_at: bool = True, follow: bool = False, camera_id: str = "c") -> ActionStatus:
         """
         Add a third person camera (i.e. a camera not attached to the any object) to the scene. This camera will render concurrently with the camera attached to the Magnebot and will output images at the end of every action (see [`SceneState.third_person_images`](scene_state.md)).
 
@@ -946,7 +946,9 @@ class Magnebot(FloorplanController):
         - `success`
 
         :param position: The initial position of the camera. If `follow == True`, this is relative to the Magnebot. If `follow == False`, this is in absolute worldspace coordinates.
-        :param rotation: The initial rotation of the camera in Euler angles. If None, the rotation is `{"x": 0, "y": 0, "z": 0}`.
+        :param roll: The initial roll of the camera in degrees.
+        :param pitch: The initial pitch of the camera in degrees.
+        :param yaw: The initial yaw of the camera in degrees.
         :param look_at: If True, on every frame, the camera will rotate to look at the Magnebot.
         :param follow: If True, on every frame, the camera will follow the Magnebot, maintaining a constant relative position and rotation.
         :param camera_id: The ID of this camera.
@@ -970,12 +972,11 @@ class Magnebot(FloorplanController):
                                               "avatar_id": camera_id,
                                               "position": position})
         # Set the initial rotation.
-        if rotation is not None:
-            for angle, axis in zip(["x", "y", "z"], ["roll", "yaw", "pitch"]):
-                self._next_frame_commands.append({"$type": "rotate_sensor_container_by",
-                                                  "axis": axis,
-                                                  "angle": rotation[angle],
-                                                  "avatar_id": camera_id})
+        for angle, axis in zip([roll, pitch, yaw], ["roll", "yaw", "pitch"]):
+            self._next_frame_commands.append({"$type": "rotate_sensor_container_by",
+                                              "axis": axis,
+                                              "angle": angle,
+                                              "avatar_id": camera_id})
         if look_at:
             self._per_frame_commands.append({"$type": "look_at_robot",
                                              "avatar_id": camera_id})

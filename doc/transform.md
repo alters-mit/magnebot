@@ -22,9 +22,9 @@ Positional data for an object, Magnebot, body part, etc.
 
 **`Transform(position, rotation, forward)`**
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| position |  np.array | The position of the object as a numpy array. |
-| rotation |  np.array | The rotation (quaternion) of the object as a numpy array. |
-| forward |  np.array | The forward directional vector of the object as a numpy array. |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| position |  np.array |  | The position of the object as a numpy array. |
+| rotation |  np.array |  | The rotation (quaternion) of the object as a numpy array. |
+| forward |  np.array |  | The forward directional vector of the object as a numpy array. |
 

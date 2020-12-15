@@ -80,7 +80,7 @@ print(b_id, color)
 
 **`MagnebotStatic(static_robot)`**
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| static_robot |  StaticRobot | Static robot output data. |
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| static_robot |  StaticRobot |  | Static robot output data. |
 
