@@ -18,9 +18,7 @@ class Carry(DemoController):
 
     def run(self) -> None:
         self.init_scene(scene="2b", layout=1, room=4)
-        # The position for the third-person camera. We'll use this later to parent it to the Magnebot.
-        camera_position = {"x": 4.54, "y": 8, "z": -2.56}
-        self.add_camera(position=camera_position, look_at=True)
+        self.add_camera(position={"x": -3.6, "y": 8, "z": -0.67}, look_at=True, follow=True)
 
         # Go to the first target and pick it up.
         self.move_to(target=self.target_id_0, arrived_at=0.75)
@@ -37,19 +35,10 @@ class Carry(DemoController):
         self.move_by(-0.8)
         self.reset_arm(arm=Arm.left)
 
-        # Start to follow the Magnebot.
-        relative_position = TDWUtils.vector3_to_array(camera_position) - self.state.magnebot_transform.position
-        self._next_frame_commands.append({"$type": "parent_avatar_to_robot",
-                                          "avatar_id": "c",
-                                          "position": TDWUtils.array_to_vector3(relative_position)})
-
         # Go to the "goal position".
-        self.navigate(target={"x": 8.557, "y": 0, "z": 1.31}, aligned_at=0.75)
-        # Drop each target.
-        for object_id, arm in zip([self.target_id_0, self.target_id_1], [Arm.right, Arm.left]):
-            self.reach_for(target={"x": 9.152, "y": 0.75, "z": 0.731}, arm=arm)
-            self.drop(target=object_id, arm=arm)
-            self.reset_arm(arm=arm)
+        self.navigate(target={"x": 8.557, "y": 0, "z": 1.31}, aligned_at=0.35)
+        # Drop the objects.
+        self.drop_all()
         # Back away.
         self.move_by(-1)
         self.end()
@@ -64,5 +53,5 @@ class Carry(DemoController):
 
 
 if __name__ == "__main__":
-    m = Carry(launch_build=False, images_directory="D:/magnebot/carry", debug=True)
+    m = Carry(launch_build=False, images_directory="D:/magnebot/carry", debug=False)
     m.run()

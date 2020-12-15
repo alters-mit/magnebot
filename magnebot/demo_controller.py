@@ -112,7 +112,6 @@ class DemoController(Magnebot):
                                   "origin": origin,
                                   "destination": target}])
         nav_mesh_path = get_data(resp=resp, d_type=NavMeshPath).get_path()
-        print(len(nav_mesh_path))
         path: List[Dict[str, float]] = list()
         occupancy_path: List[np.array] = list()
         # For every node on the path, constrain it to the nearest position on the occupancy map.

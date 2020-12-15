@@ -960,9 +960,11 @@ class Magnebot(FloorplanController):
                                           "avatar_id": camera_id})
 
         if follow:
-            self._next_frame_commands.append({"$type": "parent_avatar_to_robot",
-                                              "avatar_id": camera_id,
-                                              "position": position})
+            # Follow the Magnebot. `object_id` is the Magnebot's assumed ID.
+            self._per_frame_commands.append({"$type": "follow_object",
+                                             "avatar_id": camera_id,
+                                             "offset": position,
+                                             "object_id": 0})
         else:
             self._next_frame_commands.append({"$type": "teleport_avatar_to",
                                               "avatar_id": camera_id,
@@ -1357,10 +1359,11 @@ class Magnebot(FloorplanController):
             state_1 = SceneState(self.communicate([]))
             moving = False
             for a_id in self.magnebot_static.arm_joints.values():
-                if np.linalg.norm(state_0.joint_angles[a_id][0] -
-                                  state_1.joint_angles[a_id][0]) > 0.001:
-                    moving = True
-                    break
+                for i in range(len(state_0.joint_angles[a_id])):
+                    if np.linalg.norm(state_0.joint_angles[a_id][i] -
+                                      state_1.joint_angles[a_id][i]) > 0.001:
+                        moving = True
+                        break
             state_0 = state_1
             attempts += 1
         if moving:
@@ -1477,8 +1480,6 @@ class Magnebot(FloorplanController):
         :return: The converted position relative to the Magnebot's position and rotation.
         """
 
-        return TDWUtils.rotate_position_around(position=position - state.magnebot_transform.position,
-                                               angle=-TDWUtils.get_angle_between(v1=Magnebot.FORWARD,
-                                                                                 v2=state.magnebot_transform.forward))
-
-
+        return QuaternionUtils.world_to_local_vector(position=position,
+                                                     origin=state.magnebot_transform.position,
+                                                     rotation=state.magnebot_transform.rotation)
