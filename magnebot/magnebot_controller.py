@@ -19,7 +19,7 @@ from magnebot.object_static import ObjectStatic
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.scene_state import SceneState
 from magnebot.action_status import ActionStatus
-from magnebot.paths import SPAWN_POSITIONS_PATH, COLUMN_Y, OCCUPANCY_MAPS_DIRECTORY, SCENE_BOUNDS_PATH
+from magnebot.paths import SPAWN_POSITIONS_PATH, TORSO_Y, OCCUPANCY_MAPS_DIRECTORY, SCENE_BOUNDS_PATH
 from magnebot.arm import Arm
 from magnebot.joint_type import JointType
 from magnebot.arm_joint import ArmJoint
@@ -131,7 +131,7 @@ class Magnebot(FloorplanController):
     # The ratio of prisimatic joint y values for the torso vs. worldspace y values.
     # These aren't always an exact ratio (ok, Unity...), so they're cached here.
     _TORSO_Y: Dict[float, float] = dict()
-    with COLUMN_Y.open(encoding='utf-8-sig') as f:
+    with TORSO_Y.open(encoding='utf-8-sig') as f:
         r = DictReader(f)
         for row in r:
             _TORSO_Y[float(row["prismatic"])] = float(row["actual"])

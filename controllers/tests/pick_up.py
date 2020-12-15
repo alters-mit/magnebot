@@ -1,4 +1,3 @@
-from typing import Dict, List
 from tdw.tdw_utils import TDWUtils
 from magnebot import TestController, Arm
 from magnebot.action_status import ActionStatus
