@@ -963,7 +963,7 @@ class Magnebot(FloorplanController):
             # Follow the Magnebot. `object_id` is the Magnebot's assumed ID.
             self._per_frame_commands.append({"$type": "follow_object",
                                              "avatar_id": camera_id,
-                                             "offset": position,
+                                             "position": position,
                                              "object_id": 0})
         else:
             self._next_frame_commands.append({"$type": "teleport_avatar_to",
