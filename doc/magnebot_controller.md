@@ -181,7 +181,7 @@ Note that it is possible for the Magnebot to go to positions that aren't "free".
 | screen_height |  int  | 256 | The height of the screen in pixels. |
 | auto_save_images |  bool  | False | If True, automatically save images to `images_directory` at the end of every action. |
 | images_directory |  str  | "images" | The output directory for images if `auto_save_images == True`. |
-| debug |  bool  | False | If True, enable debug mode and output debug messages to the console. |
+| debug |  bool  | False | If True, enable debug mode. This controller will output messages to the console, including any warnings or errors sent by the build. It will also create 3D plots of arm articulation IK solutions. |
 
 ***
 
