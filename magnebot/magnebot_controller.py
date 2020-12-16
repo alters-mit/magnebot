@@ -978,7 +978,7 @@ class Magnebot(FloorplanController):
                                               "angle": angle,
                                               "avatar_id": camera_id})
         if look_at:
-            self._per_frame_commands.append({"$type": "look_at_robot",
+            self._per_frame_commands.append({"$type": "look_at",
                                              "avatar_id": camera_id})
 
         self._end_action()
@@ -1117,7 +1117,8 @@ class Magnebot(FloorplanController):
                     {"$type": "create_avatar",
                      "type": "A_Img_Caps_Kinematic"},
                     {"$type": "parent_avatar_to_robot",
-                     "position": {"x": 0, "y": 0.923, "z": 0.1838}},
+                     "position": {"x": 0, "y": 0.053, "z": 0.1838},
+                     "body_part": "torso"},
                     {"$type": "set_pass_masks",
                      "pass_masks": ["_img", "_id", "_depth"]},
                     {"$type": "enable_image_sensor",
@@ -1163,8 +1164,7 @@ class Magnebot(FloorplanController):
         # Move the torso up to its default height to prevent anything from dragging.
         self._next_frame_commands.append({"$type": "set_prismatic_target",
                                           "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
-                                          "target": Magnebot._DEFAULT_TORSO_Y,
-                                          "axis": "y"})
+                                          "target": Magnebot._DEFAULT_TORSO_Y})
         self._do_arm_motion()
 
     def _start_ik(self, target: Dict[str, float], arm: Arm, absolute: bool = False, arrived_at: float = 0.125,
@@ -1278,8 +1278,7 @@ class Magnebot(FloorplanController):
         # Slide the torso to the desired height.
         self.communicate({"$type": "set_prismatic_target",
                           "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
-                          "target": torso_prismatic,
-                          "axis": "y"})
+                          "target": torso_prismatic})
         self._do_arm_motion()
 
         # Convert the IK solution into TDW commands, using the expected joint and axis order.
@@ -1323,8 +1322,7 @@ class Magnebot(FloorplanController):
         if reset_torso:
             commands.extend([{"$type": "set_prismatic_target",
                               "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
-                              "target": Magnebot._DEFAULT_TORSO_Y,
-                              "axis": "y"},
+                              "target": Magnebot._DEFAULT_TORSO_Y},
                              {"$type": "set_revolute_target",
                               "joint_id": self.magnebot_static.arm_joints[ArmJoint.column],
                               "target": 0}])
