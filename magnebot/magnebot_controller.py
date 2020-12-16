@@ -9,7 +9,7 @@ from ikpy.chain import Chain
 from ikpy.link import OriginLink, URDFLink
 from ikpy.utils import geometry
 from tdw.floorplan_controller import FloorplanController
-from tdw.output_data import Version, StaticRobot, SegmentationColors, Bounds, Rigidbodies
+from tdw.output_data import OutputData, Version, StaticRobot, SegmentationColors, Bounds, Rigidbodies, LogMessage
 from tdw.tdw_utils import TDWUtils, QuaternionUtils
 from tdw.object_init_data import AudioInitData
 from tdw.py_impact import PyImpact, ObjectInfo
@@ -154,7 +154,7 @@ class Magnebot(FloorplanController):
         :param screen_height: The height of the screen in pixels.
         :param auto_save_images: If True, automatically save images to `images_directory` at the end of every action.
         :param images_directory: The output directory for images if `auto_save_images == True`.
-        :param debug: If True, enable debug mode and output debug messages to the console.
+        :param debug: If True, enable debug mode. This controller will output messages to the console, including any warnings or errors sent by the build. It will also create 3D plots of arm articulation IK solutions.
         """
 
         super().__init__(port=port, launch_build=launch_build)
@@ -1035,8 +1035,19 @@ class Magnebot(FloorplanController):
         # Add per-frame commands.
         commands.extend(self._per_frame_commands)
 
-        # Send the commands and get a response.
-        return super().communicate(commands)
+        if not self._debug:
+            # Send the commands and get a response.
+            return super().communicate(commands)
+        else:
+            resp = super().communicate(commands)
+            # Print log messages.
+            for i in range(len(resp) - 1):
+                r_id = OutputData.get_data_type_id(resp[i])
+                if r_id == "logm":
+                    log_message = LogMessage(resp[i])
+                    print(f"Message from build: {log_message.get_message_type()}, {log_message.get_message()}\t"
+                          f"{log_message.get_object_type()}")
+            return resp
 
     def _add_object(self, model_name: str, position: Dict[str, float] = None,
                     rotation: Dict[str, float] = None, library: str = "models_core.json",
@@ -1146,6 +1157,8 @@ class Magnebot(FloorplanController):
                           "stay": False,
                           "exit": False,
                           "collision_types": ["obj", "env"]}])
+        if self._debug:
+            commands.append({"$type": "send_log_messages"})
         return commands
 
     def _start_action(self) -> None:

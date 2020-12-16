@@ -8,6 +8,7 @@
 
 #### `Magnebot`
 
+- In debug mode, output log messages from the build.
 - Improved the IK system:
   - Choose a strategy for raising/lowering the torso depending on the height of the target.
   - Move the torso up/down before starting the rest of the arm movement.
