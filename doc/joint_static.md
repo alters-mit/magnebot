@@ -2,7 +2,7 @@
 
 `from magnebot.joint_static import JointStatic`
 
-Static data for a joint the Magnebot.
+Static data for a joint of the Magnebot.
 
 ***
 

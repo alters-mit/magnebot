@@ -304,6 +304,7 @@ Possible [return values](action_status.md):
 
 - `success`
 - `failed_to_move`
+- `collision`
 
 
 | Parameter | Type | Default | Description |
@@ -327,6 +328,7 @@ Possible [return values](action_status.md):
 
 - `success`
 - `failed_to_move`
+- `collision`
 - `failed_to_turn`
 
 

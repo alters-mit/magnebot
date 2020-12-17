@@ -4,7 +4,7 @@ from tdw.output_data import StaticRobot
 
 class JointStatic:
     """
-    Static data for a joint the Magnebot.
+    Static data for a joint of the Magnebot.
     """
 
     def __init__(self, sr: StaticRobot, index: int):

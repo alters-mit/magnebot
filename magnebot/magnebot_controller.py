@@ -13,6 +13,7 @@ from tdw.output_data import OutputData, Version, StaticRobot, SegmentationColors
 from tdw.tdw_utils import TDWUtils, QuaternionUtils
 from tdw.object_init_data import AudioInitData
 from tdw.py_impact import PyImpact, ObjectInfo
+from tdw.collisions import Collisions
 from tdw.release.pypi import PyPi
 from magnebot.util import get_data
 from magnebot.object_static import ObjectStatic
@@ -517,6 +518,7 @@ class Magnebot(FloorplanController):
 
         - `success`
         - `failed_to_move`
+        - `collision`
 
         :param distance: The target distance. If less than zero, the Magnebot will move backwards.
         :param arrived_at: If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
@@ -565,11 +567,45 @@ class Magnebot(FloorplanController):
             move_state_0 = SceneState(resp=self.communicate(commands))
             move_done = False
             while not move_done:
-                move_state_1 = SceneState(resp=self.communicate(commands))
+                resp = self.communicate([])
+                move_state_1 = SceneState(resp=resp)
                 dt = np.linalg.norm(move_state_1.magnebot_transform.position - move_state_0.magnebot_transform.position)
                 if dt < 0.001:
                     move_done = True
                 move_state_0 = move_state_1
+
+                # Check if we collided with the environment or with any objects.
+                collided = False
+                collisions = Collisions(resp=resp)
+                if "enter" in collisions.env_collisions:
+                    for object_id in collisions.env_collisions["enter"]:
+                        if object_id in self.magnebot_static.joints:
+                            collided = True
+                            break
+                if not collided and "enter" in collisions.obj_collisions:
+                    for id_pair in collisions.obj_collisions["enter"]:
+                        # Listen only for collisions between a body part and a scene object.
+                        if (id_pair.int1 in self.magnebot_static.joints and
+                            id_pair.int2 not in self.magnebot_static.joints) or \
+                                (id_pair.int1 not in self.magnebot_static.joints and
+                                 id_pair.int2 in self.magnebot_static.joints):
+                            collided = True
+                            break
+                if collided:
+                    # Stop wheel movement to prevent the Magnebot from tipping over.
+                    commands = []
+                    for wheel in self.magnebot_static.wheels:
+                        # Set the target of each wheel to its current position.
+                        commands.append({"$type": "set_revolute_target",
+                                         "target": float(move_state_1.joint_angles[
+                                                             self.magnebot_static.wheels[wheel]][0]),
+                                         "joint_id": self.magnebot_static.wheels[wheel]})
+                    self._next_frame_commands.extend(commands)
+                    if self._debug:
+                        print("Collision. Stopping movement.")
+                    self._end_action()
+                    return ActionStatus.collision
+
             wheel_state = move_state_0
             # Check if we're at the destination.
             p1 = wheel_state.magnebot_transform.position
@@ -583,7 +619,7 @@ class Magnebot(FloorplanController):
                 return ActionStatus.success
             # Go until we've traversed the distance.
             # 0.5 is a magic number.
-            spin = (d / Magnebot._WHEEL_CIRCUMFERENCE) * 360 * 0.5
+            spin = (d / Magnebot._WHEEL_CIRCUMFERENCE) * 360 * 0.5 * (1 if distance > 0 else -1)
             d_total = np.linalg.norm(p1 - p0)
             if d_total > d_0:
                 spin *= -1
@@ -611,6 +647,7 @@ class Magnebot(FloorplanController):
 
         - `success`
         - `failed_to_move`
+        - `collision`
         - `failed_to_turn`
 
         :param target: Either the ID of an object or a Vector3 position.
@@ -1155,7 +1192,7 @@ class Magnebot(FloorplanController):
                          {"$type": "send_collisions",
                           "enter": True,
                           "stay": False,
-                          "exit": False,
+                          "exit": True,
                           "collision_types": ["obj", "env"]}])
         if self._debug:
             commands.append({"$type": "send_log_messages"})
