@@ -2,6 +2,8 @@
 
 ## 0.1.2
 
+- Added: `social.jpg`
+
 ### `magnebot` module
 
 - Removed `int_pair.py` (moved to the `tdw` repo).
@@ -10,6 +12,10 @@
 
 - `move_by()` and `move_to()` will stop directional movement if the Magnebot collides with the environment or any scene objects.
 - Fixed: In `move_by()` and `move_to()`, the Magnebot goes the wrong way when making more than one attempt if `distance < 0`. 
+
+### Demos
+
+- Added: `social_image.py` Generate the social image.
 
 ### Tests
 
