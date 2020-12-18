@@ -313,6 +313,8 @@ class Magnebot(FloorplanController):
 
         **Always call this function before any other API calls.**
 
+        It might take a few minutes to initialize the scene.
+
         Set the `scene` and `layout` parameters in `init_scene()` to load an interior scene with furniture and props. Set the `room` to spawn the avatar in the center of a room.
 
         ```python
