@@ -62,7 +62,6 @@ Possible [return values](action_status.md):
 - `success`
 - `failed_to_move`
 - `failed_to_turn`
-- `no_path`
 
 
 | Parameter | Type | Default | Description |

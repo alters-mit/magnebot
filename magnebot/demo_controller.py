@@ -34,7 +34,7 @@ class DemoController(Magnebot):
 
         self._image_count = 0
 
-    def add_camera(self, position: Dict[str, float], rotation: Dict[str, float] = None,
+    def add_camera(self, position: Dict[str, float], roll: float = 0, pitch: float = 0, yaw: float = 0,
                    look_at: bool = True, follow: bool = False, camera_id: str = "c") -> ActionStatus:
         """
         See: [`Magnebot.add_camera()`](magnebot_controller.md#add_camera).
@@ -43,7 +43,7 @@ class DemoController(Magnebot):
         """
 
         self._create_images_directory(avatar_id=camera_id)
-        status = super().add_camera(position=position, rotation=rotation, look_at=look_at, follow=follow,
+        status = super().add_camera(position=position, roll=roll, pitch=pitch, yaw=yaw, look_at=look_at, follow=follow,
                                     camera_id=camera_id)
         # Always save images.
         if not self._debug:
@@ -94,7 +94,6 @@ class DemoController(Magnebot):
         - `success`
         - `failed_to_move`
         - `failed_to_turn`
-        - `no_path`
 
         :param target: The target destination.
         :param arrived_at: While moving, if at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
@@ -133,7 +132,7 @@ class DemoController(Magnebot):
             # If we couldn't find a valid waypoint near the NavMesh position, end the action.
             if waypoint is None:
                 self._end_action()
-                return ActionStatus.no_path
+                return ActionStatus.failed_to_move
             # Record the waypoint occupancy map position. We'll use this to draw a Bresenham line.
             occupancy_path.append(waypoint)
             # Convert the occupancy map position to a worldspace position.

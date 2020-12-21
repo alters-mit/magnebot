@@ -33,4 +33,3 @@ class ActionStatus(Enum):
     clamped_camera_rotation = 8  # The Magnebot rotated its camera but at least one angle of rotation was clamped.
     failed_to_bend = 9  # The Magnebot tried to bend its arm but failed to bend it all the way.
     collision = 10  # The Magnebot tried to move collided with an object or part of the environment (such as a wall).
-    no_path = 100  # The Magnebot failed to navigate (see [`DemoController`](demo_controller.md)) because it couldn't find a path.
