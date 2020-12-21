@@ -1202,7 +1202,7 @@ class Magnebot(FloorplanController):
                                           "target": Magnebot._DEFAULT_TORSO_Y})
         self._do_arm_motion()
 
-    def _start_ik(self, target: Dict[str, float], arm: Arm, absolute: bool = False, arrived_at: float = 0.125,
+    def _start_ik(self, target: Dict[str, float], arm: Arm, absolute: bool = True, arrived_at: float = 0.125,
                   state: SceneState = None, allow_column: bool = True) -> ActionStatus:
         """
         Start an IK action.
@@ -1262,6 +1262,9 @@ class Magnebot(FloorplanController):
         # Convert to relative coordinates.
         if absolute:
             target = self._absolute_to_relative(position=target, state=state)
+        else:
+            target = QuaternionUtils.multiply_by_vector(
+                q=QuaternionUtils.get_inverse(q=state.magnebot_transform.rotation), v=target)
 
         # Get the initial angles of each joint.
         # The first angle is always 0 (the origin link).
@@ -1600,10 +1603,10 @@ class Magnebot(FloorplanController):
         # Apply a small downward force. This will prevent occasional glitches that freeze the object in midair.
         self._next_frame_commands.extend([{"$type": "drop_from_magnet",
                                            "arm": arm.name,
-                                           "object_id": object_id},
+                                           "object_id": int(object_id)},
                                           {"$type": "apply_force_to_object",
                                            "force": {"x": 0, "y": -0.00001, "z": 0},
-                                           "id": object_id}])
+                                           "id": int(object_id)}])
 
     @staticmethod
     def _absolute_to_relative(position: np.array, state: SceneState) -> np.array:

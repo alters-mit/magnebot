@@ -12,7 +12,7 @@
 - Image rendering
 - Scene state metadata
 
-Unless otherwise stated, each of these functions is an "action" that the Magnebot can do. Each action advances the simulation by at least 1 physics frame, returns an [`ActionStatus`](action_status.md), and updates the `state` field.
+Unless otherwise stated, each of these functions is an "action" that the Magnebot can do. Each action advances the simulation by at least 1 physics frame, returns an [`ActionStatus`](https://github.com/alters-mit/magnebot/blob/main/doc/action_status.md), and updates the `state` field.
 
 ```python
 from magnebot import Magnebot
@@ -60,7 +60,7 @@ Parameters of type `Union[Dict[str, float], int]]` can be either a Vector3 or an
 
 #### Arm
 
-All parameters of type `Arm` require you to import the [Arm enum class](arm.md):
+All parameters of type `Arm` require you to import the [Arm enum class](https://github.com/alters-mit/magnebot/blob/main/doc/arm.md):
 
 ```python
 from magnebot import Arm
@@ -82,7 +82,7 @@ print(Arm.left)
 
 ## Fields
 
-- `state` Dynamic data for all of the most recent frame (i.e. the frame after doing an action such as `move_to()`). [Read this](scene_state.md) for a full API.
+- `state` Dynamic data for all of the most recent frame (i.e. the frame after doing an action such as `move_to()`). [Read this](https://github.com/alters-mit/magnebot/blob/main/doc/scene_state.md) for a full API.
 
 - `auto_save_images` If True, automatically save images to `images_directory` at the end of every action.
 
@@ -90,7 +90,7 @@ print(Arm.left)
 
 - `camera_rpy` The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees as a numpy array. This is handled outside of `self.state` because it isn't calculated using output data from the build. See: `Magnebot.CAMERA_RPY_CONSTRAINTS` and `self.rotate_camera()`
 
-- `objects_static` Data for all objects in the scene that that doesn't change between frames, such as object IDs, mass, etc. Key = the ID of the object. [Read the full API here](object_static.md).
+- `objects_static` Data for all objects in the scene that that doesn't change between frames, such as object IDs, mass, etc. Key = the ID of the object. [Read the full API here](https://github.com/alters-mit/magnebot/blob/main/doc/object_static.md).
 
 ```python
 from magnebot import Magnebot
@@ -119,7 +119,7 @@ for hashable_color in m.segmentation_color_to_id:
     color = TDWUtils.hashable_to_color(hashable_color)
 ```
 
-- `magnebot_static` Data for the Magnebot that doesn't change between frames. [Read this for a full API](magnebot_static.md)
+- `magnebot_static` Data for the Magnebot that doesn't change between frames. [Read this for a full API](https://github.com/alters-mit/magnebot/blob/main/doc/magnebot_static.md)
 
 ```python
 from magnebot import Magnebot
@@ -226,7 +226,7 @@ Images of where each room in a scene is can be found [here](https://github.com/a
 
 You can call `init_scene()` more than once to reset the simulation.
 
-Possible [return values](action_status.md):
+Possible [return values](https://github.com/alters-mit/magnebot/blob/main/doc/action_status.md):
 
 - `success`
 - `failed_to_bend` (Technically this is _possible_, but it shouldn't ever happen.)
@@ -255,7 +255,7 @@ The Magnebot will turn by small increments to align with the target angle.
 
 When turning, the left wheels will turn one way and the right wheels in the opposite way, allowing the Magnebot to turn in place.
 
-Possible [return values](action_status.md):
+Possible [return values](https://github.com/alters-mit/magnebot/blob/main/doc/action_status.md):
 
 - `success`
 - `failed_to_turn`
@@ -280,7 +280,7 @@ The Magnebot will turn by small increments to align with the target angle.
 
 When turning, the left wheels will turn one way and the right wheels in the opposite way, allowing the Magnebot to turn in place.
 
-Possible [return values](action_status.md):
+Possible [return values](https://github.com/alters-mit/magnebot/blob/main/doc/action_status.md):
 
 - `success`
 - `failed_to_turn`
@@ -301,7 +301,7 @@ _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and
 
 Move the Magnebot forward or backward by a given distance.
 
-Possible [return values](action_status.md):
+Possible [return values](https://github.com/alters-mit/magnebot/blob/main/doc/action_status.md):
 
 - `success`
 - `failed_to_move`
@@ -325,7 +325,7 @@ Move the Magnebot to a target object or position.
 
 The Magnebot will first try to turn to face the target by internally calling a `turn_to()` action.
 
-Possible [return values](action_status.md):
+Possible [return values](https://github.com/alters-mit/magnebot/blob/main/doc/action_status.md):
 
 - `success`
 - `failed_to_move`
@@ -357,7 +357,7 @@ Reach for a target position.
 
 The action ends when the Magnebot's magnet reaches arm stops moving. The arm might stop moving if it succeeded at finishing the motion, in which case the action is successful. Or, the arms might stop moving because the motion is impossible, there's an obstacle in the way, if the arm is holding something heavy, and so on.
 
-Possible [return values](action_status.md):
+Possible [return values](https://github.com/alters-mit/magnebot/blob/main/doc/action_status.md):
 
 - `success`
 - `cannot_reach`
@@ -380,7 +380,7 @@ _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` i
 Try to grasp the target object with the arm. The Magnebot will reach for the nearest position on the object.
 If, after bending the arm, the magnet is holding the object, then the action is successful.
 
-Possible [return values](action_status.md):
+Possible [return values](https://github.com/alters-mit/magnebot/blob/main/doc/action_status.md):
 
 - `success`
 - `cannot_reach`
@@ -400,9 +400,9 @@ _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` i
 
 Drop an object held by a magnet. This action takes exactly 1 frame; it won't wait for the object to finish falling.
 
-See [`SceneState.held`](scene_state.md) for a dictionary of held objects.
+See [`SceneState.held`](https://github.com/alters-mit/magnebot/blob/main/doc/scene_state.md) for a dictionary of held objects.
 
-Possible [return values](action_status.md):
+Possible [return values](https://github.com/alters-mit/magnebot/blob/main/doc/action_status.md):
 
 - `success`
 - `not_holding`
@@ -421,7 +421,7 @@ _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` d
 
 Drop all objects held by either magnet. This action takes exactly 1 frame; it won't wait for the object to finish falling.
 
-Possible [return values](action_status.md):
+Possible [return values](https://github.com/alters-mit/magnebot/blob/main/doc/action_status.md):
 
 - `success`
 - `not_holding`
@@ -436,7 +436,7 @@ _Returns:_  An `ActionStatus` if the Magnebot dropped any objects.
 
 Reset an arm to its neutral position.
 
-Possible [return values](action_status.md):
+Possible [return values](https://github.com/alters-mit/magnebot/blob/main/doc/action_status.md):
 
 - `success`
 - `failed_to_bend`
@@ -483,7 +483,7 @@ print(status) # ActionStatus.clamped_camera_rotation
 print(m.camera_rpy) # [-10 -70 45]
 ```
 
-Possible [return values](action_status.md):
+Possible [return values](https://github.com/alters-mit/magnebot/blob/main/doc/action_status.md):
 
 - `success`
 - `clamped_camera_rotation`
@@ -513,7 +513,7 @@ m.reset_camera()
 print(m.camera_rpy) # [0 0 0]
 ```
 
-Possible [return values](action_status.md):
+Possible [return values](https://github.com/alters-mit/magnebot/blob/main/doc/action_status.md):
 
 - `success`
 
@@ -529,7 +529,7 @@ Add a third person camera (i.e. a camera not attached to the any object) to the 
 
 This should only be sent per `init_scene()` call. When `init_scene()` is called to reset the simulation, you'll need to send `add_camera()` again too.
 
-Possible [return values](action_status.md):
+Possible [return values](https://github.com/alters-mit/magnebot/blob/main/doc/action_status.md):
 
 - `success`
 
