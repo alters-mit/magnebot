@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     # Go to the next object.
     status = m.move_to(target=m.target_object_1, arrived_at=0.75)
-    assert status == ActionStatus.success, status
+    assert status == ActionStatus.collision, status
     # Grasp the object.
     status = m.grasp(target=m.target_object_1, arm=Arm.right)
     assert status == ActionStatus.success, status

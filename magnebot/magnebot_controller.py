@@ -105,7 +105,7 @@ class Magnebot(FloorplanController):
     FORWARD: np.array = np.array([0, 0, 1])
 
     # Load default audio values for objects.
-    __OBJECT_AUDIO = PyImpact.get_object_info()
+    _OBJECT_AUDIO = PyImpact.get_object_info()
     """:class_var
     The camera roll, pitch, yaw constraints in degrees.
     """
@@ -753,8 +753,21 @@ class Magnebot(FloorplanController):
         resp = self.communicate([{"$type": "send_bounds",
                                   "ids": [target],
                                  "frequency": "once"}])
+        # Get the side on the bounds closet to the magnet.
         bounds = get_data(resp=resp, d_type=Bounds)
-        target_position = TDWUtils.array_to_vector3(bounds.get_center(0))
+        sides = [bounds.get_left(0), bounds.get_right(0), bounds.get_front(0), bounds.get_back(0)]
+        sides = [np.array(s) for s in sides]
+        # Get the position of the magnet.
+        magnet_position = self.state.body_part_transforms[self.magnebot_static.magnets[arm]].position
+        # Get the closest side to the magnet.
+        closest: np.array = sides[0]
+        d = np.inf
+        for side in sides:
+            dd = np.linalg.norm(side - magnet_position)
+            if dd < d:
+                closest = side
+                d = dd
+        target_position = TDWUtils.array_to_vector3(closest)
 
         if self._debug:
             self._next_frame_commands.append({"$type": "add_position_marker",
@@ -852,7 +865,7 @@ class Magnebot(FloorplanController):
         """
 
         self._start_action()
-        self._next_frame_commands.extend(self.__get_reset_arm_commands(arm=arm, reset_torso=reset_torso))
+        self._next_frame_commands.extend(self._get_reset_arm_commands(arm=arm, reset_torso=reset_torso))
 
         status = self._do_arm_motion()
         self._end_action()
@@ -872,8 +885,8 @@ class Magnebot(FloorplanController):
 
         self._start_action()
         # Reset both arms.
-        self._next_frame_commands.extend(self.__get_reset_arm_commands(arm=Arm.left, reset_torso=True))
-        self._next_frame_commands.extend(self.__get_reset_arm_commands(arm=Arm.right, reset_torso=False))
+        self._next_frame_commands.extend(self._get_reset_arm_commands(arm=Arm.left, reset_torso=True))
+        self._next_frame_commands.extend(self._get_reset_arm_commands(arm=Arm.right, reset_torso=False))
         # Wait for both arms to stop moving.
         status = self._do_arm_motion()
         self._end_action()
@@ -1109,7 +1122,7 @@ class Magnebot(FloorplanController):
         # Get the data.
         # There isn't any audio in this simulation, but we use `AudioInitData` anyway to derive physics values.
         if audio is None:
-            audio = Magnebot.__OBJECT_AUDIO[model_name]
+            audio = Magnebot._OBJECT_AUDIO[model_name]
         if mass is not None:
             audio.mass = mass
         init_data = AudioInitData(name=model_name, position=position, rotation=rotation, scale_factor=scale,
@@ -1358,9 +1371,8 @@ class Magnebot(FloorplanController):
             # Increment to the next joint in the order.
             joint_order_index += 1
         self._next_frame_commands.extend(commands)
-        return ActionStatus.success
 
-    def __get_reset_arm_commands(self, arm: Arm, reset_torso: bool) -> List[dict]:
+    def _get_reset_arm_commands(self, arm: Arm, reset_torso: bool) -> List[dict]:
         """
         :param arm: The arm to reset.
         :param reset_torso: If True, reset the torso.
