@@ -818,9 +818,7 @@ class Magnebot(FloorplanController):
             self._end_action()
             return ActionStatus.not_holding
 
-        self._next_frame_commands.append({"$type": "drop_from_magnet",
-                                          "arm": arm.name,
-                                          "object_id": target})
+        self._append_drop_commands(object_id=target, arm=arm)
         self._end_action()
         return ActionStatus.success
 
@@ -843,9 +841,7 @@ class Magnebot(FloorplanController):
 
         for arm in self.state.held:
             for object_id in self.state.held[arm]:
-                self._next_frame_commands.append({"$type": "drop_from_magnet",
-                                                  "arm": arm.name,
-                                                  "object_id": int(object_id)})
+                self._append_drop_commands(object_id=int(object_id), arm=arm)
         self._end_action()
         return ActionStatus.success
 
@@ -1533,6 +1529,22 @@ class Magnebot(FloorplanController):
                                                           mass=rigidbodies.get_mass(i))
         # Cache the static robot data.
         self.magnebot_static = MagnebotStatic(static_robot=get_data(resp=resp, d_type=StaticRobot))
+
+    def _append_drop_commands(self, object_id: int, arm: Arm) -> None:
+        """
+        Append commands to drop an object to `_next_frame_commands`
+        :param object_id: The ID of the object.
+        :param arm: The arm holding the object.
+        """
+
+        # Drop the object.
+        # Apply a small downward force. This will prevent occasional glitches that freeze the object in midair.
+        self._next_frame_commands.extend([{"$type": "drop_from_magnet",
+                                           "arm": arm.name,
+                                           "object_id": object_id},
+                                          {"$type": "apply_force_to_object",
+                                           "force": {"x": 0, "y": -0.00001, "z": 0},
+                                           "id": object_id}])
 
     @staticmethod
     def _absolute_to_relative(position: np.array, state: SceneState) -> np.array:
