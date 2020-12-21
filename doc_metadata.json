@@ -15,7 +15,7 @@
     },
     "Arm Articulation": {
       "description": "These functions move and bend the joints of the Magnebots's arms.",
-      "functions": ["reach_for", "grasp", "drop", "drop_all", "reset_arm", "reset_arms"]
+      "functions": ["reach_for", "grasp", "drop", "drop_all", "reset_arm"]
     },
     "Camera": {
       "description": "These commands rotate the Magnebot's camera or add additional camera to the scene.",

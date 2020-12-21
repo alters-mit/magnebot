@@ -435,7 +435,7 @@ _Returns:_  An `ActionStatus` if the Magnebot dropped any objects.
 
 **`self.reset_arm(arm, reset_torso=True)`**
 
-Reset an arm to its neutral position. If the arm is holding any objects, it will continue to do so.
+Reset an arm to its neutral position.
 
 Possible [return values](action_status.md):
 
@@ -449,19 +449,6 @@ Possible [return values](action_status.md):
 | reset_torso |  bool  | True | If True, rotate and slide the torso to its neutral rotation and height. |
 
 _Returns:_  An `ActionStatus` indicating if the arm reset and if not, why.
-
-#### reset_arms
-
-**`self.reset_arms()`**
-
-Reset both arms and the torso to their neutral positions. If either arm is holding any objects, it will continue to do so.
-
-Possible [return values](action_status.md):
-
-- `success`
-- `failed_to_bend`
-
-_Returns:_  An `ActionStatus` indicating if the arms reset and if not, why.
 
 ***
 

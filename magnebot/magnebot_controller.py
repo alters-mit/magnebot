@@ -847,7 +847,7 @@ class Magnebot(FloorplanController):
 
     def reset_arm(self, arm: Arm, reset_torso: bool = True) -> ActionStatus:
         """
-        Reset an arm to its neutral position. If the arm is holding any objects, it will continue to do so.
+        Reset an arm to its neutral position.
 
         Possible [return values](action_status.md):
 
@@ -863,27 +863,6 @@ class Magnebot(FloorplanController):
         self._start_action()
         self._next_frame_commands.extend(self._get_reset_arm_commands(arm=arm, reset_torso=reset_torso))
 
-        status = self._do_arm_motion()
-        self._end_action()
-        return status
-
-    def reset_arms(self) -> ActionStatus:
-        """
-        Reset both arms and the torso to their neutral positions. If either arm is holding any objects, it will continue to do so.
-
-        Possible [return values](action_status.md):
-
-        - `success`
-        - `failed_to_bend`
-
-        :return: An `ActionStatus` indicating if the arms reset and if not, why.
-        """
-
-        self._start_action()
-        # Reset both arms.
-        self._next_frame_commands.extend(self._get_reset_arm_commands(arm=Arm.left, reset_torso=True))
-        self._next_frame_commands.extend(self._get_reset_arm_commands(arm=Arm.right, reset_torso=False))
-        # Wait for both arms to stop moving.
         status = self._do_arm_motion()
         self._end_action()
         return status
@@ -1229,7 +1208,7 @@ class Magnebot(FloorplanController):
         self._do_arm_motion()
 
     def _start_ik(self, target: Dict[str, float], arm: Arm, absolute: bool = False, arrived_at: float = 0.125,
-                  state: SceneState = None) -> ActionStatus:
+                  state: SceneState = None, allow_column: bool = True) -> ActionStatus:
         """
         Start an IK action.
 
@@ -1238,6 +1217,7 @@ class Magnebot(FloorplanController):
         :param absolute: If True, `target` is in absolute world coordinates. If False, `target` is relative to the position and rotation of the Magnebot.
         :param arrived_at: If the magnet is this distance or less from `target`, then the action is successful.
         :param state: The scene state. If None, this uses `self.state`
+        :param allow_column: If True, allow column rotation.
 
         :return: An `ActionStatus` describing whether the IK action began.
         """
@@ -1250,7 +1230,8 @@ class Magnebot(FloorplanController):
             """
 
             # Generate an IK chain, given the current desired torso height.
-            chain = self.__get_ik_chain(arm=arm, torso_y=Magnebot._TORSO_Y[round(torso_prismatic, 2)])
+            chain = self.__get_ik_chain(arm=arm, torso_y=Magnebot._TORSO_Y[round(torso_prismatic, 2)],
+                                        allow_column=allow_column)
 
             # Get the IK solution.
             ik = chain.inverse_kinematics(target_position=target,
@@ -1339,7 +1320,8 @@ class Magnebot(FloorplanController):
         return ActionStatus.success
 
     def _start_ik_orientation(self, orientation: np.array, arm: Arm, object_id: int = None,
-                              orientation_mode: str = "X") -> ActionStatus:
+                              orientation_mode: str = "Y", torso_prismatic: float = 1,
+                              initial_angles: List[float] = None) -> None:
         """
         Rotate the end effector to a target orientation.
 
@@ -1347,42 +1329,34 @@ class Magnebot(FloorplanController):
         :param arm: The arm.
         :param object_id: If not None, and if the object is held by the arm, make the object the end effector in the IK chain.
         :param orientation_mode: The orientation mode. Options: "X", "Y", "Z".
+        :param torso_prismatic: Target value for the torso prismatic joint.
         """
 
-        if object_id is not None and object_id not in self.state.held[arm]:
-            return ActionStatus.not_holding
-
-        torso_prismatic = Magnebot._DEFAULT_TORSO_Y
-        torso_prismatic = 1.5
         chain = self.__get_ik_chain(arm=arm, torso_y=Magnebot._TORSO_Y[round(torso_prismatic, 2)], object_id=object_id,
                                     allow_column=False)
-        initial_angles = self._get_initial_angles(arm=arm)
-        initial_angles = list(initial_angles)
-        if object_id is not None:
-            initial_angles.append(0)
-        initial_angles = np.array(initial_angles)
+        if initial_angles is None:
+            initial_angles = self._get_initial_angles(arm=arm)
+            initial_angles = list(initial_angles)
+            if object_id is not None:
+                initial_angles.append(0)
+            initial_angles = np.array(initial_angles)
 
         # Get the IK solution.
-        ik = chain.inverse_kinematics(target_orientation=orientation,
-                                      orientation_mode=orientation_mode,
-                                      initial_position=initial_angles)
+        angles = chain.inverse_kinematics(target_orientation=orientation,
+                                          orientation_mode=orientation_mode,
+                                          initial_position=initial_angles)
+
         # Convert the angles to degrees. Remove the first node (the origin link) and last node (the magnet).
         if object_id is not None:
-            ik = [float(np.rad2deg(a)) for a in ik[1:-2]]
+            angles = [float(np.rad2deg(a)) for a in angles[1:-2]]
         else:
-            ik = [float(np.rad2deg(a)) for a in ik[1:-1]]
-        # Make the base of the Magnebot immovable because otherwise it might push itself off the ground and tip over.
-        # Do this now, rather than in the `commands` list, to prevent a slide during arm movement.
-        self.communicate({"$type": "set_immovable",
-                          "immovable": True})
+            angles = [float(np.rad2deg(a)) for a in angles[1:-1]]
 
-        # Slide the torso to the desired height.
-        self.communicate({"$type": "set_prismatic_target",
-                          "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
-                          "target": torso_prismatic})
-        self._do_arm_motion()
-        self._append_ik_commands(angles=ik, arm=arm)
-        return ActionStatus.success
+        self._append_ik_commands(arm=arm, angles=angles)
+        # Set the torso.
+        self._next_frame_commands.append({"$type": "set_prismatic_target",
+                                          "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
+                                          "target": 1.2})
 
     def _get_initial_angles(self, arm: Arm) -> np.array:
         """
