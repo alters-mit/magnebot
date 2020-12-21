@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot
 from ikpy.chain import Chain
-from ikpy.link import OriginLink, URDFLink
+from ikpy.link import OriginLink, URDFLink, Link
 from ikpy.utils import geometry
 from tdw.floorplan_controller import FloorplanController
 from tdw.output_data import OutputData, Version, StaticRobot, SegmentationColors, Bounds, Rigidbodies, LogMessage
@@ -1289,15 +1289,7 @@ class Magnebot(FloorplanController):
 
         # Get the initial angles of each joint.
         # The first angle is always 0 (the origin link).
-        initial_angles = [0]
-        for j in Magnebot._JOINT_ORDER[arm]:
-            j_id = self.magnebot_static.arm_joints[j]
-            initial_angles.extend(self.state.joint_angles[j_id])
-        # Add the magnet.
-        initial_angles.append(0)
-        if self._debug:
-            print(f"Initial angles: {initial_angles}")
-        initial_angles = np.array([np.deg2rad(ia) for ia in initial_angles])
+        initial_angles = self._get_initial_angles(arm=arm)
 
         # Try to get an IK solution from various heights.
         # Start at the default height and incrementally raise the torso.
@@ -1341,6 +1333,81 @@ class Magnebot(FloorplanController):
                           "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
                           "target": torso_prismatic})
         self._do_arm_motion()
+
+        # Convert the IK solution into TDW commands, using the expected joint and axis order.
+        self._append_ik_commands(angles=angles, arm=arm)
+        return ActionStatus.success
+
+    def _start_ik_orientation(self, orientation: np.array, arm: Arm, object_id: int = None,
+                              orientation_mode: str = "X") -> ActionStatus:
+        """
+        Rotate the end effector to a target orientation.
+
+        :param orientation: The target orientation.
+        :param arm: The arm.
+        :param object_id: If not None, and if the object is held by the arm, make the object the end effector in the IK chain.
+        :param orientation_mode: The orientation mode. Options: "X", "Y", "Z".
+        """
+
+        if object_id is not None and object_id not in self.state.held[arm]:
+            return ActionStatus.not_holding
+
+        torso_prismatic = Magnebot._DEFAULT_TORSO_Y
+        torso_prismatic = 1.5
+        chain = self.__get_ik_chain(arm=arm, torso_y=Magnebot._TORSO_Y[round(torso_prismatic, 2)], object_id=object_id,
+                                    allow_column=False)
+        initial_angles = self._get_initial_angles(arm=arm)
+        initial_angles = list(initial_angles)
+        if object_id is not None:
+            initial_angles.append(0)
+        initial_angles = np.array(initial_angles)
+
+        # Get the IK solution.
+        ik = chain.inverse_kinematics(target_orientation=orientation,
+                                      orientation_mode=orientation_mode,
+                                      initial_position=initial_angles)
+        # Convert the angles to degrees. Remove the first node (the origin link) and last node (the magnet).
+        if object_id is not None:
+            ik = [float(np.rad2deg(a)) for a in ik[1:-2]]
+        else:
+            ik = [float(np.rad2deg(a)) for a in ik[1:-1]]
+        # Make the base of the Magnebot immovable because otherwise it might push itself off the ground and tip over.
+        # Do this now, rather than in the `commands` list, to prevent a slide during arm movement.
+        self.communicate({"$type": "set_immovable",
+                          "immovable": True})
+
+        # Slide the torso to the desired height.
+        self.communicate({"$type": "set_prismatic_target",
+                          "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
+                          "target": torso_prismatic})
+        self._do_arm_motion()
+        self._append_ik_commands(angles=ik, arm=arm)
+        return ActionStatus.success
+
+    def _get_initial_angles(self, arm: Arm) -> np.array:
+        """
+        :param arm: The arm.
+
+        :return: The angles of the arm in the current state.
+        """
+
+        # Get the initial angles of each joint.
+        # The first angle is always 0 (the origin link).
+        initial_angles = [0]
+        for j in Magnebot._JOINT_ORDER[arm]:
+            j_id = self.magnebot_static.arm_joints[j]
+            initial_angles.extend(self.state.joint_angles[j_id])
+        # Add the magnet.
+        initial_angles.append(0)
+        return np.array([np.deg2rad(ia) for ia in initial_angles])
+
+    def _append_ik_commands(self, angles: np.array, arm: Arm) -> None:
+        """
+        Convert target angles to TDW commands and append them to `_next_frame_commands`.
+
+        :param angles: The target angles in degrees.
+        :param arm: The arm.
+        """
 
         # Convert the IK solution into TDW commands, using the expected joint and axis order.
         commands = []
@@ -1430,61 +1497,84 @@ class Magnebot(FloorplanController):
         else:
             return ActionStatus.success
 
-    @staticmethod
-    def __get_ik_chain(arm: Arm, torso_y: float) -> Chain:
+    def __get_ik_chain(self, arm: Arm, torso_y: float, object_id: int = None, allow_column: bool = True) -> Chain:
         """
         :param arm: The arm of the chain (determines the x position).
         :param torso_y: The y coordinate of the torso.
+        :param object_id: If not None, append this object to the IK chain.
+        :param allow_column: If True, allow column rotation.
 
         :return: An IK chain for the arm.
         """
 
-        return Chain(name=arm.name, links=[
-            OriginLink(),
-            URDFLink(name="column",
-                     translation_vector=[0, torso_y, 0],
-                     orientation=[0, 0, 0],
-                     rotation=[0, 1, 0],
-                     bounds=(np.deg2rad(-179), np.deg2rad(179))),
-            URDFLink(name="shoulder_pitch",
-                     translation_vector=[0.215 * (-1 if arm == Arm.left else 1), 0.059, 0.019],
-                     orientation=[0, 0, 0],
-                     rotation=[1, 0, 0],
-                     bounds=(np.deg2rad(-150), np.deg2rad(70))),
-            URDFLink(name="shoulder_roll",
-                     translation_vector=[0, 0, 0],
-                     orientation=[0, 0, 0],
-                     rotation=[0, 1, 0],
-                     bounds=(np.deg2rad(-70 if arm == Arm.left else -45), np.deg2rad(45 if arm == Arm.left else 70))),
-            URDFLink(name="shoulder_yaw",
-                     translation_vector=[0, 0, 0],
-                     orientation=[0, 0, 0],
-                     rotation=[0, 0, 1],
-                     bounds=(np.deg2rad(-110 if arm == Arm.left else -20), np.deg2rad(20 if arm == Arm.left else 110))),
-            URDFLink(name="elbow_pitch",
-                     translation_vector=[0.033 * (-1 if arm == Arm.left else 1), -0.33, 0],
-                     orientation=[0, 0, 0],
-                     rotation=[-1, 0, 0],
-                     bounds=(np.deg2rad(-90), np.deg2rad(145))),
-            URDFLink(name="wrist_pitch",
-                     translation_vector=[0, -0.373, 0],
-                     orientation=[0, 0, 0],
-                     rotation=[-1, 0, 0],
-                     bounds=(np.deg2rad(-90), np.deg2rad(90))),
-            URDFLink(name="wrist_roll",
-                     translation_vector=[0, 0, 0],
-                     orientation=[0, 0, 0],
-                     rotation=[0, -1, 0],
-                     bounds=(np.deg2rad(-90), np.deg2rad(90))),
-            URDFLink(name="wrist_yaw",
-                     translation_vector=[0, 0, 0],
-                     orientation=[0, 0, 0],
-                     rotation=[0, 0, 1],
-                     bounds=(np.deg2rad(-15), np.deg2rad(15))),
-            URDFLink(name="magnet",
-                     translation_vector=[0, -0.095, 0],
-                     orientation=[0, 0, 0],
-                     rotation=None)])
+        links: List[Link] = [OriginLink()]
+        if allow_column:
+            links.append(URDFLink(name="column",
+                                  translation_vector=[0, torso_y, 0],
+                                  orientation=[0, 0, 0],
+                                  rotation=[0, 1, 0],
+                                  bounds=(np.deg2rad(-179), np.deg2rad(179))))
+        else:
+            links.append(URDFLink(name="column",
+                                  translation_vector=[0, torso_y, 0],
+                                  orientation=[0, 0, 0],
+                                  rotation=None))
+        links.extend([URDFLink(name="shoulder_pitch",
+                               translation_vector=[0.215 * (-1 if arm == Arm.left else 1), 0.059, 0.019],
+                               orientation=[0, 0, 0],
+                               rotation=[1, 0, 0],
+                               bounds=(np.deg2rad(-150), np.deg2rad(70))),
+                      URDFLink(name="shoulder_roll",
+                               translation_vector=[0, 0, 0],
+                               orientation=[0, 0, 0],
+                               rotation=[0, 1, 0],
+                               bounds=(np.deg2rad(-70 if arm == Arm.left else -45),
+                                       np.deg2rad(45 if arm == Arm.left else 70))),
+                      URDFLink(name="shoulder_yaw",
+                               translation_vector=[0, 0, 0],
+                               orientation=[0, 0, 0],
+                               rotation=[0, 0, 1],
+                               bounds=(np.deg2rad(-110 if arm == Arm.left else -20),
+                                       np.deg2rad(20 if arm == Arm.left else 110))),
+                      URDFLink(name="elbow_pitch",
+                               translation_vector=[0.033 * (-1 if arm == Arm.left else 1), -0.33, 0],
+                               orientation=[0, 0, 0],
+                               rotation=[-1, 0, 0],
+                               bounds=(np.deg2rad(-90), np.deg2rad(145))),
+                      URDFLink(name="wrist_pitch",
+                               translation_vector=[0, -0.373, 0],
+                               orientation=[0, 0, 0],
+                               rotation=[-1, 0, 0],
+                               bounds=(np.deg2rad(-90), np.deg2rad(90))),
+                      URDFLink(name="wrist_roll",
+                               translation_vector=[0, 0, 0],
+                               orientation=[0, 0, 0],
+                               rotation=[0, -1, 0],
+                               bounds=(np.deg2rad(-90), np.deg2rad(90))),
+                      URDFLink(name="wrist_yaw",
+                               translation_vector=[0, 0, 0],
+                               orientation=[0, 0, 0],
+                               rotation=[0, 0, 1],
+                               bounds=(np.deg2rad(-15), np.deg2rad(15))),
+                      URDFLink(name="magnet",
+                               translation_vector=[0, -0.095, 0],
+                               orientation=[0, 0, 0],
+                               rotation=None)])
+        # Add the object.
+        if object_id is not None:
+            state = SceneState(resp=self.communicate([]))
+            magnet = state.body_part_transforms[self.magnebot_static.magnets[arm]]
+            obj = state.object_transforms[object_id]
+            pos = obj.position - magnet.position
+            pos = Magnebot._absolute_to_relative(position=pos, state=state)
+            rot = QuaternionUtils.quaternion_to_euler_angles(quaternion=obj.rotation)
+            rot = np.deg2rad([a for a in rot])
+            links.append(URDFLink(name="obj",
+                                  translation_vector=pos,
+                                  orientation=rot,
+                                  rotation=None))
+
+        return Chain(name=arm.name, links=links)
 
     def _cache_static_data(self, resp: List[bytes]) -> None:
         """
