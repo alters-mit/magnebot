@@ -76,7 +76,6 @@ print(Arm.left)
 
 | Variable | Type | Description |
 | --- | --- | --- |
-| `FORWARD` | np.array | The global forward directional vector. |
 | `CAMERA_RPY_CONSTRAINTS` | List[float] | The camera roll, pitch, yaw constraints in degrees. |
 
 ***

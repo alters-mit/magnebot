@@ -99,11 +99,6 @@ class Magnebot(FloorplanController):
 
     """
 
-    """:class_var
-    The global forward directional vector.
-    """
-    FORWARD: np.array = np.array([0, 0, 1])
-
     # Load default audio values for objects.
     _OBJECT_AUDIO = PyImpact.get_object_info()
     """:class_var
