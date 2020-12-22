@@ -586,8 +586,13 @@ class Magnebot(FloorplanController):
                             id_pair.int2 not in self.magnebot_static.joints) or \
                                 (id_pair.int1 not in self.magnebot_static.joints and
                                  id_pair.int2 in self.magnebot_static.joints):
-                            collided = True
-                            break
+                            # Ignore very small objects.
+                            if (id_pair.int1 in self.objects_static and
+                                self.objects_static[id_pair.int1].mass > 1) or \
+                                    (id_pair.int2 in self.objects_static and
+                                     self.objects_static[id_pair.int2].mass > 1):
+                                collided = True
+                                break
                 if collided:
                     # Stop wheel movement to prevent the Magnebot from tipping over.
                     commands = []
@@ -1264,9 +1269,6 @@ class Magnebot(FloorplanController):
         # Convert to relative coordinates.
         if absolute:
             target = self._absolute_to_relative(position=target, state=state)
-        else:
-            target = QuaternionUtils.multiply_by_vector(
-                q=QuaternionUtils.get_inverse(q=state.magnebot_transform.rotation), v=target)
 
         # Get the initial angles of each joint.
         # The first angle is always 0 (the origin link).
