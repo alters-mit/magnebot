@@ -1203,7 +1203,8 @@ class Magnebot(FloorplanController):
         self._do_arm_motion()
 
     def _start_ik(self, target: Dict[str, float], arm: Arm, absolute: bool = True, arrived_at: float = 0.125,
-                  state: SceneState = None, allow_column: bool = True) -> ActionStatus:
+                  state: SceneState = None, allow_column: bool = True,
+                  fixed_torso_prismatic: float = None) -> ActionStatus:
         """
         Start an IK action.
 
@@ -1213,6 +1214,7 @@ class Magnebot(FloorplanController):
         :param arrived_at: If the magnet is this distance or less from `target`, then the action is successful.
         :param state: The scene state. If None, this uses `self.state`
         :param allow_column: If True, allow column rotation.
+        :param fixed_torso_prismatic: If not None, use this value for the torso prismatic joint and don't try to change it.
 
         :return: An `ActionStatus` describing whether the IK action began.
         """
@@ -1275,24 +1277,30 @@ class Magnebot(FloorplanController):
         # We need to do this iteratively because ikpy doesn't support prismatic joints!
         # But it should be ok because there's only one prismatic joint in this robot.
         angles: List[float] = list()
-        torso_prismatic = Magnebot._DEFAULT_TORSO_Y
+        if fixed_torso_prismatic is not None:
+            torso_prismatic = fixed_torso_prismatic
+        else:
+            torso_prismatic = Magnebot._DEFAULT_TORSO_Y
         torso_actual = self._TORSO_Y[torso_prismatic]
-        # Raise the torso above the target.
-        while torso_actual < target[1] and torso_prismatic in self._TORSO_Y:
-            torso_prismatic += 0.1
-            torso_prismatic = round(torso_prismatic, 2)
-            torso_actual = self._TORSO_Y[torso_prismatic]
-        got_solution = False
-        while not got_solution and torso_prismatic > 0.6:
+        if fixed_torso_prismatic is not None:
             got_solution, angles = __get_ik_solution()
-            if not got_solution:
-                torso_prismatic -= 0.1
-        if not got_solution:
-            torso_prismatic = self._DEFAULT_TORSO_Y
-            while not got_solution and torso_prismatic <= 1.5:
+        else:
+            # Raise the torso above the target.
+            while torso_actual < target[1] and torso_prismatic in self._TORSO_Y:
+                torso_prismatic += 0.1
+                torso_prismatic = round(torso_prismatic, 2)
+                torso_actual = self._TORSO_Y[torso_prismatic]
+            got_solution = False
+            while not got_solution and torso_prismatic > 0.6:
                 got_solution, angles = __get_ik_solution()
                 if not got_solution:
-                    torso_prismatic += 0.1
+                    torso_prismatic -= 0.1
+            if not got_solution:
+                torso_prismatic = self._DEFAULT_TORSO_Y
+                while not got_solution and torso_prismatic <= 1.5:
+                    got_solution, angles = __get_ik_solution()
+                    if not got_solution:
+                        torso_prismatic += 0.1
         # If we couldn't find a solution at any torso height, then there isn't a solution.
         if not got_solution:
             return ActionStatus.cannot_reach
@@ -1318,7 +1326,7 @@ class Magnebot(FloorplanController):
         return ActionStatus.success
 
     def _start_ik_orientation(self, orientation: np.array, arm: Arm, object_id: int = None,
-                              orientation_mode: str = "Y", torso_prismatic: float = 1,
+                              orientation_mode: str = "Y", fixed_torso_prismatic: float = 1,
                               initial_angles: List[float] = None) -> None:
         """
         Rotate the end effector to a target orientation.
@@ -1327,11 +1335,11 @@ class Magnebot(FloorplanController):
         :param arm: The arm.
         :param object_id: If not None, and if the object is held by the arm, make the object the end effector in the IK chain.
         :param orientation_mode: The orientation mode. Options: "X", "Y", "Z".
-        :param torso_prismatic: Target value for the torso prismatic joint.
+        :param fixed_torso_prismatic: Target value for the torso prismatic joint.
         """
 
-        chain = self.__get_ik_chain(arm=arm, torso_y=Magnebot._TORSO_Y[round(torso_prismatic, 2)], object_id=object_id,
-                                    allow_column=False)
+        chain = self.__get_ik_chain(arm=arm, torso_y=Magnebot._TORSO_Y[round(fixed_torso_prismatic, 2)],
+                                    object_id=object_id, allow_column=False)
         if initial_angles is None:
             initial_angles = self._get_initial_angles(arm=arm)
             initial_angles = list(initial_angles)
