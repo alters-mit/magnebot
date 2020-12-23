@@ -38,7 +38,8 @@ class Carry(DemoController):
         # Go to the "goal position".
         self.navigate(target={"x": 8.557, "y": 0, "z": 1.31}, aligned_at=0.35)
         # Drop the objects.
-        self.drop_all()
+        self.drop(self.target_id_0, Arm.right)
+        self.drop(self.target_id_1, Arm.right)
         self.end()
 
     def _get_scene_init_commands(self, magnebot_position: Dict[str, float]) -> List[dict]:

@@ -398,7 +398,9 @@ _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` i
 
 **`self.drop(target, arm)`**
 
-Drop an object held by a magnet. This action takes exactly 1 frame; it won't wait for the object to finish falling.
+**`self.drop(target, arm, wait_for_objects=True)`**
+
+Drop an object held by a magnet.
 
 See [`SceneState.held`](scene_state.md) for a dictionary of held objects.
 
@@ -412,21 +414,9 @@ Possible [return values](action_status.md):
 | --- | --- | --- | --- |
 | target |  int |  | The ID of the object currently held by the magnet. |
 | arm |  Arm |  | The arm of the magnet holding the object. |
+| wait_for_objects |  bool  | True | If True, the action will continue until the objects have finished falling. If True, the action will take exactly 1 frame to finish. |
 
 _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` dropped the `target`.
-
-#### drop_all
-
-**`self.drop_all()`**
-
-Drop all objects held by either magnet. This action takes exactly 1 frame; it won't wait for the object to finish falling.
-
-Possible [return values](action_status.md):
-
-- `success`
-- `not_holding`
-
-_Returns:_  An `ActionStatus` if the Magnebot dropped any objects.
 
 #### reset_arm
 

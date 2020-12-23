@@ -793,9 +793,9 @@ class Magnebot(FloorplanController):
         else:
             return ActionStatus.failed_to_grasp
 
-    def drop(self, target: int, arm: Arm) -> ActionStatus:
+    def drop(self, target: int, arm: Arm, wait_for_objects: bool = True) -> ActionStatus:
         """
-        Drop an object held by a magnet. This action takes exactly 1 frame; it won't wait for the object to finish falling.
+        Drop an object held by a magnet.
 
         See [`SceneState.held`](scene_state.md) for a dictionary of held objects.
 
@@ -806,6 +806,7 @@ class Magnebot(FloorplanController):
 
         :param target: The ID of the object currently held by the magnet.
         :param arm: The arm of the magnet holding the object.
+        :param wait_for_objects: If True, the action will continue until the objects have finished falling. If True, the action will take exactly 1 frame to finish.
 
         :return: An `ActionStatus` indicating if the magnet at the end of the `arm` dropped the `target`.
         """
@@ -819,29 +820,9 @@ class Magnebot(FloorplanController):
             return ActionStatus.not_holding
 
         self._append_drop_commands(object_id=target, arm=arm)
-        self._end_action()
-        return ActionStatus.success
-
-    def drop_all(self) -> ActionStatus:
-        """
-        Drop all objects held by either magnet. This action takes exactly 1 frame; it won't wait for the object to finish falling.
-
-        Possible [return values](action_status.md):
-
-        - `success`
-        - `not_holding`
-
-        :return: An `ActionStatus` if the Magnebot dropped any objects.
-        """
-
-        self._start_action()
-        if len(self.state.held[Arm.left]) == 0 and len(self.state.held[Arm.right]) == 0:
-            self._end_action()
-            return ActionStatus.not_holding
-
-        for arm in self.state.held:
-            for object_id in self.state.held[arm]:
-                self._append_drop_commands(object_id=int(object_id), arm=arm)
+        # Wait for the objects to finish falling.
+        if wait_for_objects:
+            self._wait_until_objects_stop(object_ids=[target])
         self._end_action()
         return ActionStatus.success
 
@@ -1617,6 +1598,38 @@ class Magnebot(FloorplanController):
                                           {"$type": "apply_force_to_object",
                                            "force": {"x": 0, "y": -0.00001, "z": 0},
                                            "id": int(object_id)}])
+
+    def _wait_until_objects_stop(self, object_ids: List[int], state: SceneState = None) -> bool:
+        """
+        Wait until all objects in the list stop moving.
+
+        :param object_ids: A list of object IDs.
+        :param state: The state to use. If None, use `self.state`
+
+        :return: True if the objects stopped moving after 200 frames and they're all above floor level.
+        """
+
+        if state is None:
+            state_0 = self.state
+        else:
+            state_0 = state
+        moving = True
+        # Set a maximum number of frames to prevent an infinite loop.
+        num_frames = 0
+        # Wait for the object to stop moving.
+        while moving and num_frames < 200:
+            moving = False
+            state_1 = SceneState(resp=self.communicate([]))
+            for object_id in object_ids:
+                # Stop if the object somehow fell below the floor.
+                if state_1.object_transforms[object_id].position[1] < -1:
+                    return False
+                if np.linalg.norm(state_0.object_transforms[object_id].position -
+                                  state_1.object_transforms[object_id].position) > 0.001:
+                    moving = True
+                num_frames += 1
+                state_0 = state_1
+        return not moving
 
     @staticmethod
     def _absolute_to_relative(position: np.array, state: SceneState) -> np.array:

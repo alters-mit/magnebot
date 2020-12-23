@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='magnebot',
-    version="0.1.2",
+    version="0.1.3",
     description='High-level API for the Magnebot in TDW.',
     long_description='High-level API for the Magnebot in TDW.',
     url='https://github.com/alters-mit/magnebot',
