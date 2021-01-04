@@ -1189,7 +1189,7 @@ class Magnebot(FloorplanController):
 
     def _start_ik(self, target: Dict[str, float], arm: Arm, absolute: bool = True, arrived_at: float = 0.125,
                   state: SceneState = None, allow_column: bool = True,
-                  fixed_torso_prismatic: float = None) -> ActionStatus:
+                  fixed_torso_prismatic: float = None, object_id: int = None) -> ActionStatus:
         """
         Start an IK action.
 
@@ -1200,6 +1200,7 @@ class Magnebot(FloorplanController):
         :param state: The scene state. If None, this uses `self.state`
         :param allow_column: If True, allow column rotation.
         :param fixed_torso_prismatic: If not None, use this value for the torso prismatic joint and don't try to change it.
+        :param object_id: If not None, and if the object is held by the arm, make the object the end effector in the IK chain.
 
         :return: An `ActionStatus` describing whether the IK action began.
         """
@@ -1213,7 +1214,7 @@ class Magnebot(FloorplanController):
 
             # Generate an IK chain, given the current desired torso height.
             chain = self.__get_ik_chain(arm=arm, torso_y=Magnebot._TORSO_Y[round(torso_prismatic, 2)],
-                                        allow_column=allow_column)
+                                        allow_column=allow_column, object_id=object_id)
 
             # Get the IK solution.
             ik = chain.inverse_kinematics(target_position=target,
@@ -1252,7 +1253,7 @@ class Magnebot(FloorplanController):
 
         # Get the initial angles of each joint.
         # The first angle is always 0 (the origin link).
-        initial_angles = self._get_initial_angles(arm=arm)
+        initial_angles = self._get_initial_angles(arm=arm, has_object=object_id is not None)
 
         # Try to get an IK solution from various heights.
         # Start at the default height and incrementally raise the torso.
@@ -1288,7 +1289,12 @@ class Magnebot(FloorplanController):
             return ActionStatus.cannot_reach
 
         # Convert the angles to degrees. Remove the first node (the origin link) and last node (the magnet).
-        angles = [float(np.rad2deg(a)) for a in angles[1:-1]]
+        if object_id is not None:
+            # Remove the object.
+            angles = [float(np.rad2deg(a)) for a in angles[1:-2]]
+        else:
+            angles = [float(np.rad2deg(a)) for a in angles[1:-1]]
+
         if self._debug:
             print(angles)
 
@@ -1346,9 +1352,10 @@ class Magnebot(FloorplanController):
                                           "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
                                           "target": 1.2})
 
-    def _get_initial_angles(self, arm: Arm) -> np.array:
+    def _get_initial_angles(self, arm: Arm, has_object: bool = False) -> np.array:
         """
         :param arm: The arm.
+        :param has_object: If True, there is an object in the joint chain.
 
         :return: The angles of the arm in the current state.
         """
@@ -1361,6 +1368,9 @@ class Magnebot(FloorplanController):
             initial_angles.extend(self.state.joint_angles[j_id])
         # Add the magnet.
         initial_angles.append(0)
+        # Add the object.
+        if has_object:
+            initial_angles.append(0)
         return np.array([np.deg2rad(ia) for ia in initial_angles])
 
     def _append_ik_commands(self, angles: np.array, arm: Arm) -> None:
