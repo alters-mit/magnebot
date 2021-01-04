@@ -574,13 +574,12 @@ class Magnebot(FloorplanController):
                 # Check if we collided with the environment or with any objects.
                 collided = False
                 collisions = Collisions(resp=resp)
-                if "enter" in collisions.env_collisions:
-                    for object_id in collisions.env_collisions["enter"]:
-                        if object_id in self.magnebot_static.joints:
-                            collided = True
-                            break
-                if not collided and "enter" in collisions.obj_collisions:
-                    for id_pair in collisions.obj_collisions["enter"]:
+                for object_id in collisions.env_collisions:
+                    if object_id in self.magnebot_static.joints:
+                        collided = True
+                        break
+                if not collided:
+                    for id_pair in collisions.obj_collisions:
                         # Listen only for collisions between a body part and a scene object.
                         if (id_pair.int1 in self.magnebot_static.joints and
                             id_pair.int2 not in self.magnebot_static.joints) or \
