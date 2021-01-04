@@ -822,6 +822,9 @@ class Magnebot(FloorplanController):
         self._append_drop_commands(object_id=target, arm=arm)
         # Wait for the objects to finish falling.
         if wait_for_objects:
+            # Wait a few frames just to let it start falling.
+            for i in range(5):
+                self.communicate([])
             self._wait_until_objects_stop(object_ids=[target])
         self._end_action()
         return ActionStatus.success
@@ -1135,9 +1138,6 @@ class Magnebot(FloorplanController):
                      "immovable": True},
                     {"$type": "create_avatar",
                      "type": "A_Img_Caps_Kinematic"},
-                    {"$type": "parent_avatar_to_robot",
-                     "position": {"x": 0, "y": 0.053, "z": 0.1838},
-                     "body_part": "torso"},
                     {"$type": "set_pass_masks",
                      "pass_masks": ["_img", "_id", "_depth"]},
                     {"$type": "enable_image_sensor",
@@ -1583,6 +1583,12 @@ class Magnebot(FloorplanController):
         # Cache the static robot data.
         self.magnebot_static = MagnebotStatic(static_robot=get_data(resp=resp, d_type=StaticRobot))
 
+        # Parent the avatar camera to the torso.
+        # We do this here rather then at the first frame because we need the ID of the torso.
+        self._next_frame_commands.append({"$type": "parent_avatar_to_robot",
+                                          "position": {"x": 0, "y": 0.053, "z": 0.1838},
+                                          "body_part_id": self.magnebot_static.arm_joints[ArmJoint.torso]})
+
     def _append_drop_commands(self, object_id: int, arm: Arm) -> None:
         """
         Append commands to drop an object to `_next_frame_commands`
@@ -1591,13 +1597,9 @@ class Magnebot(FloorplanController):
         """
 
         # Drop the object.
-        # Apply a small downward force. This will prevent occasional glitches that freeze the object in midair.
-        self._next_frame_commands.extend([{"$type": "drop_from_magnet",
-                                           "arm": arm.name,
-                                           "object_id": int(object_id)},
-                                          {"$type": "apply_force_to_object",
-                                           "force": {"x": 0, "y": -0.00001, "z": 0},
-                                           "id": int(object_id)}])
+        self._next_frame_commands.append({"$type": "drop_from_magnet",
+                                          "arm": arm.name,
+                                          "object_id": int(object_id)})
 
     def _wait_until_objects_stop(self, object_ids: List[int], state: SceneState = None) -> bool:
         """
