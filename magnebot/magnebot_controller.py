@@ -284,8 +284,6 @@ class Magnebot(FloorplanController):
                                   "value": False},
                                  {"$type": "set_render_quality",
                                   "render_quality": 5},
-                                 {"$type": "set_vignette",
-                                  "enabled": False},
                                  {"$type": "set_shadow_strength",
                                   "strength": 1.0},
                                  {"$type": "set_screen_size",
