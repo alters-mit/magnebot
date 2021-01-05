@@ -12,7 +12,7 @@ class ReachHigh(TestController):
         self._debug = False
         self.target_id: int = -1
 
-    def _get_scene_init_commands(self, magnebot_position: Dict[str, float]) -> List[dict]:
+    def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
         self._add_object(model_name="cabinet_36_wood_beach_honey", position={"x": 0.04, "y": 0, "z": 1.081}, mass=300)
         self.target_id = self._add_object(model_name="jug05",
                                           position={"x": -0.231, "y": 0.9215012, "z": 0.8119997})

@@ -42,7 +42,7 @@ class Carry(DemoController):
         self.drop(self.target_id_1, Arm.right)
         self.end()
 
-    def _get_scene_init_commands(self, magnebot_position: Dict[str, float]) -> List[dict]:
+    def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
         # Add two target objects.
         self.target_id_0: int = self._add_object(model_name="jug05",
                                                  position={"x": 7.73, "y": 0, "z": -3.43})

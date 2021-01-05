@@ -1116,12 +1116,15 @@ class Magnebot(FloorplanController):
         if self.auto_save_images:
             self.state.save_images(output_directory=self.images_directory)
 
-    def _get_scene_init_commands(self, magnebot_position: Dict[str, float]) -> List[dict]:
+    def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
         """
-        :param magnebot_position: The position of the Magnebot.
+        :param magnebot_position: The position of the Magnebot. If none, the position is (0, 0, 0).
 
         :return: A list of commands that every controller needs for initializing the scene.
         """
+
+        if magnebot_position is None:
+            magnebot_position = TDWUtils.VECTOR3_ZERO
 
         # Destroy the previous Magnebot, if any.
         # Add the Magnebot.
@@ -1162,7 +1165,7 @@ class Magnebot(FloorplanController):
                          {"$type": "send_collisions",
                           "enter": True,
                           "stay": False,
-                          "exit": True,
+                          "exit": False,
                           "collision_types": ["obj", "env"]}])
         if self._debug:
             commands.append({"$type": "send_log_messages"})

@@ -159,7 +159,7 @@ class DemoController(Magnebot):
                 return status
         return ActionStatus.success
 
-    def _get_scene_init_commands(self, magnebot_position: Dict[str, float]) -> List[dict]:
+    def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
         commands = super()._get_scene_init_commands(magnebot_position=magnebot_position)
         # Hide the roof.
         commands.append({"$type": "set_floorplan_roof",
