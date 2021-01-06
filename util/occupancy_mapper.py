@@ -7,7 +7,7 @@ from tdw.floorplan_controller import FloorplanController
 from tdw.output_data import OutputData, Raycast, Images, ScreenPosition
 from tdw.tdw_utils import TDWUtils
 from magnebot.scene_environment import SceneEnvironment
-from magnebot.constants import OCCUPANCY_CELL_SIZE, RUGS
+from magnebot.constants import OCCUPANCY_CELL_SIZE
 from magnebot.paths import OCCUPANCY_MAPS_DIRECTORY, ROOM_MAPS_DIRECTORY, SPAWN_POSITIONS_PATH
 from magnebot.util import get_data
 
@@ -132,19 +132,6 @@ class OccupancyMapper(FloorplanController):
             for layout in [0, 1, 2]:
                 occupancy_map = list()
                 commands = self.get_scene_init_commands(scene=scene, layout=layout, audio=True)
-
-                # Remove all rugs from the initialization recipe.
-                # Otherwise, the Magnebot can glitch when spawning on a rug.
-                rugs = []
-                for cmd in commands:
-                    if cmd["$type"] == "add_object" and cmd["name"] in RUGS:
-                        rugs.append(cmd["id"])
-                temp = []
-                for cmd in commands:
-                    if "id" in cmd and cmd["id"] in rugs:
-                        continue
-                    temp.append(cmd)
-                commands = temp
 
                 # Hide the roof and remove any existing position markers.
                 commands.extend([{"$type": "set_floorplan_roof",
@@ -301,7 +288,7 @@ class OccupancyMapper(FloorplanController):
                                      {"$type": "set_pass_masks",
                                       "pass_masks": ["_img"]},
                                      {"$type": "send_images"}])
-                    resp = c.communicate(commands)
+                    resp = self.communicate(commands)
                     images = get_data(resp=resp, d_type=Images)
                     screen_positions = dict()
                     for j in range(len(resp) - 1):
