@@ -21,4 +21,5 @@ if __name__ == "__main__":
     assert status == ActionStatus.success, status
     status = m.move_by(-12)
     assert status == ActionStatus.collision, status
+    m.end()
 

@@ -147,3 +147,11 @@ Convert the depth pass to depth values. Can be None if there is no depth image d
 
 _Returns:_  A decoded depth pass as a numpy array of floats.
 
+#### get_point_cloud
+
+**`self.get_point_cloud()`**
+
+Returns a point cloud from the depth pass. Can be None if there is no depth image data.
+
+_Returns:_  A decoded depth pass as a numpy array of floats.
+

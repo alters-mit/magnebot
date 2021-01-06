@@ -173,6 +173,12 @@ class SceneState:
         Images rendered by third-person cameras as dictionary. Key = The camera ID. Value: A dictionary of image passes, structured exactly like `images` (see above).
         """
         self.third_person_images: Dict[str: Dict[str, np.array]] = dict()
+
+        # These values are used for reshaping the _depth pass.
+        self.__width: int = -1
+        self.__height: int = -1
+        self.__uv_starts_at_top: bool = True
+
         got_magnebot_images = False
         for i in range(0, len(resp) - 1):
             if OutputData.get_data_type_id(resp[i]) == "imag":
@@ -183,12 +189,23 @@ class SceneState:
                     if avatar_id not in self.third_person_images:
                         self.third_person_images[avatar_id] = dict()
                     for j in range(images.get_num_passes()):
-                        self.third_person_images[avatar_id][images.get_pass_mask(j)[1:]] = images.get_image(j)
+                        image_data = images.get_image(j)
+                        pass_mask = images.get_pass_mask(j)
+                        if pass_mask == "_depth":
+                            image_data = TDWUtils.get_shaped_depth_pass(images=images, index=j)
+                        self.third_person_images[avatar_id][pass_mask[1:]] = image_data
                 # Save robot images.
                 else:
+                    self.__width = images.get_width()
+                    self._height = images.get_height()
+                    self.__uv_starts_at_top = images.get_uv_starts_at_top()
                     got_magnebot_images = True
                     for j in range(images.get_num_passes()):
-                        self.images[images.get_pass_mask(j)[1:]] = images.get_image(j)
+                        image_data = images.get_image(j)
+                        pass_mask = images.get_pass_mask(j)
+                        if pass_mask == "_depth":
+                            image_data = TDWUtils.get_shaped_depth_pass(images=images, index=j)
+                        self.images[pass_mask[1:]] = image_data
         # Update the frame count.
         if got_magnebot_images:
             SceneState.FRAME_COUNT += 1
@@ -212,9 +229,13 @@ class SceneState:
         for pass_name in self.images:
             if self.images[pass_name] is None:
                 continue
+            if pass_name == "depth":
+                image_data = Image.fromarray(self.images[pass_name])
+            else:
+                image_data = self.images[pass_name]
             p = output_directory.joinpath(f"{prefix}_{pass_name}.{'jpg' if pass_name == 'img' else 'png'}")
             with p.open("wb") as f:
-                f.write(self.images[pass_name])
+                f.write(image_data)
 
     def get_pil_images(self) -> dict:
         """
@@ -225,7 +246,10 @@ class SceneState:
 
         images = dict()
         for pass_name in self.images:
-            images[pass_name] = Image.open(BytesIO(self.images[pass_name]))
+            if pass_name == "depth":
+                images[pass_name] = Image.fromarray(self.images[pass_name])
+            else:
+                images[pass_name] = Image.open(BytesIO(self.images[pass_name]))
         return images
 
     def get_depth_values(self) -> np.array:
@@ -236,6 +260,19 @@ class SceneState:
         """
 
         if "depth" in self.images:
-            TDWUtils.get_depth_values(self.images["depth"])
+            return TDWUtils.get_depth_values(self.images["depth"])
+        else:
+            return None
+
+    def get_point_cloud(self) -> np.array:
+        """
+        Returns a point cloud from the depth pass. Can be None if there is no depth image data.
+
+        :return: A decoded depth pass as a numpy array of floats.
+        """
+
+        if "depth" in self.images:
+            return TDWUtils.get_point_cloud(depth=TDWUtils.get_depth_values(self.images["depth"]),
+                                            camera_matrix=self.camera_matrix)
         else:
             return None
