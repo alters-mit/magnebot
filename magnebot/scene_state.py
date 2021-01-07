@@ -175,11 +175,6 @@ class SceneState:
         """
         self.third_person_images: Dict[str: Dict[str, np.array]] = dict()
 
-        # These values are used for reshaping the _depth pass.
-        self.__width: int = -1
-        self.__height: int = -1
-        self.__uv_starts_at_top: bool = True
-
         got_magnebot_images = False
         for i in range(0, len(resp) - 1):
             if OutputData.get_data_type_id(resp[i]) == "imag":
@@ -197,9 +192,6 @@ class SceneState:
                         self.third_person_images[avatar_id][pass_mask[1:]] = image_data
                 # Save robot images.
                 else:
-                    self.__width = images.get_width()
-                    self._height = images.get_height()
-                    self.__uv_starts_at_top = images.get_uv_starts_at_top()
                     got_magnebot_images = True
                     for j in range(images.get_num_passes()):
                         image_data = images.get_image(j)

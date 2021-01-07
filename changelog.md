@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.2.0
+
+### `magnebot` module
+
+- Updated floorplan images, spawn positions, occupancy maps, etc. to reflect the changes to the floorplan layouts in the `tdw` module.
+- Removed: `DemoController.navigate()`
+- Backend:
+  - Removed: `constants.RUGS`
+  
+#### `Magnebot`
+
+- `grasp()` will end as soon as the magnet grasps the object, rather than when the arm stops moving.
+- `reach_for()` will end as soon as the magnet is at the target position or when the arms stop moving.
+- Backend:
+  - No longer listens to `exit` collision events.
+  - Added optional parameters `object_id` and `do_prismatic_first` to `_start_ik()`. `object_id` will extend the IK chain to include an object.
+  - If an object is part of the IK chain, its center (via `send_bounds`) will be used instead of its position and its rotation will be ignored.
+  - Removed `_start_ik_orientation()` because it isn't needed right now and doesn't work very well.
+  - Added optional parameter `conditional` to `_do_arm_motion()` to allow a boolean function interrupt the arm motion.
+  - Added: `_is_grasping()`
+  - Added: `_magnet_is_at_target()`
+  - `drop()` doesn't apply a force to dropped objects (no longer needed).
+  - `SceneState` reshapes and saves depth images correctly.
+  
+#### `SceneState`
+
+- Added: `get_point_cloud()`
+
+### Demo controllers
+
+- Removed: `carry.py`
+
 ## 0.1.3
 
 ### `magnebot` module
