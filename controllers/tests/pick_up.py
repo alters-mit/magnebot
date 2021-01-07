@@ -38,8 +38,8 @@ if __name__ == "__main__":
     assert status == ActionStatus.failed_to_bend, status
 
     # Go to the next object.
-    status = m.move_to(target=m.target_object_1, arrived_at=0.75)
-    assert status == ActionStatus.collision, status
+    status = m.move_to(target=m.target_object_1)
+    assert status == ActionStatus.success, status
     # Grasp the object.
     status = m.grasp(target=m.target_object_1, arm=Arm.right)
     assert status == ActionStatus.success, status
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     # Failed to reset entirely due to the mass of the object.
     assert status == ActionStatus.failed_to_bend, status
     # Go to the box.
-    m.move_to(target=m.box, arrived_at=1.1)
+    m.move_to(target=m.box)
 
     # Get a point above the box.
     box_top = m.state.object_transforms[m.box].position[:]

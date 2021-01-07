@@ -712,7 +712,8 @@ class Magnebot(FloorplanController):
     def grasp(self, target: int, arm: Arm) -> ActionStatus:
         """
         Try to grasp the target object with the arm. The Magnebot will reach for the nearest position on the object.
-        If, after bending the arm, the magnet is holding the object, then the action is successful.
+
+        If the magnet grasps the object, the arm will stop moving and the action is successful.
 
         Possible [return values](action_status.md):
 
@@ -758,18 +759,16 @@ class Magnebot(FloorplanController):
                                               "position": target_position})
         # Start the IK action.
         status = self._start_ik(target=target_position, arm=arm, absolute=True)
+        if status != ActionStatus.success:
+            self._end_action()
+            return status
 
         # Enable grasping.
         self._next_frame_commands.append({"$type": "set_magnet_targets",
                                           "arm": arm.name,
                                           "targets": [target]})
-
-        if status != ActionStatus.success:
-            self._end_action()
-            return status
-
         # Wait for the arm motion to end.
-        self._do_arm_motion()
+        self._do_arm_motion(conditional=lambda state: Magnebot._is_grasping(target, arm, state))
         self._end_action()
 
         if target in self.state.held[arm]:
@@ -1320,7 +1319,7 @@ class Magnebot(FloorplanController):
         # Add the object.
         if has_object:
             initial_angles.append(0)
-        return np.array([np.deg2rad(ia) for ia in initial_angles])
+        return np.radians(initial_angles)
 
     def _append_ik_commands(self, angles: np.array, arm: Arm) -> None:
         """
@@ -1391,9 +1390,11 @@ class Magnebot(FloorplanController):
                 raise Exception(f"Joint type not defined: {joint_type} for {joint_name}.")
         return commands
 
-    def _do_arm_motion(self) -> ActionStatus:
+    def _do_arm_motion(self, conditional = None) -> ActionStatus:
         """
         Wait until the arms have stopped moving.
+
+        :param conditional: a conditional function (returns bool) that can stop the arm motion and has a SceneState parameter.
 
         :return: An `ActionStatus` indicating if the arms stopped moving and if not, why.
         """
@@ -1404,6 +1405,27 @@ class Magnebot(FloorplanController):
         moving = True
         while moving and attempts < 200:
             state_1 = SceneState(self.communicate([]))
+            # Check if the action should stop here because of a conditional. If so, stop arm motion.
+            if conditional is not None and conditional(state_1):
+                for arm_joint in self.magnebot_static.arm_joints:
+                    joint_id = self.magnebot_static.arm_joints[arm_joint]
+                    joint_angles = state_1.joint_angles[joint_id]
+                    # Ignore the prismatic joint.
+                    if arm_joint == ArmJoint.torso:
+                        continue
+                    joint_axis = Magnebot._JOINT_AXES[arm_joint]
+                    # Set the arm joints to their current positions.
+                    if joint_axis == JointType.revolute:
+                        self._next_frame_commands.append({"$type": "set_revolute_target",
+                                                          "joint_id": joint_id,
+                                                          "target": float(joint_angles[0])})
+                    elif joint_axis == JointType.spherical:
+                        self._next_frame_commands.append({"$type": "set_spherical_target",
+                                                          "joint_id": joint_id,
+                                                          "target": TDWUtils.array_to_vector3(joint_angles)})
+                moving = False
+                continue
+
             moving = False
             for a_id in self.magnebot_static.arm_joints.values():
                 for i in range(len(state_0.joint_angles[a_id])):
@@ -1417,6 +1439,18 @@ class Magnebot(FloorplanController):
             return ActionStatus.failed_to_bend
         else:
             return ActionStatus.success
+
+    @staticmethod
+    def _is_grasping(target: int, arm: Arm, state: SceneState) -> bool:
+        """
+        :param target: The object ID.
+        :param arm: The arm.
+        :param state: The SceneState.
+
+        :return: True if the arm is holding the object in this scene state.
+        """
+
+        return target in state.held[arm]
 
     def __get_ik_chain(self, arm: Arm, torso_y: float, object_id: int = None, allow_column: bool = True) -> Chain:
         """

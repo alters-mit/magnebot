@@ -378,7 +378,8 @@ _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` i
 **`self.grasp(target, arm)`**
 
 Try to grasp the target object with the arm. The Magnebot will reach for the nearest position on the object.
-If, after bending the arm, the magnet is holding the object, then the action is successful.
+
+If the magnet grasps the object, the arm will stop moving and the action is successful.
 
 Possible [return values](action_status.md):
 

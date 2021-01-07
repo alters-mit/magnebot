@@ -83,7 +83,7 @@ class SceneState:
                 position=np.array(r.get_joint_position(i)),
                 rotation=np.array(r.get_joint_rotation(i)),
                 forward=np.array(r.get_joint_forward(i)))
-            self.joint_angles[j_id] = np.array([np.rad2deg(a) for a in r.get_joint_positions(i)])
+            self.joint_angles[j_id] = r.get_joint_positions(i)
 
         # Get data for the non-joint robot body parts.
         for i in range(r.get_num_non_moving()):
