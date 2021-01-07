@@ -649,13 +649,15 @@ class Magnebot(FloorplanController):
         if status == ActionStatus.success:
             if isinstance(target, int):
                 target = self.state.object_transforms[target].position
+                # Try to stop before colliding with an object.
+                distance = np.linalg.norm(self.state.magnebot_transform.position - target) - arrived_at
             elif isinstance(target, dict):
                 target = TDWUtils.vector3_to_array(target)
+                distance = np.linalg.norm(self.state.magnebot_transform.position - target)
             else:
                 raise Exception(f"Invalid target: {target}")
 
-            return self.move_by(distance=np.linalg.norm(self.state.magnebot_transform.position - target) - arrived_at,
-                                arrived_at=arrived_at)
+            return self.move_by(distance=distance, arrived_at=arrived_at)
         else:
             self._end_action()
             return status
