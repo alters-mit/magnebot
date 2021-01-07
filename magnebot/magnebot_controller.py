@@ -694,7 +694,9 @@ class Magnebot(FloorplanController):
             return status
 
         # Wait for the arm motion to end.
-        self._do_arm_motion()
+        self._do_arm_motion(conditional=lambda state: self._magnet_is_at_target(target=destination,
+                                                                                arm=arm,
+                                                                                state=state))
         self._end_action()
 
         # Check how close the magnet is to the expected relative position.
@@ -1175,8 +1177,8 @@ class Magnebot(FloorplanController):
         self._do_arm_motion()
 
     def _start_ik(self, target: Dict[str, float], arm: Arm, absolute: bool = True, arrived_at: float = 0.125,
-                  state: SceneState = None, allow_column: bool = True,
-                  fixed_torso_prismatic: float = None, object_id: int = None) -> ActionStatus:
+                  state: SceneState = None, allow_column: bool = True, fixed_torso_prismatic: float = None,
+                  object_id: int = None, do_prismatic_first: bool = False) -> ActionStatus:
         """
         Start an IK action.
 
@@ -1188,6 +1190,7 @@ class Magnebot(FloorplanController):
         :param allow_column: If True, allow column rotation.
         :param fixed_torso_prismatic: If not None, use this value for the torso prismatic joint and don't try to change it.
         :param object_id: If not None, and if the object is held by the arm, make the object the end effector in the IK chain.
+        :param do_prismatic_first: If True, do the prismatic (torso) motion first. If False, move the torso while the arm moves.
 
         :return: An `ActionStatus` describing whether the IK action began.
         """
@@ -1291,13 +1294,17 @@ class Magnebot(FloorplanController):
                           "immovable": True})
 
         # Slide the torso to the desired height.
-        self.communicate({"$type": "set_prismatic_target",
+        torso_command = {"$type": "set_prismatic_target",
                           "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
-                          "target": torso_prismatic})
-        self._do_arm_motion()
+                          "target": torso_prismatic}
+        if do_prismatic_first:
+            self.communicate(torso_command)
+            self._do_arm_motion()
 
         # Convert the IK solution into TDW commands, using the expected joint and axis order.
         self._append_ik_commands(angles=angles, arm=arm)
+        if not do_prismatic_first:
+            self._next_frame_commands.append(torso_command)
         return ActionStatus.success
 
     def _get_initial_angles(self, arm: Arm, has_object: bool = False) -> np.array:
@@ -1390,7 +1397,7 @@ class Magnebot(FloorplanController):
                 raise Exception(f"Joint type not defined: {joint_type} for {joint_name}.")
         return commands
 
-    def _do_arm_motion(self, conditional = None) -> ActionStatus:
+    def _do_arm_motion(self, conditional=None) -> ActionStatus:
         """
         Wait until the arms have stopped moving.
 
@@ -1520,13 +1527,9 @@ class Magnebot(FloorplanController):
             state = SceneState(resp=self.communicate([]))
             magnet = state.body_part_transforms[self.magnebot_static.magnets[arm]]
             obj = state.object_transforms[object_id]
-            pos = obj.position - magnet.position
-            pos = Magnebot._absolute_to_relative(position=pos, state=state)
-            rot = QuaternionUtils.quaternion_to_euler_angles(quaternion=obj.rotation)
-            rot = np.deg2rad([a for a in rot])
             links.append(URDFLink(name="obj",
-                                  translation_vector=pos,
-                                  orientation=rot,
+                                  translation_vector=obj.position - magnet.position,
+                                  orientation=[0, 0, 0],
                                   rotation=None))
 
         return Chain(name=arm.name, links=links)
@@ -1637,3 +1640,17 @@ class Magnebot(FloorplanController):
         return QuaternionUtils.world_to_local_vector(position=position,
                                                      origin=state.magnebot_transform.position,
                                                      rotation=state.magnebot_transform.rotation)
+
+    def _magnet_is_at_target(self, target: np.array, arm: Arm, state: SceneState) -> bool:
+        """
+        :param target: The target position.
+        :param arm: The arm.
+        :param state: The state
+
+        :return: True if the magnet is at the target position.
+        """
+
+        magnet_position = Magnebot._absolute_to_relative(
+            position=state.body_part_transforms[self.magnebot_static.magnets[arm]].position,
+            state=state)
+        return np.linalg.norm(magnet_position - target) < 0.001
