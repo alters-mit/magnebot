@@ -67,7 +67,8 @@ m.init_scene(scene="2a", layout=1, room=1)
 print(m.state.held[Arm.left]) # []
 ```
 
-- `object_transforms` A dictionary of object [transform data](transform.md). Key = the object ID.
+- `object_transforms` A dictionary of object [transform data](transform.md). Key = the object ID. 
+The `position` is always the rotated bottom-center of the object.
 
 ```python
 from magnebot import Magnebot

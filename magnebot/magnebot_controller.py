@@ -1524,11 +1524,16 @@ class Magnebot(FloorplanController):
                                rotation=None)])
         # Add the object.
         if object_id is not None:
-            state = SceneState(resp=self.communicate([]))
+            # Get the center of the object.
+            resp = self.communicate({"$type": "send_bounds",
+                                     "ids": [int(object_id)]})
+            obj_position = np.array(get_data(resp=resp, d_type=Bounds).get_center(0))
+            # Get the position of the magnet.
+            state = SceneState(resp=resp)
             magnet = state.body_part_transforms[self.magnebot_static.magnets[arm]]
-            obj = state.object_transforms[object_id]
+            # Add the object as an IK link.
             links.append(URDFLink(name="obj",
-                                  translation_vector=obj.position - magnet.position,
+                                  translation_vector=magnet.position - obj_position,
                                   orientation=[0, 0, 0],
                                   rotation=None))
 

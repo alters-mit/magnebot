@@ -111,7 +111,8 @@ class SceneState:
         # Get object data.
         transforms = get_data(resp=resp, d_type=Transforms)
         """:field
-        A dictionary of object [transform data](transform.md). Key = the object ID.
+        A dictionary of object [transform data](transform.md). Key = the object ID. 
+        The `position` is always the rotated bottom-center of the object.
 
         ```python
         from magnebot import Magnebot
