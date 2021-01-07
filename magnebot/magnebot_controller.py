@@ -654,7 +654,7 @@ class Magnebot(FloorplanController):
             else:
                 raise Exception(f"Invalid target: {target}")
 
-            return self.move_by(distance=np.linalg.norm(self.state.magnebot_transform.position - target),
+            return self.move_by(distance=np.linalg.norm(self.state.magnebot_transform.position - target) - arrived_at,
                                 arrived_at=arrived_at)
         else:
             self._end_action()
@@ -1300,45 +1300,6 @@ class Magnebot(FloorplanController):
         # Convert the IK solution into TDW commands, using the expected joint and axis order.
         self._append_ik_commands(angles=angles, arm=arm)
         return ActionStatus.success
-
-    def _start_ik_orientation(self, orientation: np.array, arm: Arm, object_id: int = None,
-                              orientation_mode: str = "Y", fixed_torso_prismatic: float = 1,
-                              initial_angles: List[float] = None) -> None:
-        """
-        Rotate the end effector to a target orientation.
-
-        :param orientation: The target orientation.
-        :param arm: The arm.
-        :param object_id: If not None, and if the object is held by the arm, make the object the end effector in the IK chain.
-        :param orientation_mode: The orientation mode. Options: "X", "Y", "Z".
-        :param fixed_torso_prismatic: Target value for the torso prismatic joint.
-        """
-
-        chain = self.__get_ik_chain(arm=arm, torso_y=Magnebot._TORSO_Y[round(fixed_torso_prismatic, 2)],
-                                    object_id=object_id, allow_column=False)
-        if initial_angles is None:
-            initial_angles = self._get_initial_angles(arm=arm)
-            initial_angles = list(initial_angles)
-            if object_id is not None:
-                initial_angles.append(0)
-            initial_angles = np.array(initial_angles)
-
-        # Get the IK solution.
-        angles = chain.inverse_kinematics(target_orientation=orientation,
-                                          orientation_mode=orientation_mode,
-                                          initial_position=initial_angles)
-
-        # Convert the angles to degrees. Remove the first node (the origin link) and last node (the magnet).
-        if object_id is not None:
-            angles = [float(np.rad2deg(a)) for a in angles[1:-2]]
-        else:
-            angles = [float(np.rad2deg(a)) for a in angles[1:-1]]
-
-        self._append_ik_commands(arm=arm, angles=angles)
-        # Set the torso.
-        self._next_frame_commands.append({"$type": "set_prismatic_target",
-                                          "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
-                                          "target": 1.2})
 
     def _get_initial_angles(self, arm: Arm, has_object: bool = False) -> np.array:
         """
