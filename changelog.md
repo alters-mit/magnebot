@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.1
+
+### `magnebot` module
+
+#### `Magnebot`
+
+- Added: `get_visible_objects()`
+
+### Example controllers
+
+- Added: `pick_up.py`
+
+### Test controllers
+
+- Added: `spawn.py`
+
 ## 0.2.0
 
 ### `magnebot` module

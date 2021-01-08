@@ -1007,6 +1007,16 @@ class Magnebot(FloorplanController):
         z = self._scene_bounds["z_min"] + (j * OCCUPANCY_CELL_SIZE)
         return x, z
 
+    def get_visible_objects(self) -> List[int]:
+        """
+        Get all objects visible to the Magnebot in `self.state` using the id (segmentation color) image.
+
+        :return: A list of IDs of visible objects.
+        """
+
+        colors = [c[1] for c in self.state.get_pil_images()["id"].getcolors()]
+        return [o for o in self.objects_static if self.objects_static[o].segmentation_color in colors]
+
     def end(self) -> None:
         """
         End the simulation. Terminate the build process.

@@ -568,6 +568,14 @@ print(m.get_occupancy_position(x, y)) # (1.1157886505126946, 2.2528389358520506)
 
 _Returns:_  Tuple: (x coordinate; z coordinate) of the corresponding worldspace position.
 
+#### get_visible_objects
+
+**`self.get_visible_objects()`**
+
+Get all objects visible to the Magnebot in `self.state` using the id (segmentation color) image.
+
+_Returns:_  A list of IDs of visible objects.
+
 #### end
 
 **`self.end()`**
