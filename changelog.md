@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.2
+
+### `magnebot` module
+
+#### `Magnebot`
+
+- `move_by()` and `move_to()` stop when there is a collision with the environment but not with an object.
+- `move_by()`, `move_to()`, `turn_by()`, and `turn_to()` stop when the Magnebot is starting to tip over, at which point they'll try to correct the tipping.
+- Added: `reset_position()`
+
+### Test Controllers
+
+- Removed: `tip.py`
+- Added: `pick_up_heavy.py`
+
 ## 0.2.1
 
 ### `magnebot` module

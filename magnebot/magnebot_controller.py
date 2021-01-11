@@ -9,7 +9,8 @@ from ikpy.chain import Chain
 from ikpy.link import OriginLink, URDFLink, Link
 from ikpy.utils import geometry
 from tdw.floorplan_controller import FloorplanController
-from tdw.output_data import OutputData, Version, StaticRobot, SegmentationColors, Bounds, Rigidbodies, LogMessage
+from tdw.output_data import OutputData, Version, StaticRobot, SegmentationColors, Bounds, Rigidbodies, LogMessage, Robot
+from tdw.output_data import Magnebot as Mag
 from tdw.tdw_utils import TDWUtils, QuaternionUtils
 from tdw.object_init_data import AudioInitData
 from tdw.py_impact import PyImpact, ObjectInfo
@@ -277,6 +278,9 @@ class Magnebot(FloorplanController):
         # Send these commands every frame.
         self._per_frame_commands: List[dict] = list()
 
+        # If True, the Magnebot is about to tip over.
+        self._about_to_tip = False
+
         # Set image encoding to .jpg
         # Set the highest render quality.
         # Set global physics values.
@@ -385,6 +389,7 @@ class Magnebot(FloorplanController):
 
         - `success`
         - `failed_to_turn`
+        - `tipping`
 
         :param angle: The target angle in degrees. Positive value = clockwise turn.
         :param aligned_at: If the different between the current angle and the target angle is less than this value, then the action is successful.
@@ -434,6 +439,10 @@ class Magnebot(FloorplanController):
             turn_done = False
             while not turn_done:
                 state_1 = SceneState(resp=self.communicate([]))
+                if self._about_to_tip:
+                    self._stop_tipping(state=state_1)
+                    self._end_action()
+                    return ActionStatus.tipping
                 dt = QuaternionUtils.get_y_angle(state_0.magnebot_transform.rotation,
                                                  state_1.magnebot_transform.rotation)
                 if np.abs(dt) < 0.001:
@@ -474,6 +483,7 @@ class Magnebot(FloorplanController):
 
         - `success`
         - `failed_to_turn`
+        - `tipping`
 
         :param target: Either the ID of an object or a Vector3 position.
         :param aligned_at: If the different between the current angle and the target angle is less than this value, then the action is successful.
@@ -496,11 +506,14 @@ class Magnebot(FloorplanController):
         """
         Move the Magnebot forward or backward by a given distance.
 
+        While moving, the Magnebot might start to tip over (usually because it's holding something heavy). If this happens, the Magnebot will stop moving and drop any objects with mass > 30.
+
         Possible [return values](action_status.md):
 
         - `success`
         - `failed_to_move`
         - `collision`
+        - `tipping`
 
         :param distance: The target distance. If less than zero, the Magnebot will move backwards.
         :param arrived_at: If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
@@ -551,6 +564,12 @@ class Magnebot(FloorplanController):
             while not move_done:
                 resp = self.communicate([])
                 move_state_1 = SceneState(resp=resp)
+
+                if self._about_to_tip:
+                    self._stop_tipping(state=move_state_1)
+                    self._end_action()
+                    return ActionStatus.tipping
+
                 dt = np.linalg.norm(move_state_1.magnebot_transform.position - move_state_0.magnebot_transform.position)
                 if dt < 0.001:
                     move_done = True
@@ -563,30 +582,8 @@ class Magnebot(FloorplanController):
                     if object_id in self.magnebot_static.joints:
                         collided = True
                         break
-                if not collided:
-                    for id_pair in collisions.obj_collisions:
-                        # Listen only for collisions between a body part and a scene object.
-                        if (id_pair.int1 in self.magnebot_static.joints and
-                            id_pair.int2 not in self.magnebot_static.joints) or \
-                                (id_pair.int1 not in self.magnebot_static.joints and
-                                 id_pair.int2 in self.magnebot_static.joints):
-                            # Ignore very small objects.
-                            if (id_pair.int1 in self.objects_static and
-                                self.objects_static[id_pair.int1].mass > 1) or \
-                                    (id_pair.int2 in self.objects_static and
-                                     self.objects_static[id_pair.int2].mass > 1):
-                                collided = True
-                                break
                 if collided:
-                    # Stop wheel movement to prevent the Magnebot from tipping over.
-                    commands = []
-                    for wheel in self.magnebot_static.wheels:
-                        # Set the target of each wheel to its current position.
-                        commands.append({"$type": "set_revolute_target",
-                                         "target": float(move_state_1.joint_angles[
-                                                             self.magnebot_static.wheels[wheel]][0]),
-                                         "joint_id": self.magnebot_static.wheels[wheel]})
-                    self._next_frame_commands.extend(commands)
+                    self._stop_wheels(state=move_state_1)
                     if self._debug:
                         print("Collision. Stopping movement.")
                     self._end_action()
@@ -635,6 +632,7 @@ class Magnebot(FloorplanController):
         - `failed_to_move`
         - `collision`
         - `failed_to_turn`
+        - `tipping`
 
         :param target: Either the ID of an object or a Vector3 position.
         :param arrived_at: While moving, if at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
@@ -661,6 +659,32 @@ class Magnebot(FloorplanController):
         else:
             self._end_action()
             return status
+
+    def reset_position(self) -> ActionStatus:
+        """
+        Drop all objects. Set the Magnebot's position from `(x, y, z)` to `(x, 0, z)` and set its rotation to the default rotation.
+        The action ends when all previously-held objects stop moving.
+        This will be interpreted by the physics engine as a _very_ sudden and fast movement.
+
+        This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
+
+        Possible [return values](action_status.md):
+
+        - `success`
+
+        :return: An `ActionStatus` (always success).
+        """
+
+        self._start_action()
+        position = TDWUtils.array_to_vector3(self.state.magnebot_transform.position)
+        position["y"] = 0
+        self._next_frame_commands.extend([{"$type": "teleport_robot",
+                                           "position": position},
+                                          {"$type": "set_immovable",
+                                           "immovable": True}])
+        self._stop_tipping(state=self.state)
+        self._end_action()
+        return ActionStatus.success
 
     def reach_for(self, target: Dict[str, float], arm: Arm, absolute: bool = True, arrived_at: float = 0.125) -> ActionStatus:
         """
@@ -1045,7 +1069,7 @@ class Magnebot(FloorplanController):
 
         if not self._debug:
             # Send the commands and get a response.
-            return super().communicate(commands)
+            resp = super().communicate(commands)
         else:
             resp = super().communicate(commands)
             # Print log messages.
@@ -1055,7 +1079,15 @@ class Magnebot(FloorplanController):
                     log_message = LogMessage(resp[i])
                     print(f"Message from build: {log_message.get_message_type()}, {log_message.get_message()}\t"
                           f"{log_message.get_object_type()}")
-            return resp
+        # Check if the Magnebot is about to tip.
+        r = get_data(resp=resp, d_type=Robot)
+        m = get_data(resp=resp, d_type=Mag)
+        if r is not None and m is not None:
+            bottom = np.array(r.get_position())
+            top = np.array(m.get_top())
+            bottom_top_distance = np.linalg.norm(np.array([bottom[0], bottom[2]]) - np.array([top[0], top[2]]))
+            self._about_to_tip = bottom_top_distance > 0.2
+        return resp
 
     def _add_object(self, model_name: str, position: Dict[str, float] = None,
                     rotation: Dict[str, float] = None, library: str = "models_core.json",
@@ -1671,3 +1703,38 @@ class Magnebot(FloorplanController):
             position=state.body_part_transforms[self.magnebot_static.magnets[arm]].position,
             state=state)
         return np.linalg.norm(magnet_position - target) < 0.001
+
+    def _stop_wheels(self, state: SceneState) -> None:
+        """
+        Stop wheel movement.
+
+        :param state: The current state.
+        """
+        commands = []
+        for wheel in self.magnebot_static.wheels:
+            # Set the target of each wheel to its current position.
+            commands.append({"$type": "set_revolute_target",
+                             "target": float(state.joint_angles[
+                                                 self.magnebot_static.wheels[wheel]][0]),
+                             "joint_id": self.magnebot_static.wheels[wheel]})
+        self._next_frame_commands.extend(commands)
+
+    def _stop_tipping(self, state: SceneState) -> None:
+        """
+        Handle situations where the Magnebot is tipping by dropping all heavy objects.
+
+        :param state: The current state.
+        """
+
+        if self._debug:
+            print("About to tip over. Stopping.")
+        held_objects: List[int] = list()
+        for arm in state.held:
+            for held_object in state.held[arm]:
+                if self.objects_static[held_object].mass > 8:
+                    self._append_drop_commands(object_id=held_object, arm=arm)
+                    held_objects.append(held_object)
+        # Stop the wheels.
+        self._stop_wheels(state=state)
+        # Wait for the objects to stop moving.
+        self._wait_until_objects_stop(object_ids=held_objects)

@@ -259,6 +259,7 @@ Possible [return values](action_status.md):
 
 - `success`
 - `failed_to_turn`
+- `tipping`
 
 
 | Parameter | Type | Default | Description |
@@ -284,6 +285,7 @@ Possible [return values](action_status.md):
 
 - `success`
 - `failed_to_turn`
+- `tipping`
 
 
 | Parameter | Type | Default | Description |
@@ -301,11 +303,14 @@ _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and
 
 Move the Magnebot forward or backward by a given distance.
 
+While moving, the Magnebot might start to tip over (usually because it's holding something heavy). If this happens, the Magnebot will stop moving and drop any objects with mass > 30.
+
 Possible [return values](action_status.md):
 
 - `success`
 - `failed_to_move`
 - `collision`
+- `tipping`
 
 
 | Parameter | Type | Default | Description |
@@ -331,6 +336,7 @@ Possible [return values](action_status.md):
 - `failed_to_move`
 - `collision`
 - `failed_to_turn`
+- `tipping`
 
 
 | Parameter | Type | Default | Description |
@@ -340,6 +346,22 @@ Possible [return values](action_status.md):
 | aligned_at |  float  | 3 | While turning, if the different between the current angle and the target angle is less than this value, then the action is successful. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot moved to the target and if not, why.
+
+#### reset_position
+
+**`self.reset_position()`**
+
+Drop all objects. Set the Magnebot's position from `(x, y, z)` to `(x, 0, z)` and set its rotation to the default rotation.
+The action ends when all previously-held objects stop moving.
+This will be interpreted by the physics engine as a _very_ sudden and fast movement.
+
+This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
+
+Possible [return values](action_status.md):
+
+- `success`
+
+_Returns:_  An `ActionStatus` (always success).
 
 ***
 

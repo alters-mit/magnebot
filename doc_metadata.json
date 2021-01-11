@@ -11,7 +11,7 @@
     },
     "Movement": {
       "description": "These functions move or turn the Magnebot.",
-      "functions": ["turn_by", "turn_to", "move_by", "move_to"]
+      "functions": ["turn_by", "turn_to", "move_by", "move_to", "reset_position"]
     },
     "Arm Articulation": {
       "description": "These functions move and bend the joints of the Magnebots's arms.",
