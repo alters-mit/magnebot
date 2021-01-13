@@ -143,7 +143,8 @@ class Magnebot(FloorplanController):
     _WHEEL_CIRCUMFERENCE: float = 2 * np.pi * _WHEEL_RADIUS
 
     def __init__(self, port: int = 1071, launch_build: bool = True, screen_width: int = 256, screen_height: int = 256,
-                 debug: bool = False, auto_save_images: bool = False, images_directory: str = "images"):
+                 debug: bool = False, auto_save_images: bool = False, images_directory: str = "images",
+                 random_seed: int = None):
         """
         :param port: The socket port. [Read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md#command-line-arguments) for more information.
         :param launch_build: If True, the build will launch automatically on the default port (1071). If False, you will need to launch the build yourself (for example, from a Docker container).
@@ -151,6 +152,7 @@ class Magnebot(FloorplanController):
         :param screen_height: The height of the screen in pixels.
         :param auto_save_images: If True, automatically save images to `images_directory` at the end of every action.
         :param images_directory: The output directory for images if `auto_save_images == True`.
+        :param random_seed: The seed used for random numbers. If None, this is chosen randomly. In the Magenbot API this is used only when randomly selecting a start position for the Magnebot (see the `room` parameter of `init_scene()`). The same random seed is used in higher-level APIs such as the Transport Challenge.
         :param debug: If True, enable debug mode. This controller will output messages to the console, including any warnings or errors sent by the build. It will also create 3D plots of arm articulation IK solutions.
         """
 
@@ -159,6 +161,11 @@ class Magnebot(FloorplanController):
         self.__first_time_only = True
 
         self._debug = debug
+
+        # Get a random seed.
+        if random_seed is None:
+            random_seed = self.get_unique_id()
+        self._rng = np.random.RandomState(random_seed)
 
         """:field
         Dynamic data for all of the most recent frame (i.e. the frame after doing an action such as `move_to()`). [Read this](scene_state.md) for a full API.
@@ -341,11 +348,12 @@ class Magnebot(FloorplanController):
         Possible [return values](action_status.md):
 
         - `success`
-        - `failed_to_bend` (Technically this is _possible_, but it shouldn't ever happen.)
 
         :param scene: The name of an interior floorplan scene. Each number (1, 2, etc.) has a different shape, different rooms, etc. Each letter (a, b, c) is a cosmetically distinct variant with the same floorplan.
         :param layout: The furniture layout of the floorplan. Each number (0, 1, 2) will populate the floorplan with different furniture in different positions.
         :param room: The index of the room that the Magnebot will spawn in the center of. If None, the room will be chosen randomly.
+
+        :return: An `ActionStatus` (always success).
         """
 
         # Load the occupancy map.
@@ -576,18 +584,30 @@ class Magnebot(FloorplanController):
                 move_state_0 = move_state_1
 
                 # Check if we collided with the environment or with any objects.
-                collided = False
                 collisions = Collisions(resp=resp)
                 for object_id in collisions.env_collisions:
                     if object_id in self.magnebot_static.joints:
-                        collided = True
-                        break
-                if collided:
-                    self._stop_wheels(state=move_state_1)
-                    if self._debug:
-                        print("Collision. Stopping movement.")
-                    self._end_action()
-                    return ActionStatus.collision
+                        self._stop_wheels(state=move_state_1)
+                        if self._debug:
+                            print("Collision. Stopping movement.")
+                        self._end_action()
+                        return ActionStatus.collision
+                for id_pair in collisions.obj_collisions:
+                    # Listen only for collisions between a body part and a scene object.
+                    if (id_pair.int1 in self.magnebot_static.joints and
+                        id_pair.int2 not in self.magnebot_static.joints) or \
+                            (id_pair.int1 not in self.magnebot_static.joints and
+                             id_pair.int2 in self.magnebot_static.joints):
+                        # Ignore very small objects.
+                        if (id_pair.int1 in self.objects_static and
+                            self.objects_static[id_pair.int1].mass > 8) or \
+                                (id_pair.int2 in self.objects_static and
+                                 self.objects_static[id_pair.int2].mass > 8):
+                            self._stop_wheels(state=move_state_1)
+                            if self._debug:
+                                print("Collision. Stopping movement.")
+                            self._end_action()
+                            return ActionStatus.collision
 
             wheel_state = move_state_0
             # Check if we're at the destination.
@@ -662,7 +682,7 @@ class Magnebot(FloorplanController):
 
     def reset_position(self) -> ActionStatus:
         """
-        Drop all objects. Set the Magnebot's position from `(x, y, z)` to `(x, 0, z)` and set its rotation to the default rotation.
+         Set the Magnebot's position from `(x, y, z)` to `(x, 0, z)`, set its rotation to the default rotation, and drop all held objects.
         The action ends when all previously-held objects stop moving.
         This will be interpreted by the physics engine as a _very_ sudden and fast movement.
 
@@ -1215,9 +1235,13 @@ class Magnebot(FloorplanController):
         """
 
         # Move the torso up to its default height to prevent anything from dragging.
-        self._next_frame_commands.append({"$type": "set_prismatic_target",
+        # Reset the column rotation.
+        self._next_frame_commands.extend([{"$type": "set_prismatic_target",
                                           "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
-                                          "target": Magnebot._DEFAULT_TORSO_Y})
+                                          "target": Magnebot._DEFAULT_TORSO_Y},
+                                          {"$type": "set_revolute_target",
+                                           "joint_id": self.magnebot_static.arm_joints[ArmJoint.column],
+                                           "target": 0}])
         self._do_arm_motion()
 
     def _start_ik(self, target: Dict[str, float], arm: Arm, absolute: bool = True, arrived_at: float = 0.125,
@@ -1575,9 +1599,11 @@ class Magnebot(FloorplanController):
             # Get the position of the magnet.
             state = SceneState(resp=resp)
             magnet = state.body_part_transforms[self.magnebot_static.magnets[arm]]
+            translation_vector = magnet.position - obj_position
+            translation_vector[0] *= -1
             # Add the object as an IK link.
             links.append(URDFLink(name="obj",
-                                  translation_vector=magnet.position - obj_position,
+                                  translation_vector=translation_vector,
                                   orientation=[0, 0, 0],
                                   rotation=None))
 

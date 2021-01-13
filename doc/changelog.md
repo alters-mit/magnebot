@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.2.3
+
+### `magnebot` module
+
+#### `Magnebot`
+
+- Added optional parameter `random_seed` to constructor.
+- `init_scene()` always returns `ActionStatus.success`.
+- `move_by()` stops if the Magnebot collides with a heavy object.
+- The Magnebot will reset the rotation of its column before moving or turning.
+- Fixed: The position of an object at the end of the IK chain is sometimes incorrect.
+
+### Documentation
+
+- Improved the README. Added an API hierarchy diagram.
+- Moved changelog to `doc/`
+- Added: `custom_apis.md`
+
 ## 0.2.2
 
 ### `magnebot` module

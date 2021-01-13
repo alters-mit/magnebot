@@ -170,7 +170,7 @@ Note that it is possible for the Magnebot to go to positions that aren't "free".
 
 **`Magnebot()`**
 
-**`Magnebot(port=1071, launch_build=True, screen_width=256, screen_height=256, auto_save_images=False, images_directory="images", debug=False)`**
+**`Magnebot(port=1071, launch_build=True, screen_width=256, screen_height=256, auto_save_images=False, images_directory="images", random_seed=None, debug=False)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -180,6 +180,7 @@ Note that it is possible for the Magnebot to go to positions that aren't "free".
 | screen_height |  int  | 256 | The height of the screen in pixels. |
 | auto_save_images |  bool  | False | If True, automatically save images to `images_directory` at the end of every action. |
 | images_directory |  str  | "images" | The output directory for images if `auto_save_images == True`. |
+| random_seed |  int  | None | The seed used for random numbers. If None, this is chosen randomly. In the Magenbot API this is used only when randomly selecting a start position for the Magnebot (see the `room` parameter of `init_scene()`). The same random seed is used in higher-level APIs such as the Transport Challenge. |
 | debug |  bool  | False | If True, enable debug mode. This controller will output messages to the console, including any warnings or errors sent by the build. It will also create 3D plots of arm articulation IK solutions. |
 
 ***
@@ -229,13 +230,15 @@ You can call `init_scene()` more than once to reset the simulation.
 Possible [return values](action_status.md):
 
 - `success`
-- `failed_to_bend` (Technically this is _possible_, but it shouldn't ever happen.)
+
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | scene |  str |  | The name of an interior floorplan scene. Each number (1, 2, etc.) has a different shape, different rooms, etc. Each letter (a, b, c) is a cosmetically distinct variant with the same floorplan. |
 | layout |  int |  | The furniture layout of the floorplan. Each number (0, 1, 2) will populate the floorplan with different furniture in different positions. |
 | room |  int  | None | The index of the room that the Magnebot will spawn in the center of. If None, the room will be chosen randomly. |
+
+_Returns:_  An `ActionStatus` (always success).
 
 ***
 
@@ -351,7 +354,7 @@ _Returns:_  An `ActionStatus` indicating if the Magnebot moved to the target and
 
 **`self.reset_position()`**
 
-Drop all objects. Set the Magnebot's position from `(x, y, z)` to `(x, 0, z)` and set its rotation to the default rotation.
+Set the Magnebot's position from `(x, y, z)` to `(x, 0, z)`, set its rotation to the default rotation, and drop all held objects.
 The action ends when all previously-held objects stop moving.
 This will be interpreted by the physics engine as a _very_ sudden and fast movement.
 

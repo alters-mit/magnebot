@@ -1,10 +1,14 @@
 # Magnebot
 
-Magnebot is a high-level robotics-like API for [TDW](https://github.com/threedworld-mit/tdw). The Magnebot can move around the scene and manipulate objects by picking them up with "magnets". The scene and all of the Magnebot's actions are driven by a physics simulation.
+Magnebot is a high-level robotics-like API for [TDW](https://github.com/threedworld-mit/tdw). The Magnebot can move around the scene and manipulate objects by picking them up with "magnets". The simulation is entirely driven by physics.
 
 ![](doc/images/reach_high.gif)
 
-[Read the Magnebot API documentation here.](https://github.com/alters-mit/magnebot/blob/main/doc/magnebot_controller.md) The Magnebot can be loaded into a [wide variety of scenes populated by interactable objects](https://github.com/alters-mit/magnebot/tree/main/doc/images/floorplans). All of the Magnebot's possible movements are divided into "actions", each corresponding to an API call, such as `turn_by()` and `move_to()`. Arm articulation is driven by an inverse kinematics (IK) system: specify a target position or object in the action `reach_for(target, arm)` and the `arm` will calculate a solution to reach the `target`. At the end of every action, the Magnebot controller script will return  [scene state data](https://github.com/alters-mit/magnebot/blob/main/doc/scene_state.md), which includes an image, a depth map, a segmentation color map, and physics metadata for each body part of the robot and each object in the scene.
+**[Read the Magnebot API documentation here.](https://github.com/alters-mit/magnebot/blob/main/doc/magnebot_controller.md)**
+
+- The Magnebot can be loaded into a [wide variety of scenes populated by interactable objects](https://github.com/alters-mit/magnebot/tree/main/doc/images/floorplans). 
+- All of the Magnebot's possible movements are divided into "actions", each corresponding to an API call, such as `turn_by()` and `move_to()`. Arm articulation is driven by an inverse kinematics (IK) system: specify a target position or object in the action `reach_for(target, arm)` and the `arm` will calculate a solution to reach the `target`. 
+- At the end of every action, the Magnebot controller script will return  [scene state data](https://github.com/alters-mit/magnebot/blob/main/doc/scene_state.md), which includes an image, a depth map, a segmentation color map, and physics metadata for each body part of the robot and each object in the scene.
 
 # Requirements
 
@@ -44,15 +48,16 @@ m.end()
 
 # Documentation
 
-- **Read the Magnebot API documentation [here.](https://github.com/alters-mit/magnebot/blob/main/doc/magnebot_controller.md)**
+- **[Read the Magnebot API documentation here.](https://github.com/alters-mit/magnebot/blob/main/doc/magnebot_controller.md)**
 - Read the API Documentation for other classes in the `magnebot` module [here.](https://github.com/alters-mit/magnebot/tree/main/doc)
-- [Changelog](https://github.com/alters-mit/magnebot/blob/master/changelog.md)
+- (Backend only) [Read this to learn how to write custom APIs](https://github.com/alters-mit/magnebot/blob/main/doc/custom_apis.md).
+- [Changelog](https://github.com/alters-mit/magnebot/blob/main/doc/changelog.md)
 - For more information regarding TDW, see the [TDW repo](https://github.com/threedworld-mit/tdw/). Relevant documentation includes:
   - [Getting Started With TDW](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md) 
   - [The Command API documentation](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md)
   - [Robotics in TDW](https://github.com/threedworld-mit/tdw/blob/master/Documentation/misc_frontend/robots.md)
   - [Docker and TDW](https://github.com/threedworld-mit/tdw/blob/master/Documentation/Docker/docker.md)
- 
+
 # Examples
 
 - [Example controllers](https://github.com/alters-mit/magnebot/tree/main/controllers/examples) show actual examples for an actual use-case.
@@ -63,6 +68,16 @@ m.end()
 
 - [`OccupancyMapper`](https://github.com/alters-mit/magnebot/blob/main/util/occupancy_mapper.py) generates occupancy maps for each scene+layout combination, as well as floorplan and room images.
 - [`doc_gen.py`](https://github.com/alters-mit/magnebot/blob/main/util/doc_gen.py) generates API documentation using [`py-md-doc`](https://pypi.org/project/py-md-doc/).
+
+# API Hierarchy
+
+The Magnebot API relies on the `tdw` Python module. There are also specialized extensions of the Magnebot API. To learn how to write your own API extension, [read this](https://github.com/alters-mit/magnebot/blob/main/doc/custom_apis.md).
+
+<img src="doc/images/api_hierarchy.png" style="zoom:67%;" />
+
+| API                                                          | Description                                                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| [Transport Challenge](https://github.com/alters-mit/transport_challenge) | Transport objects from room to room using containers as tools. |
 
 # Troubleshooting and debugging
 
@@ -118,7 +133,7 @@ This simulation is 100% physics-driven. *Every task will sometimes fail.* Possib
 - The Magnebot tried to move forward but got caught on furniture.
 - The Magnebot tried to put an object in a container but the object bounced out.
 
-*You* will need to develop solutions to handle cases like this. You can use the [`ActionStatus`](https://github.com/alters-mit/magnebot/blob/master/doc/action_status.md) return values to figure out why a task failed and [`SceneData`](https://github.com/alters-mit/magnebot/blob/master/doc/scene_data.md) to get the current state of the simulation.
+*You* will need to develop solutions to handle cases like this. You can use the [`ActionStatus`](https://github.com/alters-mit/magnebot/blob/main/doc/action_status.md) return values to figure out why a task failed and [`SceneData`](https://github.com/alters-mit/magnebot/blob/main/doc/scene_data.md) to get the current state of the simulation.
 
 ### "The simulation behaves differently on different machines / Physics aren't deterministic"
 

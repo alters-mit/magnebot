@@ -32,7 +32,7 @@ class ActionStatus(Enum):
     not_holding = 7  # The Magnebot didn't try to drop the object(s) because it isn't holding them.
     clamped_camera_rotation = 8  # The Magnebot rotated its camera but at least one angle of rotation was clamped.
     failed_to_bend = 9  # The Magnebot tried to bend its arm but failed to bend it all the way.
-    collision = 10  # The Magnebot tried to move or turn but failed because it collided with the environment (such as a wall).
+    collision = 10  # The Magnebot tried to move or turn but failed because it collided with the environment (such as a wall) or a large object (mass > 8).
     tipping = 11  # The Magnebot tried to move or turn but failed because it started to tip over.
     not_in = 100  # (Transport Challenge only) The Magnebot tried and failed to put the object in the container.
     still_in = 101  # (Transport Challenge only) The Magnebot tried and failed to pour all objects out of the container.
