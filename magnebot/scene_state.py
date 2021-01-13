@@ -266,6 +266,6 @@ class SceneState:
 
         if "depth" in self.images:
             return TDWUtils.get_point_cloud(depth=TDWUtils.get_depth_values(self.images["depth"]),
-                                            camera_matrix=self.camera_matrix)
+                                            camera_matrix=self.camera_matrix, far_plane=100, near_plane=1)
         else:
             return None
