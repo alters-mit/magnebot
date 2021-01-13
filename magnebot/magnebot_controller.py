@@ -1097,7 +1097,7 @@ class Magnebot(FloorplanController):
                 r_id = OutputData.get_data_type_id(resp[i])
                 if r_id == "logm":
                     log_message = LogMessage(resp[i])
-                    print(f"Message from build: {log_message.get_message_type()}, {log_message.get_message()}\t"
+                    print(f"[Build]: {log_message.get_message_type()}, {log_message.get_message()}\t"
                           f"{log_message.get_object_type()}")
         # Check if the Magnebot is about to tip.
         r = get_data(resp=resp, d_type=Robot)
@@ -1193,7 +1193,9 @@ class Magnebot(FloorplanController):
                     {"$type": "set_pass_masks",
                      "pass_masks": ["_img", "_id", "_depth"]},
                     {"$type": "enable_image_sensor",
-                     "enable": False}]
+                     "enable": False},
+                    {"$type": "set_anti_aliasing",
+                     "mode": "subpixel"}]
         # Add the objects.
         for object_id in self._object_init_commands:
             commands.extend(self._object_init_commands[object_id])
