@@ -222,13 +222,12 @@ class SceneState:
         for pass_name in self.images:
             if self.images[pass_name] is None:
                 continue
-            if pass_name == "depth":
-                image_data = Image.fromarray(self.images[pass_name])
-            else:
-                image_data = self.images[pass_name]
             p = output_directory.joinpath(f"{prefix}_{pass_name}.{'jpg' if pass_name == 'img' else 'png'}")
-            with p.open("wb") as f:
-                f.write(image_data)
+            if pass_name == "depth":
+                Image.fromarray(self.images[pass_name]).save(str(p.resolve()))
+            else:
+                with p.open("wb") as f:
+                    f.write(self.images[pass_name])
 
     def get_pil_images(self) -> dict:
         """
