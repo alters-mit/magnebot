@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.2.4
+
+### `magnebot` module
+
+#### `Magnebot`
+
+- The `launch_build` parameter in the constructor defaults to `False` (was `True`)
+- Improved image antialiasing quality
+- Fixed: When choosing a random room in which to spawn the Magnebot, the `random_seed` isn't used
+
+#### `SceneState`
+
+- Fixed: Depth maps aren't saved correctly.
+
+#### Backend
+
+- Added function `check_version()` to `util.py`
+
+### Documentation
+
+- Updated install instructions in the README
+- Moved troubleshooting section of the README to `doc/troubleshooting.md`
+
 ## 0.2.3
 
 ### `magnebot` module
@@ -12,14 +35,9 @@
 - The Magnebot will reset the rotation of its column before moving or turning.
 - Fixed: The position of an object at the end of the IK chain is sometimes incorrect.
 
-#### Backend
-
-- Added function `check_version()` to `util.py`
-
 ### Documentation
 
 - Improved the README. Added an API hierarchy diagram.
-- Moved troubleshooting section of the README to `doc/troubleshooting.md`
 - Moved changelog to `doc/`
 - Added: `custom_apis.md`
 

@@ -34,9 +34,8 @@ See [Getting Started With TDW](https://github.com/threedworld-mit/tdw/blob/maste
 ```python
 from magnebot import Magnebot, Arm
 
-# If launch_build=True, the controller will launch the build process, which is often very convenient.
-# On a remote server, always set launch_build=False and launch the build like you would with any other executable.
-m = Magnebot(launch_build=False)
+
+m = Magnebot()
 
 # Initialize the scene, populate it with objects, and add the Magnebot.
 # This can take a few minutes to finish.
