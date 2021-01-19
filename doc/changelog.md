@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- Added a license
+- Updated install instructions in the README
+- Made the repo public
+
 ## 0.2.4
 
 ### `magnebot` module

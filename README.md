@@ -22,10 +22,14 @@ See [Getting Started With TDW](https://github.com/threedworld-mit/tdw/blob/maste
 
 # Installation
 
-1. Clone this repo
-2. `cd path/to/magnebot` (replace `path/to` with the actual path)
-3. `pip3 install -e .`
-4. 
+1. Clone the `tdw` repo if you haven't already
+2. `cd path/to/tdw/Python` (replace `path/to` with the actual path)
+3. `git checkout magnebot`
+4. `pip3 install -e .`
+5. Clone this repo
+6. `cd path/to/magnebot` (replace `path/to` with the actual path)
+7. `pip3 install -e .`
+8. [Download a test build](https://github.com/threedworld-mit/tdw/releases/tag/magnebot_test) and unzip it.
 
 # Usage
 
@@ -34,7 +38,6 @@ See [Getting Started With TDW](https://github.com/threedworld-mit/tdw/blob/maste
 ```python
 from magnebot import Magnebot, Arm
 
-
 m = Magnebot()
 
 # Initialize the scene, populate it with objects, and add the Magnebot.
@@ -42,14 +45,17 @@ m = Magnebot()
 m.init_scene(scene="1a", layout=0, room=1)
 
 # Reach for a target position.
-status = m.reach_for(arm=Arm.left, target={"x": 0.1, "y": 0.6, "z": 0.4})
+status = m.reach_for(arm=Arm.left, target={"x": 0.1, "y": 0.6, "z": 0.4}, absolute=False)
 print(status) # ActionStatus.success
+
+# Save images.
+m.state.save_images(output_directory="magnebot_test_images")
 
 # End the simulation.
 m.end()
 ```
 
-2. If `launch_build=False`, [launch the TDW build now](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md).
+2. [Launch the TDW build.](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md)
 
 # Documentation
 
