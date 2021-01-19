@@ -18,7 +18,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8'
     ],
-    keywords='unity simulation tdw',
+    keywords='unity simulation tdw robotics',
     packages=find_packages(),
-    install_requires=['tdw', 'numpy', 'ikpy', 'matplotlib', 'pillow', "py_md_doc"],
+    install_requires=['tdw', 'numpy', 'ikpy', 'requests', 'matplotlib', 'pillow', "py_md_doc"],
 )

@@ -1,4 +1,7 @@
+from json import loads
+from pkg_resources import get_distribution
 from typing import Dict, Type, TypeVar, List, Optional
+from requests import get
 from tdw.output_data import OutputData, Transforms, Rigidbodies, Bounds, Images, SegmentationColors, Volumes, Raycast, \
     CompositeObjects, CameraMatrices, Environments, Overlap, Version, StaticRobot, Robot, Magnebot, NavMeshPath
 
@@ -41,3 +44,19 @@ def get_data(resp: List[bytes], d_type: Type[T]) -> Optional[T]:
         if r_id == __OUTPUT_IDS[d_type]:
             return d_type(resp[i])
     return None
+
+
+def check_version(module: str = "magnebot") -> None:
+    """
+    Make sure that a Python module is up to date.
+
+    :param module: The name of the module.
+    """
+
+    v_local = get_distribution(module).version
+    # v_remote = loads(get(f"https://pypi.org/pypi/{module}/json").content)["info"]["version"]
+    v_remote = v_local
+
+    if v_remote != v_local:
+        print(f"You have {module} v{v_local} but version v{v_local} is available. "
+              f"To upgrade:\npip3 install {module} -U")

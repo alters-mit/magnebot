@@ -12,9 +12,14 @@
 - The Magnebot will reset the rotation of its column before moving or turning.
 - Fixed: The position of an object at the end of the IK chain is sometimes incorrect.
 
+#### Backend
+
+- Added function `check_version()` to `util.py`
+
 ### Documentation
 
 - Improved the README. Added an API hierarchy diagram.
+- Moved troubleshooting section of the README to `doc/troubleshooting.md`
 - Moved changelog to `doc/`
 - Added: `custom_apis.md`
 

@@ -1,4 +1,3 @@
-import random
 from json import loads
 from typing import List, Dict, Optional, Union, Tuple
 from csv import DictReader
@@ -16,7 +15,7 @@ from tdw.object_init_data import AudioInitData
 from tdw.py_impact import PyImpact, ObjectInfo
 from tdw.collisions import Collisions
 from tdw.release.pypi import PyPi
-from magnebot.util import get_data
+from magnebot.util import get_data, check_version
 from magnebot.object_static import ObjectStatic
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.scene_state import SceneState
@@ -142,7 +141,7 @@ class Magnebot(FloorplanController):
     # The circumference of the Magnebot wheel.
     _WHEEL_CIRCUMFERENCE: float = 2 * np.pi * _WHEEL_RADIUS
 
-    def __init__(self, port: int = 1071, launch_build: bool = True, screen_width: int = 256, screen_height: int = 256,
+    def __init__(self, port: int = 1071, launch_build: bool = False, screen_width: int = 256, screen_height: int = 256,
                  debug: bool = False, auto_save_images: bool = False, images_directory: str = "images",
                  random_seed: int = None):
         """
@@ -310,6 +309,8 @@ class Magnebot(FloorplanController):
             if build_version != python_version:
                 print(f"Your installed version of tdw ({python_version}) doesn't match the version of the build "
                       f"{build_version}. This might cause errors!")
+        # Make sure that the Magnebot API is up to date.
+        check_version()
 
     def init_scene(self, scene: str, layout: int, room: int = None) -> ActionStatus:
         """
@@ -367,7 +368,7 @@ class Magnebot(FloorplanController):
         rooms = loads(SPAWN_POSITIONS_PATH.read_text())[scene[0]][str(layout)]
         room_keys = list(rooms.keys())
         if room is None:
-            room = random.choice(room_keys)
+            room = self._rng.choice(room_keys)
         else:
             room = str(room)
             assert room in room_keys, f"Invalid room: {room}; valid rooms are: {room_keys}"
@@ -1669,7 +1670,7 @@ class Magnebot(FloorplanController):
         """
 
         # Drop the object.
-        self._next_frame_commands.append({"$type": "drop_from_magnet",
+        self._next_frame_commands.append({"$type": "detach_from_magnet",
                                           "arm": arm.name,
                                           "object_id": int(object_id)})
 
