@@ -80,6 +80,10 @@ This API doesn't include navigation, but it does give you sufficient data to wri
 
 It is possible, though unlikely, that the Magnebot will tip over. If this happens, you can call `reset_position()`.
 
+### "The Magnebot dropped a held object while moving"
+
+While moving, if the Magnebot is about to tip over, it will immediately stop moving and drop all held objects because it could be tipping due to an overly heavy object. The API always prioritizes preventing the Magnebot from tipping over.
+
 ### "I have a problem not listed here"
 
 Create a GitHub Issue and explain the problem.

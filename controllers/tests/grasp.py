@@ -23,6 +23,8 @@ class Grasp(TestController):
 if __name__ == "__main__":
     m = Grasp()
     m.init_scene()
+    m.turn_by(160)
+    m.turn_by(120)
     status = m.grasp(m.target_id, arm=Arm.right)
     assert status == ActionStatus.success, status
     m.end()

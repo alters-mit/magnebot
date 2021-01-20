@@ -1394,8 +1394,8 @@ class Magnebot(FloorplanController):
 
         # Slide the torso to the desired height.
         torso_command = {"$type": "set_prismatic_target",
-                          "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
-                          "target": torso_prismatic}
+                         "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
+                         "target": torso_prismatic}
         if do_prismatic_first:
             self.communicate(torso_command)
             self._do_arm_motion()
