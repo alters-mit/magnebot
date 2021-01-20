@@ -96,6 +96,11 @@ class MagnebotStatic:
         """
         self.magnets: Dict[Arm, int] = dict()
 
+        """:field
+        The ID of the root object.
+        """
+        self.root: int = -1
+
         for i in range(static_robot.get_num_joints()):
             joint_id = static_robot.get_joint_id(i)
             # Cache the body parts.
@@ -107,6 +112,8 @@ class MagnebotStatic:
                 self.wheels[Wheel[joint_name]] = joint_id
             elif "magnet" in joint_name:
                 self.magnets[Arm.left if "left" in joint_name else Arm.right] = joint_id
+            elif static_robot.get_is_joint_root(i):
+                self.root = joint_id
             else:
                 self.arm_joints[ArmJoint[joint_name]] = joint_id
         for i in range(static_robot.get_num_non_moving()):
