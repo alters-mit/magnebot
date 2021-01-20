@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.1
+
+### `magnebot` module
+
+#### `Magnebot`
+
+- Fixed some typos in the documentation
+
+### Example controllers
+
+- Simplified some of the code and added more code comments
+
 ## 0.3.0
 
 - Added a license

@@ -426,7 +426,6 @@ class Magnebot(FloorplanController):
 
             # Calculate the delta angler of the wheels, given the target angle of the Magnebot.
             # Source: https://answers.unity.com/questions/1120115/tank-wheels-and-treads.html
-            # Source: return ActionStatus.failed_to_turn
             # The distance that the Magnebot needs to travel, defined as a fraction of its circumference.
             d = (delta_angle / 360.0) * Magnebot._MAGNEBOT_CIRCUMFERENCE
             # The 3 is a magic number. Who knows what it means??
@@ -683,11 +682,9 @@ class Magnebot(FloorplanController):
 
     def reset_position(self) -> ActionStatus:
         """
-         Set the Magnebot's position from `(x, y, z)` to `(x, 0, z)`, set its rotation to the default rotation, and drop all held objects.
-        The action ends when all previously-held objects stop moving.
-        This will be interpreted by the physics engine as a _very_ sudden and fast movement.
+        Set the Magnebot's position from `(x, y, z)` to `(x, 0, z)`, set its rotation to the default rotation (see `tdw.tdw_utils.QuaternionUtils.IDENTITY`), and drop all held objects. The action ends when all previously-held objects stop moving.
 
-        This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
+        This will be interpreted by the physics engine as a _very_ sudden and fast movement. This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
 
         Possible [return values](action_status.md):
 
@@ -711,7 +708,7 @@ class Magnebot(FloorplanController):
         """
         Reach for a target position.
 
-        The action ends when the Magnebot's magnet reaches arm stops moving. The arm might stop moving if it succeeded at finishing the motion, in which case the action is successful. Or, the arms might stop moving because the motion is impossible, there's an obstacle in the way, if the arm is holding something heavy, and so on.
+        The action ends when the arm stops moving. The arm might stop moving if it succeeded at finishing the motion, in which case the action is successful. Or, the arms might stop moving because the motion is impossible, there's an obstacle in the way, if the arm is holding something heavy, and so on.
 
         Possible [return values](action_status.md):
 

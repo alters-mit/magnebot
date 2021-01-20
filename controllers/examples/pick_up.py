@@ -4,6 +4,10 @@ from magnebot import Magnebot, Arm, ActionStatus
 
 
 class PickUp(Magnebot):
+    """
+    This is an example of how to move the Magnebot around a room and pick up an object.
+    """
+
     def run(self) -> None:
         print("Loading the scene...")
 

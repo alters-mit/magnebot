@@ -354,11 +354,9 @@ _Returns:_  An `ActionStatus` indicating if the Magnebot moved to the target and
 
 **`self.reset_position()`**
 
-Set the Magnebot's position from `(x, y, z)` to `(x, 0, z)`, set its rotation to the default rotation, and drop all held objects.
-The action ends when all previously-held objects stop moving.
-This will be interpreted by the physics engine as a _very_ sudden and fast movement.
+Set the Magnebot's position from `(x, y, z)` to `(x, 0, z)`, set its rotation to the default rotation (see `tdw.tdw_utils.QuaternionUtils.IDENTITY`), and drop all held objects. The action ends when all previously-held objects stop moving.
 
-This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
+This will be interpreted by the physics engine as a _very_ sudden and fast movement. This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
 
 Possible [return values](action_status.md):
 
@@ -380,7 +378,7 @@ _These functions move and bend the joints of the Magnebots's arms._
 
 Reach for a target position.
 
-The action ends when the Magnebot's magnet reaches arm stops moving. The arm might stop moving if it succeeded at finishing the motion, in which case the action is successful. Or, the arms might stop moving because the motion is impossible, there's an obstacle in the way, if the arm is holding something heavy, and so on.
+The action ends when the arm stops moving. The arm might stop moving if it succeeded at finishing the motion, in which case the action is successful. Or, the arms might stop moving because the motion is impossible, there's an obstacle in the way, if the arm is holding something heavy, and so on.
 
 Possible [return values](action_status.md):
 
