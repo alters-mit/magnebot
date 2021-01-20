@@ -21,15 +21,14 @@ class ObjectStatic:
     """
 
     # Objects that we can assume are kinematic.
-    __KINEMATIC = ['24_in_wall_cabinet_white_wood', '24_in_wall_cabinet_wood_beach_honey',
-                   '36_in_wall_cabinet_white_wood', '36_in_wall_cabinet_wood_beach_honey', 'blue_rug',
-                   'cabinet_24_door_drawer_wood_beach_honey', 'cabinet_24_singledoor_wood_beach_honey',
+    __KINEMATIC = ['24_in_wall_cabinet_white_wood', '24_in_wall_cabinet_wood_beach_honey', 'aquostv',
                    'cabinet_24_two_drawer_white_wood', 'cabinet_24_two_drawer_wood_beach_honey',
                    'cabinet_24_white_wood', 'cabinet_24_wood_beach_honey', 'cabinet_36_white_wood',
                    'cabinet_36_wood_beach_honey', 'cabinet_full_height_white_wood',
-                   'cabinet_full_height_wood_beach_honey', 'carpet_rug', 'elf_painting', 'flat_woven_rug',
-                   'framed_painting', 'fruit_basket', 'its_about_time_painting', 'purple_woven_rug',
-                   'silver_frame_painting']
+                   'cabinet_full_height_wood_beach_honey', 'elf_painting', 'framed_painting', 'fruit_basket',
+                   'its_about_time_painting', 'silver_frame_painting', 'sink_base_white_wood',
+                   'sink_base_wood_beach_honey']
+
     # A dictionary of object categories. Key = object name. Value = category.
     __CATEGORIES = loads(OBJECT_CATEGORIES_PATH.read_text(encoding="utf-8"))
 
@@ -55,7 +54,8 @@ class ObjectStatic:
         """
         self.category = ObjectStatic.__CATEGORIES[self.name]
         """:field
-        If True, this object is kinematic, and won't respond to physics. Example: a painting hung on a wall.
+        If True, this object is kinematic, and won't respond to physics. 
+        Examples: a painting hung on a wall or built-in furniture like a countertop.
         """
         self.kinematic = self.name in ObjectStatic.__KINEMATIC
         """:field

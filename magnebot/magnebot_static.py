@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 from tdw.output_data import StaticRobot
 from magnebot.joint_static import JointStatic
 from magnebot.arm import Arm
@@ -40,6 +40,11 @@ class MagnebotStatic:
         ```
         """
         self.joints: Dict[int, JointStatic] = dict()
+
+        """:field
+        The object IDs of every part of the Magnebot. Includes everything in `self.joints` as well as non-moving parts.
+        """
+        self.body_parts: List[int] = list()
 
         """:field
         The name and ID of each arm joint. Key = The [`ArmJoint` enum value](arm_joint.md). Value = The object ID.
@@ -95,6 +100,7 @@ class MagnebotStatic:
             joint_id = static_robot.get_joint_id(i)
             # Cache the body parts.
             self.joints[joint_id] = JointStatic(sr=static_robot, index=i)
+            self.body_parts.append(joint_id)
             # Cache the wheels.
             joint_name = static_robot.get_joint_name(i)
             if "wheel" in joint_name:
@@ -103,3 +109,5 @@ class MagnebotStatic:
                 self.magnets[Arm.left if "left" in joint_name else Arm.right] = joint_id
             else:
                 self.arm_joints[ArmJoint[joint_name]] = joint_id
+        for i in range(static_robot.get_num_non_moving()):
+            self.body_parts.append(static_robot.get_non_moving_id(i))

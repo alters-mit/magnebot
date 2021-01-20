@@ -30,6 +30,8 @@ for b_id in m.magnebot_static.joints:
     print(b_id, m.magnebot_static.joints[b_id].segmentation_color)
 ```
 
+- `body_parts` The object IDs of every part of the Magnebot. Includes everything in `self.joints` as well as non-moving parts.
+
 - `arm_joints` The name and ID of each arm joint. Key = The [`ArmJoint` enum value](arm_joint.md). Value = The object ID.
 
 ```python

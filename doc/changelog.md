@@ -7,7 +7,15 @@
 #### `Magnebot`
 
 - Added optional parameter `img_is_png` to the constructor
-- Fixed some typos in the documentation
+- Added field: `colliding_objects` A list of objects that the Magnebot is colliding with at the end of the most recent action.
+
+#### `MagnebotStatic`
+
+- Added field: `body_parts`  The object IDs of every part of the Magnebot. Includes everything in `self.joints` as well as non-moving parts.
+
+#### `ObjectStatic`
+
+- Fixed: Some kinematic objects are not recorded as being kinematic.
 
 ### Example controllers
 
@@ -16,6 +24,7 @@
 ### Test controllers
 
 - Added: `benchmark.py`
+- Added: `grasp.py`
 
 ## 0.3.0
 

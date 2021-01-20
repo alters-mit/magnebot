@@ -189,6 +189,11 @@ class Magnebot(FloorplanController):
         """
         self.camera_rpy: np.array([0, 0, 0])
 
+        """:field
+        A list of objects that the Magnebot is colliding with at the end of the most recent action.
+        """
+        self.colliding_objects: List[int] = list()
+
         # Commands to initialize objects.
         self._object_init_commands: Dict[int, List[dict]] = dict()
 
@@ -594,6 +599,8 @@ class Magnebot(FloorplanController):
                         self._end_action()
                         return ActionStatus.collision
                 for id_pair in collisions.obj_collisions:
+                    if collisions.obj_collisions[id_pair].state != "enter":
+                        continue
                     # Listen only for collisions between a body part and a scene object.
                     if (id_pair.int1 in self.magnebot_static.joints and
                         id_pair.int2 not in self.magnebot_static.joints) or \
@@ -789,8 +796,9 @@ class Magnebot(FloorplanController):
         bounds = get_data(resp=resp, d_type=Bounds)
         sides = [bounds.get_left(0), bounds.get_right(0), bounds.get_front(0), bounds.get_back(0)]
         sides = [np.array(s) for s in sides]
+        state = SceneState(resp=resp)
         # Get the position of the magnet.
-        magnet_position = self.state.body_part_transforms[self.magnebot_static.magnets[arm]].position
+        magnet_position = state.body_part_transforms[self.magnebot_static.magnets[arm]].position
         # Get the closest side to the magnet.
         closest: np.array = sides[0]
         d = np.inf
@@ -815,7 +823,7 @@ class Magnebot(FloorplanController):
                                           "arm": arm.name,
                                           "targets": [target]})
         # Wait for the arm motion to end.
-        self._do_arm_motion(conditional=lambda state: Magnebot._is_grasping(target, arm, state))
+        self._do_arm_motion(conditional=lambda s: Magnebot._is_grasping(target, arm, s))
         self._end_action()
 
         if target in self.state.held[arm]:
@@ -1098,6 +1106,28 @@ class Magnebot(FloorplanController):
                     log_message = LogMessage(resp[i])
                     print(f"[Build]: {log_message.get_message_type()}, {log_message.get_message()}\t"
                           f"{log_message.get_object_type()}")
+        # Get collisions.
+        if self.magnebot_static is not None:
+            collisions = Collisions(resp=resp)
+            for int_pair in collisions.obj_collisions:
+                # Ignore collisions unless they are with the Magnebot.
+                if int_pair.int1 not in self.magnebot_static.body_parts and int_pair.int2 not in \
+                        self.magnebot_static.body_parts:
+                    continue
+                # Ignore collisions that don't involve an object.
+                if int_pair.int1 not in self.objects_static and int_pair.int2 not in self.objects_static:
+                    continue
+                if int_pair.int1 in self.objects_static:
+                    object_id = int_pair.int1
+                else:
+                    object_id = int_pair.int2
+                # Remove object IDs if this is an exit event.
+                if collisions.obj_collisions[int_pair].state == "exit" and object_id in self.colliding_objects:
+                    self.colliding_objects.remove(object_id)
+                # Add object IDs if this is a new enter event.
+                elif collisions.obj_collisions[int_pair].state == "enter" and object_id not in self.colliding_objects:
+                    self.colliding_objects.append(object_id)
+
         # Check if the Magnebot is about to tip.
         r = get_data(resp=resp, d_type=Robot)
         m = get_data(resp=resp, d_type=Mag)
@@ -1216,7 +1246,7 @@ class Magnebot(FloorplanController):
                          {"$type": "send_collisions",
                           "enter": True,
                           "stay": False,
-                          "exit": False,
+                          "exit": True,
                           "collision_types": ["obj", "env"]}])
         if self._debug:
             commands.append({"$type": "send_log_messages"})
@@ -1618,10 +1648,11 @@ class Magnebot(FloorplanController):
         :param resp: The response from the build.
         """
 
-        # Clear static data.
+        # Clear data from the previous simulation.
         self.objects_static.clear()
         self.segmentation_color_to_id.clear()
         self._next_frame_commands.clear()
+        self.colliding_objects.clear()
         self.camera_rpy: np.array = np.array([0, 0, 0])
         SceneState.FRAME_COUNT = 0
 

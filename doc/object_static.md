@@ -26,7 +26,8 @@ for object_id in m.objects_static:
 
 - `category` The semantic category of the object.
 
-- `kinematic` If True, this object is kinematic, and won't respond to physics. Example: a painting hung on a wall.
+- `kinematic` If True, this object is kinematic, and won't respond to physics. 
+Examples: a painting hung on a wall or built-in furniture like a countertop.
 
 - `segmentation_color` The RGB segmentation color for the object as a numpy array: `[r, g, b]`
 
