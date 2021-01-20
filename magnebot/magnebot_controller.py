@@ -156,8 +156,6 @@ class Magnebot(FloorplanController):
         :param img_is_png: If True, the `img` pass images will be .png files. If False,  the `img` pass images will be .jpg files, which are smaller; the build will run approximately 2% faster.
         """
 
-        super().__init__(port=port, launch_build=launch_build)
-
         self.__first_time_only = True
 
         self._debug = debug
@@ -292,6 +290,8 @@ class Magnebot(FloorplanController):
 
         # If True, the Magnebot is about to tip over.
         self._about_to_tip = False
+
+        super().__init__(port=port, launch_build=launch_build)
 
         # Set image encoding to .png (default) or .jpg
         # Set the highest render quality.

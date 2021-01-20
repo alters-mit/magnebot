@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.2
+
+### `magnebot` module
+
+#### `Magnebot`
+
+- Fixed: AttributeError if `launch_build=True`
+
 ## 0.3.1
 
 ### `magnebot` module
