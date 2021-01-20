@@ -170,6 +170,9 @@ class SceneState:
         """
         self.images: Dict[str, np.array] = dict()
 
+        # File extensions per pass.
+        self.__image_extensions: Dict[str, str] = dict()
+
         """:field
         Images rendered by third-person cameras as dictionary. Key = The camera ID. Value: A dictionary of image passes, structured exactly like `images` (see above).
         """
@@ -198,7 +201,12 @@ class SceneState:
                         pass_mask = images.get_pass_mask(j)
                         if pass_mask == "_depth":
                             image_data = TDWUtils.get_shaped_depth_pass(images=images, index=j)
-                        self.images[pass_mask[1:]] = image_data
+                        # Remove the underscore from the pass mask such as: _img -> img
+                        pass_name = pass_mask[1:]
+                        # Save the image data.
+                        self.images[pass_name] = image_data
+                        # Record the file extension.
+                        self.__image_extensions[pass_name] = images.get_extension(j)
         # Update the frame count.
         if got_magnebot_images:
             SceneState.FRAME_COUNT += 1
@@ -208,7 +216,8 @@ class SceneState:
         Save the ID pass (segmentation colors) and the depth pass to disk.
         Images will be named: `[frame_number]_[pass_name].[extension]`
         For example, the depth pass on the first frame will be named: `00000000_depth.png`
-        The image pass is a jpg file and the other passes are png files.
+
+        The `img` pass is either a .jpg or a .png file (see [the `img_is_png` parameter in the Magnebot constructor](magnebot_controller.md)). The `id` and `depth` passes are .png files.
 
         :param output_directory: The directory that the images will be saved to.
         """
@@ -217,12 +226,14 @@ class SceneState:
             output_directory = Path(output_directory)
         if not output_directory.exists():
             output_directory.mkdir(parents=True)
+        # The prefix is a zero-padded integer to ensure sequential images.
         prefix = TDWUtils.zero_padding(SceneState.FRAME_COUNT, 8)
         # Save each image.
         for pass_name in self.images:
             if self.images[pass_name] is None:
                 continue
-            p = output_directory.joinpath(f"{prefix}_{pass_name}.{'jpg' if pass_name == 'img' else 'png'}")
+            # Get the filename, such as: `00000000_img.png`
+            p = output_directory.joinpath(f"{prefix}_{pass_name}.{self.__image_extensions[pass_name]}")
             if pass_name == "depth":
                 Image.fromarray(self.images[pass_name]).save(str(p.resolve()))
             else:

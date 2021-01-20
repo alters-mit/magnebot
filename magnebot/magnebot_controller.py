@@ -143,7 +143,7 @@ class Magnebot(FloorplanController):
 
     def __init__(self, port: int = 1071, launch_build: bool = False, screen_width: int = 256, screen_height: int = 256,
                  debug: bool = False, auto_save_images: bool = False, images_directory: str = "images",
-                 random_seed: int = None):
+                 random_seed: int = None, img_is_png: bool = True):
         """
         :param port: The socket port. [Read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md#command-line-arguments) for more information.
         :param launch_build: If True, the build will launch automatically on the default port (1071). If False, you will need to launch the build yourself (for example, from a Docker container).
@@ -153,6 +153,7 @@ class Magnebot(FloorplanController):
         :param images_directory: The output directory for images if `auto_save_images == True`.
         :param random_seed: The seed used for random numbers. If None, this is chosen randomly. In the Magenbot API this is used only when randomly selecting a start position for the Magnebot (see the `room` parameter of `init_scene()`). The same random seed is used in higher-level APIs such as the Transport Challenge.
         :param debug: If True, enable debug mode. This controller will output messages to the console, including any warnings or errors sent by the build. It will also create 3D plots of arm articulation IK solutions.
+        :param img_is_png: If True, the `img` pass images will be .png files. If False,  the `img` pass images will be .jpg files, which are smaller; the build will run approximately 2% faster.
         """
 
         super().__init__(port=port, launch_build=launch_build)
@@ -287,11 +288,11 @@ class Magnebot(FloorplanController):
         # If True, the Magnebot is about to tip over.
         self._about_to_tip = False
 
-        # Set image encoding to .jpg
+        # Set image encoding to .png (default) or .jpg
         # Set the highest render quality.
         # Set global physics values.
         resp = self.communicate([{"$type": "set_img_pass_encoding",
-                                  "value": False},
+                                  "value": img_is_png},
                                  {"$type": "set_render_quality",
                                   "render_quality": 5},
                                  {"$type": "set_shadow_strength",

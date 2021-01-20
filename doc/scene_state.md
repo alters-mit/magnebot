@@ -126,7 +126,8 @@ id_pass = m.state.images["id"]
 Save the ID pass (segmentation colors) and the depth pass to disk.
 Images will be named: `[frame_number]_[pass_name].[extension]`
 For example, the depth pass on the first frame will be named: `00000000_depth.png`
-The image pass is a jpg file and the other passes are png files.
+
+The `img` pass is either a .jpg or a .png file (see [the `img_is_png` parameter in the Magnebot constructor](magnebot_controller.md)). The `id` and `depth` passes are .png files.
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |

@@ -6,11 +6,16 @@
 
 #### `Magnebot`
 
+- Added optional parameter `img_is_png` to the constructor
 - Fixed some typos in the documentation
 
 ### Example controllers
 
 - Simplified some of the code and added more code comments
+
+### Test controllers
+
+- Added: `benchmark.py`
 
 ## 0.3.0
 
