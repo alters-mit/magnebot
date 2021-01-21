@@ -6,7 +6,28 @@
 
 #### `Magnebot`
 
+- In the `grasp()` action, if the target object is higher up than the default height of the torso, the torso will slide upwards first, and then the rest of the arm articulation action will occur.
 - Fixed: AttributeError if `launch_build=True`
+- Fixed: IK actions such as `grasp()` and `reach_for()` are calculated from an incorrect torso height.
+- Fixed: If an IK action such as `grasp()` or `reach_for()` targets a position above the torso, the torso often slides below the target.
+- Backend: 
+  - Added `_trigger_events` to record trigger collisions, which will be used in extensions of this API (the Transport Challenge uses it to check if an object is in a container)
+  - Added `_get_bounds_sides()` which is used for getting valid sides for a `grasp()` action.
+  - Added optional parameters `orientation_mode` and `target_orientation` to `_start_ik()`.
+  - Fixed: the `fixed_torso_prismatic` parameter of `_start_ik()` affects IK calculations. It is now only used when actually generating TDW commands.
+
+### Documentation
+
+- Fixed some typos and added some clarifications.
+- Moved the scene intialization section of `custom_apis.md` to the top of the document.
+
+### Demo controllers
+
+- Improved the sequence of actions in `reach_high.py`
+
+### Test controllers
+
+- Improved the usefulness of `grasp.py`
 
 ## 0.3.1
 

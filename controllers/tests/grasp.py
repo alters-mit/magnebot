@@ -1,5 +1,4 @@
 from typing import Dict, List
-from tdw.tdw_utils import TDWUtils
 from magnebot import Arm, ActionStatus
 from magnebot.test_controller import TestController
 
@@ -21,20 +20,11 @@ class Grasp(TestController):
         commands = super()._get_scene_init_commands(magnebot_position=magnebot_position)
         return commands
 
-    def show_relative(self) -> None:
-        self._start_action()
-        p = self._absolute_to_relative(position=self.pos, state=self.state)
-        self._next_frame_commands.append({"$type": "add_position_marker",
-                                          "position": TDWUtils.array_to_vector3(p),
-                                          "color": {"r": 0, "g": 0, "b": 1, "a": 1}})
-        self._end_action()
-
 
 if __name__ == "__main__":
     m = Grasp()
     m.init_scene()
     m.turn_by(-177)
-    m.show_relative()
     status = m.grasp(m.target_id, arm=Arm.right)
     assert status == ActionStatus.success, status
     m.end()

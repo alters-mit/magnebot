@@ -155,7 +155,7 @@ print(m.occupancy_map[x][y]) # 0 (free and navigable position)
 print(m.get_occupancy_position(x, y)) # (1.1157886505126946, 2.2528389358520506)
 ```
 
-Images of occupancy maps can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/occupancy_maps). The blue squares are free navigable positions. Images are named `scene_layout.jpg` (there aren't any letters in the scene name because the difference between lettered variants is purely aesthetic and the room maps are identical).
+Images of occupancy maps can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/occupancy_maps). The blue squares are free navigable positions. Images are named `[scene]_[layout].jpg` For example, the occupancy map image for scene "2a" layout 0 is: `2_0.jpg`.
 
 The occupancy map is static, meaning that it won't update when objects are moved.
 
@@ -182,7 +182,7 @@ Note that it is possible for the Magnebot to go to positions that aren't "free".
 | screen_height |  int  | 256 | The height of the screen in pixels. |
 | auto_save_images |  bool  | False | If True, automatically save images to `images_directory` at the end of every action. |
 | images_directory |  str  | "images" | The output directory for images if `auto_save_images == True`. |
-| random_seed |  int  | None | The seed used for random numbers. If None, this is chosen randomly. In the Magenbot API this is used only when randomly selecting a start position for the Magnebot (see the `room` parameter of `init_scene()`). The same random seed is used in higher-level APIs such as the Transport Challenge. |
+| random_seed |  int  | None | The seed used for random numbers. If None, this is chosen randomly. In the Magnebot API this is used only when randomly selecting a start position for the Magnebot (see the `room` parameter of `init_scene()`). The same random seed is used in higher-level APIs such as the Transport Challenge. |
 | debug |  bool  | False | If True, enable debug mode. This controller will output messages to the console, including any warnings or errors sent by the build. It will also create 3D plots of arm articulation IK solutions. |
 | img_is_png |  bool  | True | If True, the `img` pass images will be .png files. If False,  the `img` pass images will be .jpg files, which are smaller; the build will run approximately 2% faster. |
 
@@ -204,7 +204,7 @@ Initialize a scene, populate it with objects, and add the Magnebot. The simulati
 
 It might take a few minutes to initialize the scene.
 
-Set the `scene` and `layout` parameters in `init_scene()` to load an interior scene with furniture and props. Set the `room` to spawn the avatar in the center of a room.
+Set the `scene` and `layout` parameters in `init_scene()` to load an interior scene with furniture and props. Set the `room` to spawn the avatar in the center of a specific room.
 
 ```python
 from magnebot import Magnebot
@@ -224,9 +224,9 @@ Valid scenes, layouts, and rooms:
 | 4a, 4b, 4c | 0, 1, 2 | 0, 1, 2, 3, 4, 5, 6, 7 |
 | 5a, 5b, 5c | 0, 1, 2 | 0, 1, 2, 3 |
 
-Images of each scene+layout combination can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/floorplans). Images are named `scene_layout.jpg`.
+Images of each scene+layout combination can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/floorplans). Images are named `[scene]_[layout].jpg` For example, the image for scene "2a" layout 0 is: `2a_0.jpg`.
 
-Images of where each room in a scene is can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/rooms). Images are named `scene.jpg` (there aren't any letters in the scene name because the difference between lettered variants is purely aesthetic and the room maps are identical).
+Images of where each room in a scene is can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/rooms). Images are named `[scene].jpg` For example, the image for scene "2a" layout 0 is: `2.jpg`.
 
 You can call `init_scene()` more than once to reset the simulation.
 
@@ -271,7 +271,7 @@ Possible [return values](action_status.md):
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | angle |  float |  | The target angle in degrees. Positive value = clockwise turn. |
-| aligned_at |  float  | 3 | If the different between the current angle and the target angle is less than this value, then the action is successful. |
+| aligned_at |  float  | 3 | If the difference between the current angle and the target angle is less than this value, then the action is successful. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
 
@@ -441,7 +441,7 @@ Possible [return values](action_status.md):
 | --- | --- | --- | --- |
 | target |  int |  | The ID of the object currently held by the magnet. |
 | arm |  Arm |  | The arm of the magnet holding the object. |
-| wait_for_objects |  bool  | True | If True, the action will continue until the objects have finished falling. If True, the action will take exactly 1 frame to finish. |
+| wait_for_objects |  bool  | True | If True, the action will continue until the objects have finished falling. If False, the action will take exactly 1 frame to finish. |
 
 _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` dropped the `target`.
 

@@ -74,6 +74,8 @@ color = m.magnebot_static.joints[b_id].segmentation_color
 print(b_id, color)
 ```
 
+- `root` The ID of the root object.
+
 ***
 
 ## Functions

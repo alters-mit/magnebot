@@ -8,7 +8,8 @@ from ikpy.chain import Chain
 from ikpy.link import OriginLink, URDFLink, Link
 from ikpy.utils import geometry
 from tdw.floorplan_controller import FloorplanController
-from tdw.output_data import OutputData, Version, StaticRobot, SegmentationColors, Bounds, Rigidbodies, LogMessage, Robot
+from tdw.output_data import OutputData, Version, StaticRobot, SegmentationColors, Bounds, Rigidbodies, LogMessage,\
+    Robot, TriggerCollision
 from tdw.output_data import Magnebot as Mag
 from tdw.tdw_utils import TDWUtils, QuaternionUtils
 from tdw.object_init_data import AudioInitData
@@ -151,7 +152,7 @@ class Magnebot(FloorplanController):
         :param screen_height: The height of the screen in pixels.
         :param auto_save_images: If True, automatically save images to `images_directory` at the end of every action.
         :param images_directory: The output directory for images if `auto_save_images == True`.
-        :param random_seed: The seed used for random numbers. If None, this is chosen randomly. In the Magenbot API this is used only when randomly selecting a start position for the Magnebot (see the `room` parameter of `init_scene()`). The same random seed is used in higher-level APIs such as the Transport Challenge.
+        :param random_seed: The seed used for random numbers. If None, this is chosen randomly. In the Magnebot API this is used only when randomly selecting a start position for the Magnebot (see the `room` parameter of `init_scene()`). The same random seed is used in higher-level APIs such as the Transport Challenge.
         :param debug: If True, enable debug mode. This controller will output messages to the console, including any warnings or errors sent by the build. It will also create 3D plots of arm articulation IK solutions.
         :param img_is_png: If True, the `img` pass images will be .png files. If False,  the `img` pass images will be .jpg files, which are smaller; the build will run approximately 2% faster.
         """
@@ -268,7 +269,7 @@ class Magnebot(FloorplanController):
         print(m.get_occupancy_position(x, y)) # (1.1157886505126946, 2.2528389358520506)
         ```
         
-        Images of occupancy maps can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/occupancy_maps). The blue squares are free navigable positions. Images are named `scene_layout.jpg` (there aren't any letters in the scene name because the difference between lettered variants is purely aesthetic and the room maps are identical).
+        Images of occupancy maps can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/occupancy_maps). The blue squares are free navigable positions. Images are named `[scene]_[layout].jpg` For example, the occupancy map image for scene "2a" layout 0 is: `2_0.jpg`.
         
         The occupancy map is static, meaning that it won't update when objects are moved.
 
@@ -290,6 +291,11 @@ class Magnebot(FloorplanController):
 
         # If True, the Magnebot is about to tip over.
         self._about_to_tip = False
+
+        # Trigger events at the end of the most recent action.
+        # Key = The trigger collider object.
+        # Value = A list of trigger events that started and have continued (enter with an exit).
+        self._trigger_events: Dict[int, List[int]] = dict()
 
         super().__init__(port=port, launch_build=launch_build)
 
@@ -326,7 +332,7 @@ class Magnebot(FloorplanController):
 
         It might take a few minutes to initialize the scene.
 
-        Set the `scene` and `layout` parameters in `init_scene()` to load an interior scene with furniture and props. Set the `room` to spawn the avatar in the center of a room.
+        Set the `scene` and `layout` parameters in `init_scene()` to load an interior scene with furniture and props. Set the `room` to spawn the avatar in the center of a specific room.
 
         ```python
         from magnebot import Magnebot
@@ -346,9 +352,9 @@ class Magnebot(FloorplanController):
         | 4a, 4b, 4c | 0, 1, 2 | 0, 1, 2, 3, 4, 5, 6, 7 |
         | 5a, 5b, 5c | 0, 1, 2 | 0, 1, 2, 3 |
 
-        Images of each scene+layout combination can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/floorplans). Images are named `scene_layout.jpg`.
+        Images of each scene+layout combination can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/floorplans). Images are named `[scene]_[layout].jpg` For example, the image for scene "2a" layout 0 is: `2a_0.jpg`.
 
-        Images of where each room in a scene is can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/rooms). Images are named `scene.jpg` (there aren't any letters in the scene name because the difference between lettered variants is purely aesthetic and the room maps are identical).
+        Images of where each room in a scene is can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/rooms). Images are named `[scene].jpg` For example, the image for scene "2a" layout 0 is: `2.jpg`.
 
         You can call `init_scene()` more than once to reset the simulation.
 
@@ -407,7 +413,7 @@ class Magnebot(FloorplanController):
         - `tipping`
 
         :param angle: The target angle in degrees. Positive value = clockwise turn.
-        :param aligned_at: If the different between the current angle and the target angle is less than this value, then the action is successful.
+        :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
 
         :return: An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
         """
@@ -788,14 +794,7 @@ class Magnebot(FloorplanController):
 
         self._start_action()
 
-        # Reach for the center of the object.
-        resp = self.communicate([{"$type": "send_bounds",
-                                  "ids": [target],
-                                 "frequency": "once"}])
-        # Get the side on the bounds closet to the magnet.
-        bounds = get_data(resp=resp, d_type=Bounds)
-        sides = [bounds.get_left(0), bounds.get_right(0), bounds.get_front(0), bounds.get_back(0)]
-        sides = [np.array(s) for s in sides]
+        sides, resp = self._get_bounds_sides(target=target)
         state = SceneState(resp=resp)
         # Get the position of the magnet.
         magnet_position = state.body_part_transforms[self.magnebot_static.magnets[arm]].position
@@ -813,7 +812,8 @@ class Magnebot(FloorplanController):
             self._next_frame_commands.append({"$type": "add_position_marker",
                                               "position": target_position})
         # Start the IK action.
-        status = self._start_ik(target=target_position, arm=arm, absolute=True)
+        status = self._start_ik(target=target_position, arm=arm, absolute=True,
+                                do_prismatic_first=target_position["y"] > Magnebot._TORSO_Y[Magnebot._DEFAULT_TORSO_Y])
         if status != ActionStatus.success:
             self._end_action()
             return status
@@ -844,7 +844,7 @@ class Magnebot(FloorplanController):
 
         :param target: The ID of the object currently held by the magnet.
         :param arm: The arm of the magnet holding the object.
-        :param wait_for_objects: If True, the action will continue until the objects have finished falling. If True, the action will take exactly 1 frame to finish.
+        :param wait_for_objects: If True, the action will continue until the objects have finished falling. If False, the action will take exactly 1 frame to finish.
 
         :return: An `ActionStatus` indicating if the magnet at the end of the `arm` dropped the `target`.
         """
@@ -1127,6 +1127,42 @@ class Magnebot(FloorplanController):
                 # Add object IDs if this is a new enter event.
                 elif collisions.obj_collisions[int_pair].state == "enter" and object_id not in self.colliding_objects:
                     self.colliding_objects.append(object_id)
+            # Get trigger events.
+            trigger_enters: Dict[int, List[int]] = dict()
+            trigger_stays: Dict[int, List[int]] = dict()
+            for i in range(len(resp) - 1):
+                r_id = OutputData.get_data_type_id(resp[i])
+                if r_id == "trco":
+                    trigger = TriggerCollision(resp[i])
+                    trigger_id = trigger.get_collidee_id()
+                    if trigger_id not in self._trigger_events:
+                        self._trigger_events[trigger_id] = list()
+                    collider_id = trigger.get_collider_id()
+                    state = trigger.get_state()
+                    # New trigger event.
+                    if state == "enter" and collider_id not in self._trigger_events[trigger_id]:
+                        self._trigger_events[trigger_id].append(collider_id)
+                        if trigger_id not in trigger_enters:
+                            trigger_enters[trigger_id] = list()
+                        trigger_enters[trigger_id].append(collider_id)
+                    # Ongoing trigger event.
+                    else:
+                        if trigger_id not in trigger_stays:
+                            trigger_stays[trigger_id] = list()
+                        trigger_stays[trigger_id].append(collider_id)
+            temp: Dict[int, List[int]] = dict()
+            # Remove any enter collisions that don't have stays.
+            for trigger_id in self._trigger_events:
+                if trigger_id not in trigger_stays:
+                    continue
+                stays: List[int] = list()
+                for collider_id in self._trigger_events[trigger_id]:
+                    if trigger_id in trigger_enters and collider_id in trigger_enters[trigger_id]:
+                        stays.append(collider_id)
+                    elif trigger_id in trigger_stays and collider_id in trigger_stays[trigger_id]:
+                        stays.append(collider_id)
+                temp[trigger_id] = stays
+            self._trigger_events = temp
 
         # Check if the Magnebot is about to tip.
         r = get_data(resp=resp, d_type=Robot)
@@ -1268,8 +1304,8 @@ class Magnebot(FloorplanController):
         # Move the torso up to its default height to prevent anything from dragging.
         # Reset the column rotation.
         self._next_frame_commands.extend([{"$type": "set_prismatic_target",
-                                          "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
-                                          "target": Magnebot._DEFAULT_TORSO_Y},
+                                           "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
+                                           "target": Magnebot._DEFAULT_TORSO_Y},
                                           {"$type": "set_revolute_target",
                                            "joint_id": self.magnebot_static.arm_joints[ArmJoint.column],
                                            "target": 0}])
@@ -1277,7 +1313,8 @@ class Magnebot(FloorplanController):
 
     def _start_ik(self, target: Dict[str, float], arm: Arm, absolute: bool = True, arrived_at: float = 0.125,
                   state: SceneState = None, allow_column: bool = True, fixed_torso_prismatic: float = None,
-                  object_id: int = None, do_prismatic_first: bool = False) -> ActionStatus:
+                  object_id: int = None, do_prismatic_first: bool = False,
+                  orientation_mode: str = None, target_orientation: np.array = None) -> ActionStatus:
         """
         Start an IK action.
 
@@ -1290,6 +1327,8 @@ class Magnebot(FloorplanController):
         :param fixed_torso_prismatic: If not None, use this value for the torso prismatic joint and don't try to change it.
         :param object_id: If not None, and if the object is held by the arm, make the object the end effector in the IK chain.
         :param do_prismatic_first: If True, do the prismatic (torso) motion first. If False, move the torso while the arm moves.
+        :param orientation_mode: The IK orientation mode.
+        :param target_orientation: The target IK orientation.
 
         :return: An `ActionStatus` describing whether the IK action began.
         """
@@ -1302,12 +1341,14 @@ class Magnebot(FloorplanController):
             """
 
             # Generate an IK chain, given the current desired torso height.
-            chain = self.__get_ik_chain(arm=arm, torso_y=Magnebot._TORSO_Y[round(torso_prismatic, 2)],
+            # The extra height is the y position of the column's base.
+            chain = self.__get_ik_chain(arm=arm, torso_y=Magnebot._TORSO_Y[round(torso_prismatic, 2)] + 0.159,
                                         allow_column=allow_column, object_id=object_id)
 
             # Get the IK solution.
             ik = chain.inverse_kinematics(target_position=target,
-                                          initial_position=initial_angles)
+                                          initial_position=initial_angles,
+                                          orientation_mode=orientation_mode, target_orientation=target_orientation)
 
             if self._debug:
                 ax = matplotlib.pyplot.figure().add_subplot(111, projection='3d')
@@ -1349,27 +1390,18 @@ class Magnebot(FloorplanController):
         # We need to do this iteratively because ikpy doesn't support prismatic joints!
         # But it should be ok because there's only one prismatic joint in this robot.
         angles: List[float] = list()
-        if fixed_torso_prismatic is not None:
-            torso_prismatic = fixed_torso_prismatic
+        if target[1] > Magnebot._TORSO_Y[Magnebot._DEFAULT_TORSO_Y]:
+            torso_prismatic = max(Magnebot._TORSO_Y.keys())
         else:
             torso_prismatic = Magnebot._DEFAULT_TORSO_Y
-        torso_actual = self._TORSO_Y[torso_prismatic]
-        if fixed_torso_prismatic is not None:
+        got_solution = False
+        while not got_solution and torso_prismatic > 0.6:
             got_solution, angles = __get_ik_solution()
-        else:
-            # Raise the torso above the target.
-            while torso_actual < target[1] and torso_prismatic in self._TORSO_Y:
-                torso_prismatic += 0.1
-                torso_prismatic = round(torso_prismatic, 2)
-                torso_actual = self._TORSO_Y[torso_prismatic]
-            got_solution = False
-            while not got_solution and torso_prismatic > 0.6:
-                got_solution, angles = __get_ik_solution()
-                if not got_solution:
-                    torso_prismatic -= 0.1
             if not got_solution:
-                torso_prismatic = self._DEFAULT_TORSO_Y
-                while not got_solution and torso_prismatic <= 1.5:
+                torso_prismatic -= 0.1
+        if not got_solution:
+            torso_prismatic = self._DEFAULT_TORSO_Y
+            while not got_solution and torso_prismatic <= 1.5:
                     got_solution, angles = __get_ik_solution()
                     if not got_solution:
                         torso_prismatic += 0.1
@@ -1392,6 +1424,8 @@ class Magnebot(FloorplanController):
         self.communicate({"$type": "set_immovable",
                           "immovable": True})
 
+        if fixed_torso_prismatic is not None:
+            torso_prismatic = fixed_torso_prismatic
         # Slide the torso to the desired height.
         torso_command = {"$type": "set_prismatic_target",
                          "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
@@ -1631,7 +1665,6 @@ class Magnebot(FloorplanController):
             state = SceneState(resp=resp)
             magnet = state.body_part_transforms[self.magnebot_static.magnets[arm]]
             translation_vector = magnet.position - obj_position
-            translation_vector[0] *= -1
             # Add the object as an IK link.
             links.append(URDFLink(name="obj",
                                   translation_vector=translation_vector,
@@ -1653,6 +1686,7 @@ class Magnebot(FloorplanController):
         self.segmentation_color_to_id.clear()
         self._next_frame_commands.clear()
         self.colliding_objects.clear()
+        self._trigger_events.clear()
         self.camera_rpy: np.array = np.array([0, 0, 0])
         SceneState.FRAME_COUNT = 0
 
@@ -1796,3 +1830,20 @@ class Magnebot(FloorplanController):
         self._stop_wheels(state=state)
         # Wait for the objects to stop moving.
         self._wait_until_objects_stop(object_ids=held_objects)
+
+    def _get_bounds_sides(self, target: int) -> Tuple[List[np.array], List[bytes]]:
+        """
+        :param target: The ID of the target object.
+
+        :return: Tuple: Sides on the bounds of the object that can be used for an action; the response from the build.
+        """
+
+        # Reach for the center of the object.
+        resp = self.communicate([{"$type": "send_bounds",
+                                  "ids": [target],
+                                  "frequency": "once"}])
+        # Get the side on the bounds closet to the magnet.
+        bounds = get_data(resp=resp, d_type=Bounds)
+        sides = [bounds.get_left(0), bounds.get_right(0), bounds.get_front(0), bounds.get_back(0),
+                 bounds.get_top(0), bounds.get_bottom(0)]
+        return [np.array(s) for s in sides], resp

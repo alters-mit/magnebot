@@ -2,6 +2,24 @@
 
 The Magnebot API is designed to be easily extendable for specialized APIs. Generally, we expect that frontend users won't need to write their own specialized APIs, but if they do, here are some helpful notes on the backend programming.
 
+## Scene initialization
+
+`self._get_init_scene_commands()` returns the list of commands used to initialize the scene. Extend or override this list to create a custom scene.
+
+See `magnebot/demo_controller.py` and `magnebot/test_controller.py` for examples of custom scene initialization.
+
+## Adding objects
+
+To add custom objects to the scene, call `_add_object()` within `_get_scene_init_commands()`. This will create a list of commands for adding an object, and then append that list to `super()._get_scene_init_commands()`. It will return the ID of the object.
+
+```python
+def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
+    object_id = self._add_object(model_name="cabinet_36_wood_beach_honey", position={"x": 0.04, "y": 0, "z": 1.081}, mass=300)
+    
+    # Initialize the scene. This will add cabinet_36_wood_beach_honey
+    return super()._get_scene_init_commands(magnebot_position=magnebot_position)
+```
+
 ## Commands and Output Data
 
 [Read these documents](https://github.com/threedworld-mit/tdw/tree/master/Documentation/api) to learn more about the low-level TDW API works.
@@ -43,24 +61,6 @@ class CustomMagnebot(Magnebot):
 
 If you want to send the same command every time `communicate()` is called (for example, if you want a camera to track an object), add the command to `self._per_frame_commands`.
 
-### Scene initialization
-
-`self._get_init_scene_commands()` returns the list of commands used to initialize the scene. Extend or override this list to create a custom scene.
-
-See `magnebot/demo_controller.py` and `magnebot/test_controller.py` for examples of custom scene initialization.
-
-### Adding objects
-
-To add custom objects to the scene, call `_add_object()` within `_get_scene_init_commands()`. This will create a list of commands for adding an object, and then append that list to `super()._get_scene_init_commands()`. It will return the ID of the object.
-
-```python
-def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
-    object_id = self._add_object(model_name="cabinet_36_wood_beach_honey", position={"x": 0.04, "y": 0, "z": 1.081}, mass=300)
-    
-    # Initialize the scene. This will add cabinet_36_wood_beach_honey
-    return super()._get_scene_init_commands(magnebot_position=magnebot_position)
-```
-
 ### Other useful functions
 
 These functions aren't in the API documentation because they are intended for only backend coding.
@@ -81,4 +81,5 @@ These functions aren't in the API documentation because they are intended for on
 | `_magnet_is_at_target()`     | Returns True if the magnet is at the target position.        |
 | `_stop_wheels()`             | Stop wheel movement.                                         |
 | `_stop_tipping()`            | Handle situations where the Magnebot is tipping by dropping all heavy objects. |
+| `_get_bounds_sides()`        | Returns the bounds sides that can be used for `grasp()` targets. You might want to adjust this for certain objects. For example, in the Transport Challenge API, the Magnebot never tries to grasp a container from the top because containers don't have lids on the top. |
 

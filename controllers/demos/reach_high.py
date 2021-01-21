@@ -31,7 +31,7 @@ if __name__ == "__main__":
     m.add_camera(position={"x": -2.36, "y": 2, "z": -2.27}, look_at=True)
     status = m.grasp(target=m.target_id, arm=Arm.left)
     assert status == ActionStatus.success, status
-    m.move_by(-0.8)
     m.reset_arm(arm=Arm.left)
+    m.move_by(-0.8)
     m.turn_by(15)
     m.end()
