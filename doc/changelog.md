@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.3
+
+### `magnebot` module
+
+#### `Magnebot`
+
+- In the `reach_for()` action, if the target object is higher up than the default height of the torso, the torso will slide upwards first, and then the rest of the arm articulation action will occur.
+
 ## 0.3.2
 
 ### `magnebot` module

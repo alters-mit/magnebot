@@ -746,7 +746,8 @@ class Magnebot(FloorplanController):
             destination = Magnebot._absolute_to_relative(position=destination, state=self.state)
 
         # Start the IK action.
-        status = self._start_ik(target=target, arm=arm, absolute=absolute, arrived_at=arrived_at)
+        status = self._start_ik(target=target, arm=arm, absolute=absolute, arrived_at=arrived_at,
+                                do_prismatic_first=target["y"] > Magnebot._TORSO_Y[Magnebot._DEFAULT_TORSO_Y])
         if status != ActionStatus.success:
             self._end_action()
             return status
