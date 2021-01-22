@@ -8,6 +8,14 @@
 
 - Increased average turn speed by 170.2%. Previous average speed of `turn_by(45)` was 2.437 seconds. New average speed of `turn_by(45)` is 0.895 seconds.
 - Increased average turn speed by 124.0%. Previous average speed of `move_by(1)` was 1.469 seconds. New average turn speed of `move_by(1)` is 0.656 seconds.
+- Default value of `img_is_png` is `False` (was `True`)
+- Fixed: TclError when trying to show a plot image of an IK solution in debug mode on a remote server.
+
+### Test controllers
+
+- Added `turn_by()` benchmark to `benchmark.py`
+- Added:  `turn_constants.py` Finds the optimal combination of wheel turn constants.
+- Added: `wheel_drives.py` Finds the optimal wheel damping and stiffness values.
 
 ## 0.3.3
 
