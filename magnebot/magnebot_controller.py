@@ -111,15 +111,15 @@ class Magnebot(FloorplanController):
     """:class_var
     In `turn_by()` and `turn_to`(), this is a "magic number" used to set the spin speed relative to the target angle.
     """
-    TURN_MAGIC_NUMBER: float = 3.12
+    TURN_MAGIC_NUMBER: float = 3.3
     """:class_var
     In `turn_by()` and `turn_to()`, turn the outer track wheels this much faster than the inner track wheels.
     """
-    TURN_OUTER_TRACK: float = 1.49
+    TURN_OUTER_TRACK: float = 1.2
     """:class_var
     In `turn_by()` and `turn_to()`, turn the front wheels this much faster than the back wheels.
     """
-    TURN_FRONT: float = 1.0
+    TURN_FRONT: float = 0.5
 
     # The order in which joint angles will be set.
     _JOINT_ORDER: Dict[Arm, List[ArmJoint]] = {Arm.left: [ArmJoint.column,
@@ -158,7 +158,7 @@ class Magnebot(FloorplanController):
 
     def __init__(self, port: int = 1071, launch_build: bool = False, screen_width: int = 256, screen_height: int = 256,
                  debug: bool = False, auto_save_images: bool = False, images_directory: str = "images",
-                 random_seed: int = None, img_is_png: bool = True):
+                 random_seed: int = None, img_is_png: bool = False):
         """
         :param port: The socket port. [Read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md#command-line-arguments) for more information.
         :param launch_build: If True, the build will launch automatically on the default port (1071). If False, you will need to launch the build yourself (for example, from a Docker container).
