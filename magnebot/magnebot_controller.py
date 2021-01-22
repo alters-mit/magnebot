@@ -26,7 +26,7 @@ from magnebot.paths import SPAWN_POSITIONS_PATH, TORSO_Y, OCCUPANCY_MAPS_DIRECTO
 from magnebot.arm import Arm
 from magnebot.joint_type import JointType
 from magnebot.arm_joint import ArmJoint
-from magnebot.constants import MAGNEBOT_RADIUS, OCCUPANCY_CELL_SIZE
+from magnebot.constants import MAGNEBOT_RADIUS, OCCUPANCY_CELL_SIZE, TURN_MAGIC_NUMBER
 
 
 class Magnebot(FloorplanController):
@@ -442,7 +442,7 @@ class Magnebot(FloorplanController):
             # The distance that the Magnebot needs to travel, defined as a fraction of its circumference.
             d = (delta_angle / 360.0) * Magnebot._MAGNEBOT_CIRCUMFERENCE
             # The 3 is a magic number. Who knows what it means??
-            spin = (d / Magnebot._WHEEL_CIRCUMFERENCE) * 360 * 3
+            spin = (d / Magnebot._WHEEL_CIRCUMFERENCE) * 360 * TURN_MAGIC_NUMBER
             # Set the direction of the wheels for the turn and send commands.
             commands = []
             for wheel in self.magnebot_static.wheels:
@@ -464,9 +464,8 @@ class Magnebot(FloorplanController):
                     self._stop_tipping(state=state_1)
                     self._end_action()
                     return ActionStatus.tipping
-                dt = QuaternionUtils.get_y_angle(state_0.magnebot_transform.rotation,
-                                                 state_1.magnebot_transform.rotation)
-                if np.abs(dt) < 0.001:
+
+                if not self._wheels_are_turning(state_0=state_0, state_1=state_1):
                     turn_done = True
                 state_0 = state_1
             wheel_state = state_0
@@ -475,6 +474,7 @@ class Magnebot(FloorplanController):
                                                 wheel_state.magnebot_transform.rotation)
             # If the angle to the target is very small, then we're done.
             if np.abs(angle - theta) < aligned_at:
+                self._stop_wheels(state=wheel_state)
                 self._end_action()
                 if self._debug:
                     print("Turn complete!")
@@ -483,14 +483,9 @@ class Magnebot(FloorplanController):
             delta_angle = angle - theta
             if self._debug:
                 print(f"angle: {angle}", f"delta_angle: {delta_angle}", f"spin: {spin}", f"d: {d}", f"theta: {theta}")
-
+        self._stop_wheels(state=wheel_state)
         self._end_action()
-        if np.abs(target_angle - angle) < aligned_at:
-            if self._debug:
-                print("Turn complete!")
-            return ActionStatus.success
-        else:
-            return ActionStatus.failed_to_turn
+        return ActionStatus.failed_to_turn
 
     def turn_to(self, target: Union[int, Dict[str, float]], aligned_at: float = 3) -> ActionStatus:
         """
@@ -1876,3 +1871,17 @@ class Magnebot(FloorplanController):
         sides = [bounds.get_left(0), bounds.get_right(0), bounds.get_front(0), bounds.get_back(0),
                  bounds.get_top(0), bounds.get_bottom(0)]
         return [np.array(s) for s in sides], resp
+
+    def _wheels_are_turning(self, state_0: SceneState, state_1: SceneState) -> bool:
+        """
+        :param state_0: The previous scene state.
+        :param state_1: The current scene state.
+
+        :return: True if the wheels are done turning.
+        """
+
+        for w_id in self.magnebot_static.wheels.values():
+            if np.linalg.norm(state_0.joint_angles[w_id][0] -
+                              state_1.joint_angles[w_id][0]) > 0.1:
+                return True
+        return False
