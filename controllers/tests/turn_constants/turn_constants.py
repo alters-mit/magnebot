@@ -16,7 +16,7 @@ if __name__ == "__main__":
         p.unlink()
     header = "time,magic_number,outer_track,front\n"
     p.write_text(header)
-    p = str(p.resolve())
+    path = str(p.resolve())
     for magic_number in np.arange(start=2.4, stop=3.4, step=0.1):
         for outer_track in np.arange(start=1, stop=1.6, step=0.1):
             for front in np.arange(start=0.5, stop=1.5, step=0.1):
@@ -35,6 +35,22 @@ if __name__ == "__main__":
                 # Write the result to disk.
                 line = f"{t1},{round(magic_number, 3)},{round(outer_track, 3)},{round(front, 3)}"
                 print(line)
-                with open(p, "at") as f:
+                with open(path, "at") as f:
                     f.write(line + "\n")
     m.end()
+
+    # Print the shortest time.
+    txt = p.read_text()
+    lines = txt.split("\n")[1:]
+    min_time = 100000
+    min_line = ""
+    for line in lines:
+        q = line.split(",")[0]
+        if q == "":
+            continue
+        t = float(q)
+        if t < min_time:
+            min_time = t
+            min_line = line
+    print(min_line)
+

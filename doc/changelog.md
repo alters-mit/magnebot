@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.4
+
+### `magnebot` module
+
+#### `Magnebot`
+
+- Increased average speed of `turn_by()` and `turn_to()` by approximately 56%
+
 ## 0.3.3
 
 ### `magnebot` module
