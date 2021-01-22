@@ -21,9 +21,9 @@ if __name__ == "__main__":
         for outer_track in np.arange(start=1, stop=1.6, step=0.1):
             for front in np.arange(start=0.5, stop=1.5, step=0.1):
                 # Set the turn constants.
-                Magnebot.TURN_MAGIC_NUMBER = magic_number
-                Magnebot.TURN_OUTER_TRACK = outer_track
-                Magnebot.TURN_FRONT = front
+                Magnebot._TURN_MAGIC_NUMBER = magic_number
+                Magnebot._TURN_OUTER_TRACK = outer_track
+                Magnebot._TURN_FRONT = front
                 m.init_scene()
                 # Turn the Magnebot. Record how long the turn takes.
                 t0 = time()
