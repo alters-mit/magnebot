@@ -26,7 +26,7 @@ from magnebot.paths import SPAWN_POSITIONS_PATH, TORSO_Y, OCCUPANCY_MAPS_DIRECTO
 from magnebot.arm import Arm
 from magnebot.joint_type import JointType
 from magnebot.arm_joint import ArmJoint
-from magnebot.constants import MAGNEBOT_RADIUS, OCCUPANCY_CELL_SIZE, TURN_MAGIC_NUMBER
+from magnebot.constants import MAGNEBOT_RADIUS, OCCUPANCY_CELL_SIZE
 
 
 class Magnebot(FloorplanController):
@@ -107,6 +107,19 @@ class Magnebot(FloorplanController):
     The camera roll, pitch, yaw constraints in degrees.
     """
     CAMERA_RPY_CONSTRAINTS: List[float] = [55, 70, 85]
+
+    """:class_var
+    In `turn_by()` and `turn_to`(), this is a "magic number" used to set the spin speed relative to the target angle.
+    """
+    TURN_MAGIC_NUMBER: float = 3.12
+    """:class_var
+    In `turn_by()` and `turn_to()`, turn the outer track wheels this much faster than the inner track wheels.
+    """
+    TURN_OUTER_TRACK: float = 1.49
+    """:class_var
+    In `turn_by()` and `turn_to()`, turn the front wheels this much faster than the back wheels.
+    """
+    TURN_FRONT: float = 1.0
 
     # The order in which joint angles will be set.
     _JOINT_ORDER: Dict[Arm, List[ArmJoint]] = {Arm.left: [ArmJoint.column,
@@ -442,15 +455,25 @@ class Magnebot(FloorplanController):
             # The distance that the Magnebot needs to travel, defined as a fraction of its circumference.
             d = (delta_angle / 360.0) * Magnebot._MAGNEBOT_CIRCUMFERENCE
             # The 3 is a magic number. Who knows what it means??
-            spin = (d / Magnebot._WHEEL_CIRCUMFERENCE) * 360 * TURN_MAGIC_NUMBER
+            spin = (d / Magnebot._WHEEL_CIRCUMFERENCE) * 360 * Magnebot.TURN_MAGIC_NUMBER
             # Set the direction of the wheels for the turn and send commands.
             commands = []
+            if spin > 0:
+                inner_track = "right"
+            else:
+                inner_track = "left"
             for wheel in self.magnebot_static.wheels:
+                if inner_track in wheel.name:
+                    wheel_spin = spin
+                else:
+                    wheel_spin = spin * Magnebot.TURN_OUTER_TRACK
+                if "front" in wheel.name:
+                    wheel_spin *= Magnebot.TURN_FRONT
                 # Spin one side of the wheels forward and the other backward to effect a turn.
                 if "left" in wheel.name:
-                    target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] + spin
+                    target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] + wheel_spin
                 else:
-                    target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] - spin
+                    target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] - wheel_spin
 
                 commands.append({"$type": "set_revolute_target",
                                  "target": target,

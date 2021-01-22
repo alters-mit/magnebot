@@ -2,3 +2,4 @@
 magnebot/__pycache__/
 magnebot.egg-info/
 pypi.py
+controllers/tests/data
