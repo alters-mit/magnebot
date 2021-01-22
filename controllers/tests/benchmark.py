@@ -24,7 +24,7 @@ class Benchmark(TestController):
         self.init_scene()
         times: List[float] = list()
         direction = 1
-        for i in range(100):
+        for i in range(20):
             if i > 0 and i % 5 == 0:
                 direction *= -1
             t0 = time()
@@ -35,10 +35,12 @@ class Benchmark(TestController):
     def turn_fps(self) -> float:
         self.init_scene()
         times: List[float] = list()
-        for i in range(100):
+        for i in range(20):
             t0 = time()
             self.turn_by(45)
-            times.append(time() - t0)
+            t1 = time() - t0
+            print(t1)
+            times.append(t1)
         return sum(times) / len(times)
 
 

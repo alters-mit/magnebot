@@ -114,6 +114,10 @@ class Magnebot(FloorplanController):
     _TURN_OUTER_TRACK: float = 1.2
     # In `turn_by()` and `turn_to()`, turn the front wheels this much faster than the back wheels.
     _TURN_FRONT: float = 0.5
+    # The default wheel damping value.
+    _WHEEL_DAMPING = 120
+    # The default wheel stiffness value.
+    _WHEEL_STIFFNESS = 1950
 
     # The order in which joint angles will be set.
     _JOINT_ORDER: Dict[Arm, List[ArmJoint]] = {Arm.left: [ArmJoint.column,
@@ -1765,6 +1769,7 @@ class Magnebot(FloorplanController):
         self._next_frame_commands.append({"$type": "parent_avatar_to_robot",
                                           "position": {"x": 0, "y": 0.053, "z": 0.1838},
                                           "body_part_id": self.magnebot_static.arm_joints[ArmJoint.torso]})
+        self._set_wheel_drive(damping=Magnebot._WHEEL_DAMPING, stiffness=Magnebot._WHEEL_STIFFNESS)
 
     def _append_drop_commands(self, object_id: int, arm: Arm) -> None:
         """
@@ -1902,3 +1907,19 @@ class Magnebot(FloorplanController):
                               state_1.joint_angles[w_id][0]) > 0.1:
                 return True
         return False
+
+    def _set_wheel_drive(self, damping: float = 300, stiffness: float = 1000, force_limit: float = 0.4) -> None:
+        """
+        Set drive values for the wheels.
+
+        :param damping: The damping value.
+        :param stiffness: The stiffness value.
+        :param force_limit: The force limit.
+        """
+
+        for wheel_id in self.magnebot_static.wheels.values():
+            self._next_frame_commands.append({"$type": "set_robot_joint_drive",
+                                              "joint_id": wheel_id,
+                                              "damping": damping,
+                                              "stiffness": stiffness,
+                                              "force_limit": force_limit})
