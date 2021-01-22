@@ -3,6 +3,7 @@ from typing import List, Dict, Optional, Union, Tuple
 from csv import DictReader
 from pathlib import Path
 import numpy as np
+from _tkinter import TclError
 import matplotlib.pyplot
 from ikpy.chain import Chain
 from ikpy.link import OriginLink, URDFLink, Link
@@ -1304,13 +1305,34 @@ class Magnebot(FloorplanController):
 
         # Move the torso up to its default height to prevent anything from dragging.
         # Reset the column rotation.
-        self._next_frame_commands.extend([{"$type": "set_prismatic_target",
+        self._next_frame_commands.extend([{"$type": "set_immovable",
+                                           "immovable": True},
+                                          {"$type": "set_prismatic_target",
                                            "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
                                            "target": Magnebot._DEFAULT_TORSO_Y},
                                           {"$type": "set_revolute_target",
                                            "joint_id": self.magnebot_static.arm_joints[ArmJoint.column],
                                            "target": 0}])
-        self._do_arm_motion()
+        # Wait until these two joints stop moving.
+        joints = [self.magnebot_static.arm_joints[ArmJoint.torso], self.magnebot_static.arm_joints[ArmJoint.column]]
+        state_0 = SceneState(self.communicate([]))
+        # Continue the motion. Per frame, check if the movement is done.
+        attempts = 0
+        moving = True
+        while moving and attempts < 200:
+            state_1 = SceneState(self.communicate([]))
+            moving = False
+            for j_id in joints:
+                for i in range(len(state_0.joint_angles[j_id])):
+                    if np.linalg.norm(state_0.joint_angles[j_id][i] -
+                                      state_1.joint_angles[j_id][i]) > 0.01:
+                        moving = True
+                        break
+            state_0 = state_1
+            attempts += 1
+        # Let the Magnebot move again.
+        self._next_frame_commands.append({"$type": "set_immovable",
+                                          "immovable": False})
 
     def _start_ik(self, target: Dict[str, float], arm: Arm, absolute: bool = True, arrived_at: float = 0.125,
                   state: SceneState = None, allow_column: bool = True, fixed_torso_prismatic: float = None,
@@ -1352,12 +1374,18 @@ class Magnebot(FloorplanController):
                                           orientation_mode=orientation_mode, target_orientation=target_orientation)
 
             if self._debug:
-                ax = matplotlib.pyplot.figure().add_subplot(111, projection='3d')
-                ax.set_xlabel("X")
-                ax.set_ylabel("Y")
-                ax.set_zlabel("Z")
-                chain.plot(ik, ax, target=target)
-                matplotlib.pyplot.show()
+                # Plot the IK solution.
+                # This won't always work on a remote server.
+                try:
+                    ax = matplotlib.pyplot.figure().add_subplot(111, projection='3d')
+                    ax.set_xlabel("X")
+                    ax.set_ylabel("Y")
+                    ax.set_zlabel("Z")
+                    chain.plot(ik, ax, target=target)
+                    matplotlib.pyplot.show()
+                except TclError as e:
+                    print(f"Tried creating a debug plot of the IK solution with but got an error:\n{e}\n"
+                          f"(This is probably because you're using a remote server.)")
 
             # Get the forward kinematics matrix of the IK solution.
             transformation_matrices = chain.forward_kinematics(ik, full_kinematics=True)
