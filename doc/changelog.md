@@ -6,7 +6,7 @@
 
 #### `Magnebot`
 
-- Increased average speed of `turn_by()` and `turn_to()` by approximately 56%
+- Increased average turn speed by 170.2%. Previous average speed of `turn_by(45)` was 2.437 seconds. New average speed of `turn_by(45)` is 0.895 seconds.
 
 ## 0.3.3
 
