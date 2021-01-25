@@ -16,4 +16,4 @@ if __name__ == "__main__":
              "wheel.py",
              "test_controller.py"]
     md = PyMdDoc(input_directory="magnebot", files=files, metadata_path="doc_metadata.json")
-    md.get_docs(output_directory="doc")
+    md.get_docs(output_directory="doc/api")

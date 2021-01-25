@@ -167,9 +167,8 @@ class Magnebot(FloorplanController):
         :param random_seed: The seed used for random numbers. If None, this is chosen randomly. In the Magnebot API this is used only when randomly selecting a start position for the Magnebot (see the `room` parameter of `init_scene()`). The same random seed is used in higher-level APIs such as the Transport Challenge.
         :param debug: If True, enable debug mode. This controller will output messages to the console, including any warnings or errors sent by the build. It will also create 3D plots of arm articulation IK solutions.
         :param img_is_png: If True, the `img` pass images will be .png files. If False,  the `img` pass images will be .jpg files, which are smaller; the build will run approximately 2% faster.
+        :param skip_frames: The build will return output data this many frames per `communicate()` call. This will greatly speed up the simulation. If you want to render every frame, set this to 0.
         """
-
-        self.__first_time_only = True
 
         self._debug = debug
 
@@ -198,7 +197,7 @@ class Magnebot(FloorplanController):
         """:field
         The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees as a numpy array. This is handled outside of `self.state` because it isn't calculated using output data from the build. See: `Magnebot.CAMERA_RPY_CONSTRAINTS` and `self.rotate_camera()`
         """
-        self.camera_rpy: np.array([0, 0, 0])
+        self.camera_rpy: np.array = np.array([0, 0, 0])
 
         """:field
         A list of objects that the Magnebot is colliding with at the end of the most recent action.
@@ -207,6 +206,9 @@ class Magnebot(FloorplanController):
 
         # Commands to initialize objects.
         self._object_init_commands: Dict[int, List[dict]] = dict()
+
+        # Used in `step_physics` per frame.
+        self._skip_frames: int = skip_frames
 
         """:field
         Data for all objects in the scene that that doesn't change between frames, such as object IDs, mass, etc. Key = the ID of the object. [Read the full API here](object_static.md).
@@ -396,11 +398,6 @@ class Magnebot(FloorplanController):
         else:
             room = str(room)
             assert room in room_keys, f"Invalid room: {room}; valid rooms are: {room_keys}"
-
-        if self.__first_time_only:
-            self.__first_time_only = False
-        else:
-            commands.append({"$type": "destroy_robot"})
         commands.extend(self._get_scene_init_commands(magnebot_position=rooms[room]))
 
         resp = self.communicate(commands)
@@ -1726,13 +1723,6 @@ class Magnebot(FloorplanController):
         :param resp: The response from the build.
         """
 
-        # Clear data from the previous simulation.
-        self.objects_static.clear()
-        self.segmentation_color_to_id.clear()
-        self._next_frame_commands.clear()
-        self.colliding_objects.clear()
-        self._trigger_events.clear()
-        self.camera_rpy: np.array = np.array([0, 0, 0])
         SceneState.FRAME_COUNT = 0
 
         # Get segmentation color data.
@@ -1923,3 +1913,17 @@ class Magnebot(FloorplanController):
                                               "damping": damping,
                                               "stiffness": stiffness,
                                               "force_limit": force_limit})
+
+    def _clear_data(self) -> None:
+        """
+        Clear persistent simulation data.
+        """
+
+        # Clear data from the previous simulation.
+        self.objects_static.clear()
+        self.segmentation_color_to_id.clear()
+        self.colliding_objects.clear()
+        self.camera_rpy: np.array = np.array([0, 0, 0])
+        self._next_frame_commands.clear()
+        self._trigger_events.clear()
+        self._per_frame_commands.clear()

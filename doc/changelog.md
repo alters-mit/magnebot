@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.0
+
+### `magnebot` module
+
+#### `Magnebot`
+
+- Fixed: `self.camera_rpy` isn't set in the constructor.
+- Fixed: Error in the build when scene is reset because it tries to destroy a non-existent robot.
+- Backend:
+  - Moved the code that resets the simulation state to from `_cache_static_data()` to `_clear_data()`.
+
+### Documentation
+
+- Moved API documents from `doc/` to `doc/api/`
+
 ## 0.3.4
 
 ### `magnebot` module
