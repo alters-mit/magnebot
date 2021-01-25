@@ -1592,24 +1592,9 @@ class Magnebot(FloorplanController):
             state_1 = SceneState(self.communicate([]))
             # Check if the action should stop here because of a conditional. If so, stop arm motion.
             if conditional is not None and conditional(state_1):
-                for arm_joint in self.magnebot_static.arm_joints:
-                    joint_id = self.magnebot_static.arm_joints[arm_joint]
-                    joint_angles = state_1.joint_angles[joint_id]
-                    # Ignore the prismatic joint.
-                    if arm_joint == ArmJoint.torso:
-                        continue
-                    joint_axis = Magnebot._JOINT_AXES[arm_joint]
-                    # Set the arm joints to their current positions.
-                    if joint_axis == JointType.revolute:
-                        self._next_frame_commands.append({"$type": "set_revolute_target",
-                                                          "joint_id": joint_id,
-                                                          "target": float(joint_angles[0])})
-                    elif joint_axis == JointType.spherical:
-                        self._next_frame_commands.append({"$type": "set_spherical_target",
-                                                          "joint_id": joint_id,
-                                                          "target": TDWUtils.array_to_vector3(joint_angles)})
                 moving = False
-                continue
+                state_0 = state_1
+                break
 
             moving = False
             for a_id in self.magnebot_static.arm_joints.values():
@@ -1620,6 +1605,7 @@ class Magnebot(FloorplanController):
                         break
             state_0 = state_1
             attempts += 1
+        self._stop_arm(state=state_0)
         if moving:
             return ActionStatus.failed_to_bend
         else:
@@ -1762,7 +1748,21 @@ class Magnebot(FloorplanController):
         self._next_frame_commands.append({"$type": "parent_avatar_to_robot",
                                           "position": {"x": 0, "y": 0.053, "z": 0.1838},
                                           "body_part_id": self.magnebot_static.arm_joints[ArmJoint.torso]})
+        # Set drive parameters for the wheels.
         self._set_wheel_drive(damping=Magnebot._WHEEL_DAMPING, stiffness=Magnebot._WHEEL_STIFFNESS)
+        # Set drive parameters for the other joints.
+        for arm_joint in self.magnebot_static.arm_joints:
+            joint_id = self.magnebot_static.arm_joints[arm_joint]
+            for axis in self.magnebot_static.joints[joint_id].drives:
+                drive = self.magnebot_static.joints[joint_id].drives[axis]
+                self._next_frame_commands.append({"$type": "set_robot_joint_drive",
+                                                  "joint_id": joint_id,
+                                                  "axis": axis,
+                                                  "force_limit": drive.force_limit,
+                                                  "lower_limit": drive.limits[0],
+                                                  "upper_limit": drive.limits[1],
+                                                  "stiffness": drive.stiffness,
+                                                  "damping": 180})
 
     def _append_drop_commands(self, object_id: int, arm: Arm) -> None:
         """
@@ -1802,7 +1802,7 @@ class Magnebot(FloorplanController):
                 if state_1.object_transforms[object_id].position[1] < -1:
                     return False
                 if np.linalg.norm(state_0.object_transforms[object_id].position -
-                                  state_1.object_transforms[object_id].position) > 0.001:
+                                  state_1.object_transforms[object_id].position) > 0.01:
                     moving = True
                 num_frames += 1
                 state_0 = state_1
@@ -1930,3 +1930,26 @@ class Magnebot(FloorplanController):
         self._next_frame_commands.clear()
         self._trigger_events.clear()
         self._per_frame_commands.clear()
+
+    def _stop_arm(self, state: SceneState) -> None:
+        """
+        Stop arm motion for both arms.
+
+        :param state: The SceneState.
+        """
+        for arm_joint in self.magnebot_static.arm_joints:
+            joint_id = self.magnebot_static.arm_joints[arm_joint]
+            joint_angles = state.joint_angles[joint_id]
+            # Ignore the prismatic joint.
+            if arm_joint == ArmJoint.torso:
+                continue
+            joint_axis = Magnebot._JOINT_AXES[arm_joint]
+            # Set the arm joints to their current positions.
+            if joint_axis == JointType.revolute:
+                self._next_frame_commands.append({"$type": "set_revolute_target",
+                                                  "joint_id": joint_id,
+                                                  "target": float(joint_angles[0])})
+            elif joint_axis == JointType.spherical:
+                self._next_frame_commands.append({"$type": "set_spherical_target",
+                                                  "joint_id": joint_id,
+                                                  "target": TDWUtils.array_to_vector3(joint_angles)})

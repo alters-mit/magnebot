@@ -1,5 +1,7 @@
+from typing import Dict
 import numpy as np
 from tdw.output_data import StaticRobot
+from magnebot.drive import Drive
 
 
 class JointStatic:
@@ -32,3 +34,11 @@ class JointStatic:
         The name of the body part object.
         """
         self.name = sr.get_joint_name(index)
+
+        """:field
+        Static data for the joint's drives. Key = axis. Value = [drive data](drive.md).
+        """
+        self.drives: Dict[str, Drive] = dict()
+        for j in range(sr.get_joint_num_drives(index)):
+            axis = sr.get_joint_drive_axis(index, j)
+            self.drives[axis] = Drive(sr=sr, joint_index=index, drive_index=j)
