@@ -25,9 +25,9 @@ class ObjectStatic:
                    'cabinet_24_two_drawer_white_wood', 'cabinet_24_two_drawer_wood_beach_honey',
                    'cabinet_24_white_wood', 'cabinet_24_wood_beach_honey', 'cabinet_36_white_wood',
                    'cabinet_36_wood_beach_honey', 'cabinet_full_height_white_wood',
-                   'cabinet_full_height_wood_beach_honey', 'elf_painting', 'framed_painting', 'fruit_basket',
-                   'its_about_time_painting', 'silver_frame_painting', 'sink_base_white_wood',
-                   'sink_base_wood_beach_honey']
+                 'cabinet_full_height_wood_beach_honey', 'elf_painting', 'framed_painting', 'fruit_basket',
+                 'its_about_time_painting', 'silver_frame_painting', 'sink_base_white_wood',
+                 'sink_base_wood_beach_honey']
 
     # A dictionary of object categories. Key = object name. Value = category.
     __CATEGORIES = loads(OBJECT_CATEGORIES_PATH.read_text(encoding="utf-8"))

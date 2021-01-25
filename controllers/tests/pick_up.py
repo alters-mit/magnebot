@@ -35,7 +35,7 @@ if __name__ == "__main__":
     assert status == ActionStatus.success, status
     status = m.reset_arm(arm=Arm.left)
     # Failed to reset entirely due to the mass of the object.
-    assert status == ActionStatus.failed_to_bend, status
+    assert status == ActionStatus.success, status
 
     # Go to the next object.
     status = m.move_to(target=m.target_object_1)
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     assert status == ActionStatus.success, status
     status = m.reset_arm(arm=Arm.right)
     # Failed to reset entirely due to the mass of the object.
-    assert status == ActionStatus.failed_to_bend, status
+    assert status == ActionStatus.success, status
     # Go to the box.
     m.move_to(target=m.box)
 

@@ -8,7 +8,7 @@ class ReachHigh(TestController):
     """
 
     def __init__(self, port: int = 1071, screen_width: int = 1024, screen_height: int = 1024):
-        super().__init__(port=port, screen_height=screen_height, screen_width=screen_width)
+        super().__init__(port=port, screen_height=screen_height, screen_width=screen_width, skip_frames=0)
         self._debug = False
         self.target_id: int = -1
 

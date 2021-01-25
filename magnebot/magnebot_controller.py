@@ -156,7 +156,7 @@ class Magnebot(FloorplanController):
 
     def __init__(self, port: int = 1071, launch_build: bool = False, screen_width: int = 256, screen_height: int = 256,
                  debug: bool = False, auto_save_images: bool = False, images_directory: str = "images",
-                 random_seed: int = None, img_is_png: bool = False):
+                 random_seed: int = None, img_is_png: bool = False, skip_frames: int = 20):
         """
         :param port: The socket port. [Read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md#command-line-arguments) for more information.
         :param launch_build: If True, the build will launch automatically on the default port (1071). If False, you will need to launch the build yourself (for example, from a Docker container).
@@ -167,7 +167,7 @@ class Magnebot(FloorplanController):
         :param random_seed: The seed used for random numbers. If None, this is chosen randomly. In the Magnebot API this is used only when randomly selecting a start position for the Magnebot (see the `room` parameter of `init_scene()`). The same random seed is used in higher-level APIs such as the Transport Challenge.
         :param debug: If True, enable debug mode. This controller will output messages to the console, including any warnings or errors sent by the build. It will also create 3D plots of arm articulation IK solutions.
         :param img_is_png: If True, the `img` pass images will be .png files. If False,  the `img` pass images will be .jpg files, which are smaller; the build will run approximately 2% faster.
-        :param skip_frames: The build will return output data this many frames per `communicate()` call. This will greatly speed up the simulation. If you want to render every frame, set this to 0.
+        :param skip_frames: The build will return output data this many frames per `communicate()` call. This will greatly speed up the simulation, but eventually there will be a noticeable loss in physics accuracy. If you want to render every frame, set this to 0.
         """
 
         self._debug = debug
@@ -1108,6 +1108,9 @@ class Magnebot(FloorplanController):
         self._next_frame_commands.clear()
         # Add per-frame commands.
         commands.extend(self._per_frame_commands)
+        # Skip some frames to speed up the simulation.
+        commands.append({"$type": "step_physics",
+                         "frames": self._skip_frames})
 
         if not self._debug:
             # Send the commands and get a response.

@@ -10,9 +10,9 @@ class TestController(Magnebot):
     This can be useful for testing the Magnebot.
     """
 
-    def __init__(self, port: int = 1071, screen_width: int = 256, screen_height: int = 256):
+    def __init__(self, port: int = 1071, screen_width: int = 256, screen_height: int = 256, skip_frames: int = 20):
         super().__init__(port=port, launch_build=False, screen_height=screen_height, screen_width=screen_width,
-                         debug=True)
+                         debug=True, skip_frames=skip_frames)
 
     def init_scene(self, scene: str = None, layout: int = None, room: int = None) -> ActionStatus:
         """
@@ -34,8 +34,9 @@ class TestController(Magnebot):
         Possible [return values](action_status.md):
 
         - `success`
-        - `failed_to_bend` (Technically this is _possible_, but it shouldn't ever happen.)
         """
+
+        self._clear_data()
 
         commands = [{"$type": "load_scene",
                      "scene_name": "ProcGenScene"},
@@ -44,6 +45,6 @@ class TestController(Magnebot):
         resp = self.communicate(commands)
         self._cache_static_data(resp=resp)
         # Wait for the Magnebot to reset to its neutral position.
-        status = self._do_arm_motion()
+        self._do_arm_motion()
         self._end_action()
-        return status
+        return ActionStatus.success
