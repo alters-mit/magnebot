@@ -6,10 +6,19 @@
 
 #### `Magnebot`
 
+- **Major speed improvements.**
 - Fixed: `self.camera_rpy` isn't set in the constructor.
+- Fixed: The IK solver uses the wrong height.
 - Fixed: Error in the build when scene is reset because it tries to destroy a non-existent robot.
+- Fixed: Wheel constants aren't optimized.
+- Fixed: `turn_by()` and `turn_to()` can greatly overshoot target rotation if they accidentally turn more than 180 degrees.
+- Fixed: `move_by()` and `move_to()` stop and fail if there's a new collision between a body part of the Magnebot (such as the wheels) the floor.
 - Backend:
   - Moved the code that resets the simulation state to from `_cache_static_data()` to `_clear_data()`.
+
+### Test controllers
+
+- `turn_constants.py` checks for how far the Magnebot drifted while turning.
 
 ### Documentation
 

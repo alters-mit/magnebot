@@ -11,11 +11,10 @@ class Grasp(TestController):
     def __init__(self, port: int = 1071):
         super().__init__(port=port)
         self.target_id: int = -1
-        self.pos = {"x": -0.1024729, "y": 0, "z": -0.6279346}
 
     def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
         self.target_id = self._add_object(model_name="blue_satchal",
-                                          position=self.pos,
+                                          position={"x": -0.1024729, "y": 0, "z": -0.6279346},
                                           rotation={"x": -7.730941e+11, "y": 152.176, "z": 4.398})
         commands = super()._get_scene_init_commands(magnebot_position=magnebot_position)
         return commands

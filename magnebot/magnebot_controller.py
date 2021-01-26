@@ -109,11 +109,11 @@ class Magnebot(FloorplanController):
     CAMERA_RPY_CONSTRAINTS: List[float] = [55, 70, 85]
 
     # In `turn_by()` and `turn_to`(), this is a "magic number" used to set the spin speed relative to the target angle.
-    _TURN_MAGIC_NUMBER: float = 3.3
+    _TURN_MAGIC_NUMBER: float = 2.6
     # In `turn_by()` and `turn_to()`, turn the outer track wheels this much faster than the inner track wheels.
-    _TURN_OUTER_TRACK: float = 1.2
+    _TURN_OUTER_TRACK: float = 1.5
     # In `turn_by()` and `turn_to()`, turn the front wheels this much faster than the back wheels.
-    _TURN_FRONT: float = 0.5
+    _TURN_FRONT: float = 1.1
     # The default wheel damping value.
     _WHEEL_DAMPING = 120
     # The default wheel stiffness value.
@@ -430,8 +430,11 @@ class Magnebot(FloorplanController):
         self._start_action()
         self._start_move_or_turn()
 
-        if angle > 180:
-            angle -= 360
+        if np.abs(angle) > 180:
+            if angle > 0:
+                angle -= 360
+            else:
+                angle += 360
 
         # Get the angle to the target.
         # The approximate number of iterations required, given the distance and speed.
@@ -499,6 +502,9 @@ class Magnebot(FloorplanController):
                 return ActionStatus.success
             # Course-correct the angle.
             delta_angle = angle - theta
+            # Handle cases where we flip over the axis.
+            if np.abs(angle + delta_angle) > 180:
+                delta_angle *= -1
             if self._debug:
                 print(f"angle: {angle}", f"delta_angle: {delta_angle}", f"spin: {spin}", f"d: {d}", f"theta: {theta}")
         self._stop_wheels(state=wheel_state)
@@ -612,6 +618,9 @@ class Magnebot(FloorplanController):
                 # Check if we collided with the environment or with any objects.
                 collisions = Collisions(resp=resp)
                 for object_id in collisions.env_collisions:
+                    # Ignore collisions with the floor.
+                    if collisions.env_collisions[object_id].floor:
+                        continue
                     if object_id in self.magnebot_static.joints:
                         self._stop_wheels(state=move_state_1)
                         if self._debug:
@@ -808,7 +817,10 @@ class Magnebot(FloorplanController):
             return ActionStatus.success
 
         self._start_action()
-
+        # Enable grasping.
+        self._next_frame_commands.append({"$type": "set_magnet_targets",
+                                          "arm": arm.name,
+                                          "targets": [target]})
         sides, resp = self._get_bounds_sides(target=target)
         state = SceneState(resp=resp)
         # Get the position of the magnet.
@@ -830,13 +842,13 @@ class Magnebot(FloorplanController):
         status = self._start_ik(target=target_position, arm=arm, absolute=True,
                                 do_prismatic_first=target_position["y"] > Magnebot._TORSO_Y[Magnebot._DEFAULT_TORSO_Y])
         if status != ActionStatus.success:
+            # Disable grasping.
+            self._next_frame_commands.append({"$type": "set_magnet_targets",
+                                              "arm": arm.name,
+                                              "targets": []})
             self._end_action()
             return status
 
-        # Enable grasping.
-        self._next_frame_commands.append({"$type": "set_magnet_targets",
-                                          "arm": arm.name,
-                                          "targets": [target]})
         # Wait for the arm motion to end.
         self._do_arm_motion(conditional=lambda s: Magnebot._is_grasping(target, arm, s))
         self._end_action()
@@ -1381,7 +1393,7 @@ class Magnebot(FloorplanController):
 
             # Generate an IK chain, given the current desired torso height.
             # The extra height is the y position of the column's base.
-            chain = self.__get_ik_chain(arm=arm, torso_y=Magnebot._TORSO_Y[round(torso_prismatic, 2)] + 0.159,
+            chain = self.__get_ik_chain(arm=arm, torso_y=Magnebot._TORSO_Y[round(torso_prismatic, 2)],
                                         allow_column=allow_column, object_id=object_id)
 
             # Get the IK solution.

@@ -23,15 +23,7 @@ class Benchmark(TestController):
         """
 
         self.init_scene()
-        times: List[float] = list()
-        direction = 1
-        for i in range(20):
-            if i > 0 and i % 5 == 0:
-                direction *= -1
-            t0 = time()
-            self.move_by(1 * direction)
-            times.append(time() - t0)
-        return sum(times) / len(times)
+        return self._get_move_fps()
 
     def turn_fps(self) -> float:
         """
@@ -55,18 +47,28 @@ class Benchmark(TestController):
         for frames in [0, 5, 10, 15, 20]:
             self.init_scene()
             self._skip_frames = frames
-            times: List[float] = list()
-            direction = 1
-            arm = Arm.left
-            for i in range(20):
-                if i > 0 and i % 5 == 0:
-                    direction *= -1
-                t0 = time()
-                self.move_by(0.5 * direction)
-                self.reach_for(target={"x": 0.2 * direction, "y": 0.4, "z": 0.5}, arm=arm, absolute=False)
-                self.reset_arm(arm=arm)
-                times.append(time() - t0)
-            print(f"| {frames} | {sum(times) / len(times)} |")
+            t = self._get_move_fps()
+            print(f"| {frames} | {t} |")
+
+    def _get_move_fps(self) -> float:
+        """
+        Move backwards and forwards and get the average time elapsed per action.
+
+        :return: The average time elapsed of the action.
+        """
+
+        times: List[float] = list()
+        direction = 1
+        arm = Arm.left
+        for i in range(20):
+            if i > 0 and i % 5 == 0:
+                direction *= -1
+            t0 = time()
+            self.move_by(0.5 * direction)
+            self.reach_for(target={"x": 0.2 * direction, "y": 0.4, "z": 0.5}, arm=arm, absolute=False)
+            self.reset_arm(arm=arm)
+            times.append(time() - t0)
+        return sum(times) / len(times)
 
 
 if __name__ == "__main__":
@@ -74,6 +76,5 @@ if __name__ == "__main__":
     print(f"turn_by(): {m.turn_fps()}")
     print(f"move_by(): {m.move_fps()}")
     m.step_fps()
-
 
     m.end()
