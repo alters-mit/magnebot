@@ -1,7 +1,6 @@
 from typing import List
 from time import time
 from magnebot.test_controller import TestController
-from magnebot import Arm
 
 
 class Benchmark(TestController):
@@ -59,14 +58,11 @@ class Benchmark(TestController):
 
         times: List[float] = list()
         direction = 1
-        arm = Arm.left
         for i in range(20):
             if i > 0 and i % 5 == 0:
                 direction *= -1
             t0 = time()
             self.move_by(0.5 * direction)
-            self.reach_for(target={"x": 0.2 * direction, "y": 0.4, "z": 0.5}, arm=arm, absolute=False)
-            self.reset_arm(arm=arm)
             times.append(time() - t0)
         return sum(times) / len(times)
 
