@@ -42,6 +42,7 @@ m = Magnebot(launch_build=False)
 ### "The simulation is too slow"
 
 - Make sure the build is using a GPU.
+- Compare your speed to [our benchmark](benchmark.md).
 - [Check the player log for errors](https://github.com/threedworld-mit/tdw/blob/master/Documentation/misc_frontend/debug_tdw.md).
 
 ### "Images are grainy / very dark / obviously glitchy"

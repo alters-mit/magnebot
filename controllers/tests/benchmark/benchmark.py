@@ -36,13 +36,11 @@ class Benchmark(TestController):
         for i in range(20):
             t0 = time()
             self.turn_by(45)
-            t1 = time() - t0
-            print(t1)
-            times.append(t1)
+            times.append(time() - t0)
         return sum(times) / len(times)
 
     def step_fps(self) -> None:
-        print("| Skipped frames | FPS |\n| --- | --- |")
+        print("| Skipped frames | Time elapsed |\n| --- | --- |")
         for frames in [0, 5, 10, 15, 20]:
             self.init_scene()
             self._skip_frames = frames

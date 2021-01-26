@@ -69,6 +69,7 @@ m.end()
   - [Robotics in TDW](https://github.com/threedworld-mit/tdw/blob/master/Documentation/misc_frontend/robots.md)
   - [Docker and TDW](https://github.com/threedworld-mit/tdw/blob/master/Documentation/Docker/docker.md)
 - [How to write custom APIs](https://github.com/alters-mit/magnebot/blob/main/doc/custom_apis.md)
+- [Benchmark](https://github.com/alters-mit/magnebot/blob/main/doc/benchmark.md)
 
 # Examples
 

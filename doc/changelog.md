@@ -22,10 +22,12 @@
 ### Test controllers
 
 - `turn_constants.py` checks for how far the Magnebot drifted while turning.
+- Added benchmark controllers: `benchmark/benchmark.py` and `benchmark/benchmark_floorplan.py`
 
 ### Documentation
 
 - Moved API documents from `doc/` to `doc/api/`
+- Added: `benchmark.md`
 
 ## 0.3.4
 
