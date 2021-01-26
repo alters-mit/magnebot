@@ -16,6 +16,8 @@ Static data for a joint of the Magnebot.
 
 - `name` The name of the body part object.
 
+- `drives` Static data for the joint's drives. Key = axis. Value = [drive data](drive.md).
+
 ***
 
 ## Functions

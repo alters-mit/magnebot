@@ -30,7 +30,6 @@ You can safely call `init_scene()` more than once to reset the simulation.
 Possible [return values](action_status.md):
 
 - `success`
-- `failed_to_bend` (Technically this is _possible_, but it shouldn't ever happen.)
 
 #### init_scene
 
@@ -54,5 +53,4 @@ You can safely call `init_scene()` more than once to reset the simulation.
 Possible [return values](action_status.md):
 
 - `success`
-- `failed_to_bend` (Technically this is _possible_, but it shouldn't ever happen.)
 
