@@ -8,6 +8,7 @@ setup(
     long_description='High-level API for the Magnebot in TDW.',
     url='https://github.com/alters-mit/magnebot',
     author='Seth Alter',
+    author_email="alters@mit.edu",
     license='MIT',
     classifiers=[
         'Development Status :: 4 - Beta',
@@ -20,5 +21,5 @@ setup(
     ],
     keywords='unity simulation tdw robotics',
     packages=find_packages(),
-    install_requires=['tdw', 'numpy', 'ikpy', 'requests', 'matplotlib', 'pillow', "py_md_doc"],
+    install_requires=['tdw>=1.8.0.0', 'numpy', 'ikpy', 'requests', 'matplotlib', 'pillow', "py_md_doc"],
 )
