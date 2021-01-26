@@ -84,4 +84,4 @@ These functions aren't in the API documentation because they are intended for on
 | `_get_bounds_sides()`        | Returns the bounds sides that can be used for `grasp()` targets. You might want to adjust this for certain objects. For example, in the Transport Challenge API, the Magnebot never tries to grasp a container from the top because containers don't have lids on the top. |
 | `_wheels_are_turning()`      | Returns True if the wheels are currently turning.            |
 | `_set_wheel_drive()`         | Set drive values for the wheels.                             |
-
+| `_stop_arms()`               | Stop all joint movement for both arms.                       |

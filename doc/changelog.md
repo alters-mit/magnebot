@@ -2,9 +2,7 @@
 
 ## 0.4.0
 
-### `magnebot` module
-
-#### `Magnebot`
+### `Magnebot`
 
 - **Major speed improvements.** The simulation now skips frames between `communicate()` calls.
   - Added optional parameters `skip_frames` to the constructor to set the number of frames to skip.
@@ -12,14 +10,14 @@
 - Fixed: The IK solver uses the wrong height.
 - Fixed: Error in the build when scene is reset because it tries to destroy a non-existent robot.
 - Fixed: Wheel constants aren't optimized.
-- Fixed: `turn_by()` and `turn_to()` can greatly overshoot target rotation if they accidentally turn more than 180 degrees.
+- Fixed: `turn_by()` and `turn_to()` can greatly overshoot target rotation if they accidentally turn more than 180 degrees or if the turn angle is less than -180 degrees.
 - Fixed: `move_by()` and `move_to()` stop and fail if there's a new collision between a body part of the Magnebot (such as the wheels) the floor.
 - Backend:
   - Moved the code that resets the simulation state to from `_cache_static_data()` to `_clear_data()`
 
-#### `JointStatic`
+### `JointStatic`
 
-- Added field `drives`. Stores [drive data](api/drive.md)
+- Added field `drives`. Stores [drive data](api/drive.md).
 
 ### Test controllers
 

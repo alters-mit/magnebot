@@ -503,7 +503,7 @@ class Magnebot(FloorplanController):
             # Course-correct the angle.
             delta_angle = angle - theta
             # Handle cases where we flip over the axis.
-            if np.abs(angle + delta_angle) > 180:
+            if angle + delta_angle <= -180:
                 delta_angle *= -1
             if self._debug:
                 print(f"angle: {angle}", f"delta_angle: {delta_angle}", f"spin: {spin}", f"d: {d}", f"theta: {theta}")
@@ -1617,7 +1617,7 @@ class Magnebot(FloorplanController):
                         break
             state_0 = state_1
             attempts += 1
-        self._stop_arm(state=state_0)
+        self._stop_arms(state=state_0)
         if moving:
             return ActionStatus.failed_to_bend
         else:
@@ -1943,7 +1943,7 @@ class Magnebot(FloorplanController):
         self._trigger_events.clear()
         self._per_frame_commands.clear()
 
-    def _stop_arm(self, state: SceneState) -> None:
+    def _stop_arms(self, state: SceneState) -> None:
         """
         Stop arm motion for both arms.
 
