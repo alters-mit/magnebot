@@ -106,21 +106,6 @@ for object_id in m.objects_static:
     print(object_id, o.segmentation_color)
 ```
 
-- `segmentation_color_to_id` A dictionary. Key = a hashable representation of the object's segmentation color. Value = The object ID. See `objects_static` for a dictionary mapped to object ID with additional data.
-
-```python
-from tdw.tdw_utils import TDWUtils
-from magnebot import Magnebot
-
-m = Magnebot()
-m.init_scene(scene="2a", layout=1)
-
-for hashable_color in m.segmentation_color_to_id:
-    object_id = m.segmentation_color_to_id[hashable_color]
-    # Convert the hashable color back to an [r, g, b] array.
-    color = TDWUtils.hashable_to_color(hashable_color)
-```
-
 - `magnebot_static` Data for the Magnebot that doesn't change between frames. [Read this for a full API](magnebot_static.md)
 
 ```python

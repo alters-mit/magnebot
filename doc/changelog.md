@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.2
+
+### `Magnebot`
+
+- Removed: `segmentation_color_to_object_id` (see `get_visible_objects()`)
+- Improved arm articulation speed when moving the torso up and down.
+
 ## 0.4.1
 
 ### `Magnebot`

@@ -224,24 +224,6 @@ class Magnebot(FloorplanController):
         self.objects_static: Dict[int, ObjectStatic] = dict()
 
         """:field
-        A dictionary. Key = a hashable representation of the object's segmentation color. Value = The object ID. See `objects_static` for a dictionary mapped to object ID with additional data.
-
-        ```python
-        from tdw.tdw_utils import TDWUtils
-        from magnebot import Magnebot
-
-        m = Magnebot()
-        m.init_scene(scene="2a", layout=1)
-
-        for hashable_color in m.segmentation_color_to_id:
-            object_id = m.segmentation_color_to_id[hashable_color]
-            # Convert the hashable color back to an [r, g, b] array.
-            color = TDWUtils.hashable_to_color(hashable_color)
-        ```
-        """
-        self.segmentation_color_to_id: Dict[int, int] = dict()
-
-        """:field
         Data for the Magnebot that doesn't change between frames. [Read this for a full API](magnebot_static.md)
         
         ```python
@@ -1466,12 +1448,13 @@ class Magnebot(FloorplanController):
         if fixed_torso_prismatic is not None:
             torso_prismatic = fixed_torso_prismatic
         # Slide the torso to the desired height.
+        torso_id = self.magnebot_static.arm_joints[ArmJoint.torso]
         torso_command = {"$type": "set_prismatic_target",
-                         "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
+                         "joint_id": torso_id,
                          "target": torso_prismatic}
         if do_prismatic_first:
             self.communicate(torso_command)
-            self._do_arm_motion()
+            self._do_arm_motion(joint_ids=[torso_id])
 
         # Convert the IK solution into TDW commands, using the expected joint and axis order.
         self._append_ik_commands(angles=angles, arm=arm)
@@ -1720,7 +1703,6 @@ class Magnebot(FloorplanController):
             object_id = segmentation_colors.get_object_id(i)
             names[object_id] = segmentation_colors.get_object_name(i)
             color = segmentation_colors.get_object_color(i)
-            self.segmentation_color_to_id[TDWUtils.color_to_hashable(color)] = object_id
             colors[object_id] = color
         # Get the bounds data.
         bounds = get_data(resp=resp, d_type=Bounds)
@@ -1891,7 +1873,6 @@ class Magnebot(FloorplanController):
 
         # Clear data from the previous simulation.
         self.objects_static.clear()
-        self.segmentation_color_to_id.clear()
         self.colliding_objects.clear()
         self.camera_rpy: np.array = np.array([0, 0, 0])
         self._next_frame_commands.clear()

@@ -29,7 +29,7 @@ if __name__ == "__main__":
     status = m.move_by(-1)
     assert status == ActionStatus.tipping, status
     status = m.move_by(1)
-    assert status == ActionStatus.collision, status
+    assert status == ActionStatus.tipping, status
     status = m.move_by(-1)
     assert status == ActionStatus.success, status
 
