@@ -442,7 +442,7 @@ Possible [return values](action_status.md):
 | --- | --- | --- | --- |
 | target |  int |  | The ID of the object currently held by the magnet. |
 | arm |  Arm |  | The arm of the magnet holding the object. |
-| wait_for_objects |  bool  | True | If True, the action will continue until the objects have finished falling. If False, the action will take exactly 1 frame to finish. |
+| wait_for_objects |  bool  | True | If True, the action will continue until the objects have finished falling. If False, the action will take 1 + `skip_frames`  number of frames to finish (where `skip_frames` is defined in the constructor). |
 
 _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` dropped the `target`.
 
@@ -471,7 +471,7 @@ _Returns:_  An `ActionStatus` indicating if the arm reset and if not, why.
 
 ### Camera
 
-_These commands rotate the Magnebot's camera or add additional camera to the scene._
+_These commands rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by 1 + skip_frames number of frames, were skip_frames is defined in the constructor._
 
 #### rotate_camera
 

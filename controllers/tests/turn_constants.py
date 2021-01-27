@@ -12,7 +12,7 @@ if __name__ == "__main__":
     m = TestController()
     m._debug = False
     # Destroy the old data.
-    p = Path("../data/turn_constants.csv")
+    p = Path("data/turn_constants.csv")
     if p.exists():
         p.unlink()
     # Write the header of the spreadsheet to disk.

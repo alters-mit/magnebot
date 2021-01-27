@@ -114,10 +114,6 @@ class Magnebot(FloorplanController):
     _TURN_OUTER_TRACK: float = 1.5
     # In `turn_by()` and `turn_to()`, turn the front wheels this much faster than the back wheels.
     _TURN_FRONT: float = 1.1
-    # The default wheel damping value.
-    _WHEEL_DAMPING = 120
-    # The default wheel stiffness value.
-    _WHEEL_STIFFNESS = 1950
 
     # The order in which joint angles will be set.
     _JOINT_ORDER: Dict[Arm, List[ArmJoint]] = {Arm.left: [ArmJoint.column,
@@ -871,7 +867,7 @@ class Magnebot(FloorplanController):
 
         :param target: The ID of the object currently held by the magnet.
         :param arm: The arm of the magnet holding the object.
-        :param wait_for_objects: If True, the action will continue until the objects have finished falling. If False, the action will take exactly 1 frame to finish.
+        :param wait_for_objects: If True, the action will continue until the objects have finished falling. If False, the action will take 1 + `skip_frames`  number of frames to finish (where `skip_frames` is defined in the constructor).
 
         :return: An `ActionStatus` indicating if the magnet at the end of the `arm` dropped the `target`.
         """
@@ -1342,22 +1338,8 @@ class Magnebot(FloorplanController):
                                            "joint_id": self.magnebot_static.arm_joints[ArmJoint.column],
                                            "target": 0}])
         # Wait until these two joints stop moving.
-        joints = [self.magnebot_static.arm_joints[ArmJoint.torso], self.magnebot_static.arm_joints[ArmJoint.column]]
-        state_0 = SceneState(self.communicate([]))
-        # Continue the motion. Per frame, check if the movement is done.
-        attempts = 0
-        moving = True
-        while moving and attempts < 200:
-            state_1 = SceneState(self.communicate([]))
-            moving = False
-            for j_id in joints:
-                for i in range(len(state_0.joint_angles[j_id])):
-                    if np.linalg.norm(state_0.joint_angles[j_id][i] -
-                                      state_1.joint_angles[j_id][i]) > 0.01:
-                        moving = True
-                        break
-            state_0 = state_1
-            attempts += 1
+        self._do_arm_motion(joint_ids=[self.magnebot_static.arm_joints[ArmJoint.torso],
+                                       self.magnebot_static.arm_joints[ArmJoint.column]], non_moving=0.01)
         # Let the Magnebot move again.
         self._next_frame_commands.append({"$type": "set_immovable",
                                           "immovable": False})
@@ -1587,16 +1569,20 @@ class Magnebot(FloorplanController):
                 raise Exception(f"Joint type not defined: {joint_type} for {joint_name}.")
         return commands
 
-    def _do_arm_motion(self, conditional=None) -> ActionStatus:
+    def _do_arm_motion(self, conditional=None, joint_ids: List[int] = None, non_moving: float = 0.001) -> ActionStatus:
         """
         Wait until the arms have stopped moving.
 
         :param conditional: a conditional function (returns bool) that can stop the arm motion and has a SceneState parameter.
+        :param joint_ids: The joint IDs to listen for. If None, listen for all joint IDs.
+        :param non_moving: If a joint has less than this many angles since the last frame, we consider it to be non-moving.
 
         :return: An `ActionStatus` indicating if the arms stopped moving and if not, why.
         """
 
         state_0 = SceneState(self.communicate([]))
+        if joint_ids is None:
+            joint_ids = self.magnebot_static.arm_joints.values()
         # Continue the motion. Per frame, check if the movement is done.
         attempts = 0
         moving = True
@@ -1609,10 +1595,10 @@ class Magnebot(FloorplanController):
                 break
 
             moving = False
-            for a_id in self.magnebot_static.arm_joints.values():
+            for a_id in joint_ids:
                 for i in range(len(state_0.joint_angles[a_id])):
                     if np.linalg.norm(state_0.joint_angles[a_id][i] -
-                                      state_1.joint_angles[a_id][i]) > 0.001:
+                                      state_1.joint_angles[a_id][i]) > non_moving:
                         moving = True
                         break
             state_0 = state_1
@@ -1760,21 +1746,6 @@ class Magnebot(FloorplanController):
         self._next_frame_commands.append({"$type": "parent_avatar_to_robot",
                                           "position": {"x": 0, "y": 0.053, "z": 0.1838},
                                           "body_part_id": self.magnebot_static.arm_joints[ArmJoint.torso]})
-        # Set drive parameters for the wheels.
-        self._set_wheel_drive(damping=Magnebot._WHEEL_DAMPING, stiffness=Magnebot._WHEEL_STIFFNESS)
-        # Set drive parameters for the other joints.
-        for arm_joint in self.magnebot_static.arm_joints:
-            joint_id = self.magnebot_static.arm_joints[arm_joint]
-            for axis in self.magnebot_static.joints[joint_id].drives:
-                drive = self.magnebot_static.joints[joint_id].drives[axis]
-                self._next_frame_commands.append({"$type": "set_robot_joint_drive",
-                                                  "joint_id": joint_id,
-                                                  "axis": axis,
-                                                  "force_limit": drive.force_limit,
-                                                  "lower_limit": drive.limits[0],
-                                                  "upper_limit": drive.limits[1],
-                                                  "stiffness": drive.stiffness,
-                                                  "damping": 180})
 
     def _append_drop_commands(self, object_id: int, arm: Arm) -> None:
         """
@@ -1837,7 +1808,7 @@ class Magnebot(FloorplanController):
         """
         :param target: The target position.
         :param arm: The arm.
-        :param state: The state
+        :param state: The state.
 
         :return: True if the magnet is at the target position.
         """
@@ -1912,22 +1883,6 @@ class Magnebot(FloorplanController):
                               state_1.joint_angles[w_id][0]) > 0.1:
                 return True
         return False
-
-    def _set_wheel_drive(self, damping: float = 300, stiffness: float = 1000, force_limit: float = 0.4) -> None:
-        """
-        Set drive values for the wheels.
-
-        :param damping: The damping value.
-        :param stiffness: The stiffness value.
-        :param force_limit: The force limit.
-        """
-
-        for wheel_id in self.magnebot_static.wheels.values():
-            self._next_frame_commands.append({"$type": "set_robot_joint_drive",
-                                              "joint_id": wheel_id,
-                                              "damping": damping,
-                                              "stiffness": stiffness,
-                                              "force_limit": force_limit})
 
     def _clear_data(self) -> None:
         """

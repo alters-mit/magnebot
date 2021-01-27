@@ -18,7 +18,7 @@
       "functions": ["reach_for", "grasp", "drop", "reset_arm"]
     },
     "Camera": {
-      "description": "These commands rotate the Magnebot's camera or add additional camera to the scene.",
+      "description": "These commands rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by 1 + skip_frames number of frames, were skip_frames is defined in the constructor.",
       "functions": ["rotate_camera", "reset_camera", "add_camera"]
     },
     "Misc.": {

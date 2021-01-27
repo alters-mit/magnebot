@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.1
+
+### `Magnebot`
+
+- Backend:
+  - Removed code to adjust Magnebot drive parameters because the default drive parameters have been adjusted in the build.
+  - Added optional parameter `joint_ids` to `_do_arm_motion()` to specify which joints to listen to. This can speed up certain arm articulations.
+
+### Test controllers
+
+- Removed: `wheel_constants.py`
+- Moved `turn_constants.py` to `tests/`
+
 ## 0.4.0
 
 ### `Magnebot`
