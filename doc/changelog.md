@@ -1,16 +1,11 @@
 # Changelog
 
-## 0.4.2
+## 0.4.1
 
 ### `Magnebot`
 
 - Removed: `segmentation_color_to_object_id` (see `get_visible_objects()`)
 - Improved arm articulation speed when moving the torso up and down.
-
-## 0.4.1
-
-### `Magnebot`
-
 - Backend:
   - Removed code to adjust Magnebot drive parameters because the default drive parameters have been adjusted in the build.
   - Added optional parameter `joint_ids` to `_do_arm_motion()` to specify which joints to listen to. This can speed up certain arm articulations.
