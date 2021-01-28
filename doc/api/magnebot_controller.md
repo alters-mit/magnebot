@@ -28,6 +28,14 @@ print(m.state.magnebot_transform.position)
 
 ***
 
+## Frame skipping
+
+`communicate()` is a low-level function that sends commands to the build (the simulator) and receives output data. Every action in this API calls `communicate()`, usually many times. You shouldn't ever need to directly call `communicate()` in the Magnebot API.
+
+Typically in TDW, when `communicate()` is called, the simulation advances exactly 1 physics frame. In the Magnebot constructor, there is a `skip_frames` parameter. With this extra parameter, TDW will advance `1 + skip_frames` number of frames before sending output data. The net result of this is that the simulation runs much faster.
+
+***
+
 ## Parameter types
 
 The types `Dict`, `Union`, and `List` are in the [`typing` module](https://docs.python.org/3/library/typing.html).
@@ -235,6 +243,8 @@ _Returns:_  An `ActionStatus` (always success).
 
 _These functions move or turn the Magnebot._
 
+_While moving, the Magnebot might start to tip over (usually because it's holding something heavy). If this happens, the Magnebot will stop moving and drop any objects with mass > 30. You can then prevent the Magnebot from tipping over._
+
 #### turn_by
 
 **`self.turn_by(angle)`**
@@ -242,8 +252,6 @@ _These functions move or turn the Magnebot._
 **`self.turn_by(angle, aligned_at=3)`**
 
 Turn the Magnebot by an angle.
-
-The Magnebot will turn by small increments to align with the target angle.
 
 When turning, the left wheels will turn one way and the right wheels in the opposite way, allowing the Magnebot to turn in place.
 
@@ -269,8 +277,6 @@ _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and
 
 Turn the Magnebot to face a target object or position.
 
-The Magnebot will turn by small increments to align with the target angle.
-
 When turning, the left wheels will turn one way and the right wheels in the opposite way, allowing the Magnebot to turn in place.
 
 Possible [return values](action_status.md):
@@ -294,8 +300,6 @@ _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and
 **`self.move_by(distance, arrived_at=0.3)`**
 
 Move the Magnebot forward or backward by a given distance.
-
-While moving, the Magnebot might start to tip over (usually because it's holding something heavy). If this happens, the Magnebot will stop moving and drop any objects with mass > 30.
 
 Possible [return values](action_status.md):
 
@@ -358,6 +362,8 @@ _Returns:_  An `ActionStatus` (always success).
 ### Arm Articulation
 
 _These functions move and bend the joints of the Magnebots's arms._
+
+_During an arm articulation action, the Magnebot is always "immovable", meaning that its wheels are locked and it isn't possible for its root object to move or rotate._
 
 #### reach_for
 
@@ -427,7 +433,7 @@ Possible [return values](action_status.md):
 | --- | --- | --- | --- |
 | target |  int |  | The ID of the object currently held by the magnet. |
 | arm |  Arm |  | The arm of the magnet holding the object. |
-| wait_for_objects |  bool  | True | If True, the action will continue until the objects have finished falling. If False, the action will take 1 + `skip_frames`  number of frames to finish (where `skip_frames` is defined in the constructor). |
+| wait_for_objects |  bool  | True | If True, the action will continue until the objects have finished falling. If False, the action will require 1 `communicate()` call (see "Frame skipping" at the top of this document). |
 
 _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` dropped the `target`.
 
@@ -456,7 +462,7 @@ _Returns:_  An `ActionStatus` indicating if the arm reset and if not, why.
 
 ### Camera
 
-_These commands rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by 1 + skip_frames number of frames, were skip_frames is defined in the constructor._
+_These commands rotate the Magnebot's camera or add additional camera to the scene. They call communicate() exactly once (see "Frame skipping" in this document)._
 
 #### rotate_camera
 

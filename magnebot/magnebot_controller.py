@@ -57,6 +57,14 @@ class Magnebot(FloorplanController):
 
     ***
 
+    ## Frame skipping
+
+    `communicate()` is a low-level function that sends commands to the build (the simulator) and receives output data. Every action in this API calls `communicate()`, usually many times. You shouldn't ever need to directly call `communicate()` in the Magnebot API.
+
+    Typically in TDW, when `communicate()` is called, the simulation advances exactly 1 physics frame. In the Magnebot constructor, there is a `skip_frames` parameter. With this extra parameter, TDW will advance `1 + skip_frames` number of frames before sending output data. The net result of this is that the simulation runs much faster.
+
+    ***
+
     ## Parameter types
 
     The types `Dict`, `Union`, and `List` are in the [`typing` module](https://docs.python.org/3/library/typing.html).
@@ -389,8 +397,6 @@ class Magnebot(FloorplanController):
         """
         Turn the Magnebot by an angle.
 
-        The Magnebot will turn by small increments to align with the target angle.
-
         When turning, the left wheels will turn one way and the right wheels in the opposite way, allowing the Magnebot to turn in place.
 
         Possible [return values](action_status.md):
@@ -493,8 +499,6 @@ class Magnebot(FloorplanController):
         """
         Turn the Magnebot to face a target object or position.
 
-        The Magnebot will turn by small increments to align with the target angle.
-
         When turning, the left wheels will turn one way and the right wheels in the opposite way, allowing the Magnebot to turn in place.
 
         Possible [return values](action_status.md):
@@ -523,8 +527,6 @@ class Magnebot(FloorplanController):
     def move_by(self, distance: float, arrived_at: float = 0.3) -> ActionStatus:
         """
         Move the Magnebot forward or backward by a given distance.
-
-        While moving, the Magnebot might start to tip over (usually because it's holding something heavy). If this happens, the Magnebot will stop moving and drop any objects with mass > 30.
 
         Possible [return values](action_status.md):
 
@@ -849,7 +851,7 @@ class Magnebot(FloorplanController):
 
         :param target: The ID of the object currently held by the magnet.
         :param arm: The arm of the magnet holding the object.
-        :param wait_for_objects: If True, the action will continue until the objects have finished falling. If False, the action will take 1 + `skip_frames`  number of frames to finish (where `skip_frames` is defined in the constructor).
+        :param wait_for_objects: If True, the action will continue until the objects have finished falling. If False, the action will require 1 `communicate()` call (see "Frame skipping" at the top of this document).
 
         :return: An `ActionStatus` indicating if the magnet at the end of the `arm` dropped the `target`.
         """

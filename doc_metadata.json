@@ -10,15 +10,15 @@
       "functions": ["init_scene"]
     },
     "Movement": {
-      "description": "These functions move or turn the Magnebot.",
+      "description": "These functions move or turn the Magnebot.\n\nWhile moving, the Magnebot might start to tip over (usually because it's holding something heavy). If this happens, the Magnebot will stop moving and drop any objects with mass > 30. You can then prevent the Magnebot from tipping over.",
       "functions": ["turn_by", "turn_to", "move_by", "move_to", "reset_position"]
     },
     "Arm Articulation": {
-      "description": "These functions move and bend the joints of the Magnebots's arms.",
+      "description": "These functions move and bend the joints of the Magnebots's arms.\n\nDuring an arm articulation action, the Magnebot is always \"immovable\", meaning that its wheels are locked and it isn't possible for its root object to move or rotate.",
       "functions": ["reach_for", "grasp", "drop", "reset_arm"]
     },
     "Camera": {
-      "description": "These commands rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by 1 + skip_frames number of frames, were skip_frames is defined in the constructor.",
+      "description": "These commands rotate the Magnebot's camera or add additional camera to the scene. They call communicate() exactly once (see \"Frame skipping\" in this document).",
       "functions": ["rotate_camera", "reset_camera", "add_camera"]
     },
     "Misc.": {
