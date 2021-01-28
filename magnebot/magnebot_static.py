@@ -34,7 +34,7 @@ class MagnebotStatic:
         m = Magnebot()
         m.init_scene(scene="2a", layout=1)
 
-        # Print the object ID and segmentation color of each body part.
+        # Print the object ID and segmentation color of each joint.
         for b_id in m.magnebot_static.joints:
             print(b_id, m.magnebot_static.joints[b_id].segmentation_color)
         ```
@@ -42,7 +42,19 @@ class MagnebotStatic:
         self.joints: Dict[int, JointStatic] = dict()
 
         """:field
-        The object IDs of every part of the Magnebot. Includes everything in `self.joints` as well as non-moving parts.
+        A list of the object IDs of every part of the Magnebot. Includes everything in `self.joints` as well as non-moving parts.
+        
+        
+        ```python
+        from magnebot import Magnebot
+
+        m = Magnebot()
+        m.init_scene(scene="2a", layout=1)
+
+        # Print the object ID of each body part.
+        for b_id in m.magnebot_static.body_parts:
+            print(b_id)
+        ```
         """
         self.body_parts: List[int] = list()
 

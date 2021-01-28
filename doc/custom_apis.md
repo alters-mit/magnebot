@@ -14,10 +14,26 @@ To add custom objects to the scene, call `_add_object()` within `_get_scene_init
 
 ```python
 def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
-    object_id = self._add_object(model_name="cabinet_36_wood_beach_honey", position={"x": 0.04, "y": 0, "z": 1.081}, mass=300)
+    # All of theses parameters except `model_name` are optional and have default values.
+    # See the docstring in `magnebot_controller.py` for parameter descriptions.
+    object_id = self._add_object(model_name="rh10",
+                                 position={"x": 0.04, "y": 0, "z": 1.081},
+                                 rotation={"x": 0, "y": 0, "z": 0},
+                                 library="models_core.json",
+                                 scale={"x": 1, "y": 1, "z": 1},
+                                 audio=None,
+                                 mass=5)
     
-    # Initialize the scene. This will add cabinet_36_wood_beach_honey
-    return super()._get_scene_init_commands(magnebot_position=magnebot_position)
+    # Initialize the scene. This will add rh10
+    commands = super()._get_scene_init_commands(magnebot_position=magnebot_position)
+    
+    # Append a low-level TDW command that affects rh10
+    # Note the order in which this appears: 
+    # _add_object() THEN _get_scene_init_commands() THEN any extra low-level commands.
+    commands.append({"$type": "apply_force_magnitude_to_object", 
+                     "magnitude": 100, 
+                     "id": object_id})
+    return commands
 ```
 
 ## Commands and Output Data

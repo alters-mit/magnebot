@@ -28,11 +28,13 @@ print(m.state.magnebot_transform.position)
 
 ***
 
-## Frame skipping
+## Frames
 
-`communicate()` is a low-level function that sends commands to the build (the simulator) and receives output data. Every action in this API calls `communicate()`, usually many times. You shouldn't ever need to directly call `communicate()` in the Magnebot API.
+Every action advances the simulation by 1 or more _simulation frames_. This occurs every time the `communicate()` function is called (which all actions call internally).
 
-Typically in TDW, when `communicate()` is called, the simulation advances exactly 1 physics frame. In the Magnebot constructor, there is a `skip_frames` parameter. With this extra parameter, TDW will advance `1 + skip_frames` number of frames before sending output data. The net result of this is that the simulation runs much faster.
+Every simulation frame advances the simulation by contains `1 + n` _physics frames_. `n` is defined in the `skip_frames` parameter of the Magnebot constructor. This greatly increases the speed of the simulation.
+
+Unless otherwise stated, "frame" in the Magnebot API documentation always refers to a simulation frame rather than a physics frame.
 
 ***
 
@@ -90,7 +92,22 @@ print(Arm.left)
 
 ## Fields
 
-- `state` Dynamic data for all of the most recent frame (i.e. the frame after doing an action such as `move_to()`). [Read this](scene_state.md) for a full API.
+- `state` [Dynamic data for all of the most recent frame after doing an action.](scene_state.md) This includes image data, physics metadata, etc.       
+
+```python
+from magnebot import Magnebot
+
+m = Magnebot()
+m.init_scene(scene="2a", layout=1)
+
+# Print the initial position of the Magnebot.
+print(m.state.magnebot_transform.position)
+
+m.move_by(1)
+
+# Print the new position of the Magnebot.
+print(m.state.magnebot_transform.position)
+```
 
 - `auto_save_images` If True, automatically save images to `images_directory` at the end of every action.
 
@@ -100,7 +117,7 @@ print(Arm.left)
 
 - `colliding_objects` A list of objects that the Magnebot is colliding with at the end of the most recent action.
 
-- `objects_static` Data for all objects in the scene that that doesn't change between frames, such as object IDs, mass, etc. Key = the ID of the object. [Read the full API here](object_static.md).
+- `objects_static` [Data for all objects in the scene that that doesn't change between frames, such as object IDs, mass, etc.](object_static.md) Key = the ID of the object..
 
 ```python
 from magnebot import Magnebot
@@ -114,7 +131,7 @@ for object_id in m.objects_static:
     print(object_id, o.segmentation_color)
 ```
 
-- `magnebot_static` Data for the Magnebot that doesn't change between frames. [Read this for a full API](magnebot_static.md)
+- `magnebot_static` [Data for the Magnebot that doesn't change between frames.](magnebot_static.md)
 
 ```python
 from magnebot import Magnebot
@@ -124,7 +141,7 @@ m.init_scene(scene="2a", layout=1)
 print(m.magnebot_static.magnets)
 ```
 
-- `occupancy_map` A numpy array of the occupancy map. This is None until you call `init_scene()`
+- `occupancy_map` A numpy array of the occupancy map. This is None until you call `init_scene()`.
 
 Shape = `(1, width, length)` where `width` and `length` are the number of cells in the grid. Each grid cell has a radius of 0.245. To convert from occupancy map `(x, y)` coordinates to worldspace `(x, z)` coordinates, see: `get_occupancy_position()`.
 
@@ -152,10 +169,7 @@ Images of occupancy maps can be found [here](https://github.com/alters-mit/magne
 
 The occupancy map is static, meaning that it won't update when objects are moved.
 
-Note that it is possible for the Magnebot to go to positions that aren't "free". Reasons for this include:
-
-- The Magnebot's base is a rectangle that is longer on the sides than the front and back. The occupancy grid cell size is defined by the longer axis, so it is possible for the Magnebot to move forward and squeeze into a smaller space.
-- The Magnebot can push, lift, or otherwise move objects out of its way.
+Note that it is possible for the Magnebot to go to positions that aren't "free". The Magnebot's base is a rectangle that is longer on the sides than the front and back. The occupancy grid cell size is defined by the longer axis, so it is possible for the Magnebot to move forward and squeeze into a smaller space. The Magnebot can also push, lift, or otherwise move objects out of its way.
 
 ***
 
@@ -178,7 +192,7 @@ Note that it is possible for the Magnebot to go to positions that aren't "free".
 | random_seed |  int  | None | The seed used for random numbers. If None, this is chosen randomly. In the Magnebot API this is used only when randomly selecting a start position for the Magnebot (see the `room` parameter of `init_scene()`). The same random seed is used in higher-level APIs such as the Transport Challenge. |
 | debug |  bool  | False | If True, enable debug mode. This controller will output messages to the console, including any warnings or errors sent by the build. It will also create 3D plots of arm articulation IK solutions. |
 | img_is_png |  bool  | False | If True, the `img` pass images will be .png files. If False,  the `img` pass images will be .jpg files, which are smaller; the build will run approximately 2% faster. |
-| skip_frames |  int  | 20 | The build will return output data this many frames per `communicate()` call. This will greatly speed up the simulation, but eventually there will be a noticeable loss in physics accuracy. If you want to render every frame, set this to 0. |
+| skip_frames |  int  | 20 | The build will return output data this many physics frames per simulation frame (`communicate()` call). This will greatly speed up the simulation, but eventually there will be a noticeable loss in physics accuracy. If you want to render every frame, set this to 0. |
 
 ***
 
@@ -192,11 +206,9 @@ _These functions should be sent at the start of the simulation._
 
 **`self.init_scene(scene, layout, room=None)`**
 
-Initialize a scene, populate it with objects, and add the Magnebot. The simulation will advance through frames until the Magnebot's body is in its neutral position.
+**Always call this function before any other API calls.** Initialize a scene, populate it with objects, and add the Magnebot.
 
-**Always call this function before any other API calls.**
-
-It might take a few minutes to initialize the scene.
+It might take a few minutes to initialize the scene. You can call `init_scene()` more than once to reset the simulation; subsequent resets at runtime should be extremely fast.
 
 Set the `scene` and `layout` parameters in `init_scene()` to load an interior scene with furniture and props. Set the `room` to spawn the avatar in the center of a specific room.
 
@@ -221,8 +233,6 @@ Valid scenes, layouts, and rooms:
 Images of each scene+layout combination can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/floorplans). Images are named `[scene]_[layout].jpg` For example, the image for scene "2a" layout 0 is: `2a_0.jpg`.
 
 Images of where each room in a scene is can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/rooms). Images are named `[scene].jpg` For example, the image for scene "2a" layout 0 is: `2.jpg`.
-
-You can call `init_scene()` more than once to reset the simulation.
 
 Possible [return values](action_status.md):
 
@@ -324,7 +334,7 @@ _Returns:_  An `ActionStatus` indicating if the Magnebot moved by `distance` and
 
 Move the Magnebot to a target object or position.
 
-The Magnebot will first try to turn to face the target by internally calling a `turn_to()` action.
+This is a wrapper function for `turn_to()` followed by `move_by()`.
 
 Possible [return values](action_status.md):
 
@@ -433,7 +443,7 @@ Possible [return values](action_status.md):
 | --- | --- | --- | --- |
 | target |  int |  | The ID of the object currently held by the magnet. |
 | arm |  Arm |  | The arm of the magnet holding the object. |
-| wait_for_objects |  bool  | True | If True, the action will continue until the objects have finished falling. If False, the action will require 1 `communicate()` call (see "Frame skipping" at the top of this document). |
+| wait_for_objects |  bool  | True | If True, the action will continue until the objects have finished falling. If False, the action advances the simulation by exactly 1 frame. |
 
 _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` dropped the `target`.
 
@@ -462,7 +472,7 @@ _Returns:_  An `ActionStatus` indicating if the arm reset and if not, why.
 
 ### Camera
 
-_These commands rotate the Magnebot's camera or add additional camera to the scene. They call communicate() exactly once (see "Frame skipping" in this document)._
+_These commands rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by exactly 1 frame._
 
 #### rotate_camera
 
@@ -470,7 +480,7 @@ _These commands rotate the Magnebot's camera or add additional camera to the sce
 
 **`self.rotate_camera(roll=0, pitch=0, yaw=0)`**
 
-Rotate the Magnebot's camera by the (roll, pitch, yaw) axes. This action takes exactly 1 frame.
+Rotate the Magnebot's camera by the (roll, pitch, yaw) axes.
 
 Each axis of rotation is constrained (see `Magnebot.CAMERA_RPY_CONSTRAINTS`).
 
@@ -510,7 +520,7 @@ _Returns:_  An `ActionStatus` indicating if the camera rotated fully or if the r
 
 **`self.reset_camera()`**
 
-Reset the rotation of the Magnebot's camera to its default angles. This action takes exactly 1 frame.
+Reset the rotation of the Magnebot's camera to its default angles.
 
 ```python
 from magnebot import Magnebot

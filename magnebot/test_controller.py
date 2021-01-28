@@ -16,9 +16,9 @@ class TestController(Magnebot):
 
     def init_scene(self, scene: str = None, layout: int = None, room: int = None) -> ActionStatus:
         """
-        Initialize an empty test room with a Magnebot. The simulation will advance through frames until the Magnebot's body is in its neutral position.
+        **Always call this function before any other API calls.** Initialize an empty test room with a Magnebot.
 
-        This function must be called before any other API calls.
+        You can safely call `init_scene()` more than once to reset the simulation.
 
         ```python
         from magnebot import TestController
@@ -28,8 +28,6 @@ class TestController(Magnebot):
 
         # Your code here.
         ```
-
-        You can safely call `init_scene()` more than once to reset the simulation.
 
         Possible [return values](action_status.md):
 

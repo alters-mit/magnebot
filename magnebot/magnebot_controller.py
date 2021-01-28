@@ -57,11 +57,13 @@ class Magnebot(FloorplanController):
 
     ***
 
-    ## Frame skipping
+    ## Frames
 
-    `communicate()` is a low-level function that sends commands to the build (the simulator) and receives output data. Every action in this API calls `communicate()`, usually many times. You shouldn't ever need to directly call `communicate()` in the Magnebot API.
+    Every action advances the simulation by 1 or more _simulation frames_. This occurs every time the `communicate()` function is called (which all actions call internally).
 
-    Typically in TDW, when `communicate()` is called, the simulation advances exactly 1 physics frame. In the Magnebot constructor, there is a `skip_frames` parameter. With this extra parameter, TDW will advance `1 + skip_frames` number of frames before sending output data. The net result of this is that the simulation runs much faster.
+    Every simulation frame advances the simulation by contains `1 + n` _physics frames_. `n` is defined in the `skip_frames` parameter of the Magnebot constructor. This greatly increases the speed of the simulation.
+
+    Unless otherwise stated, "frame" in the Magnebot API documentation always refers to a simulation frame rather than a physics frame.
 
     ***
 
@@ -171,7 +173,7 @@ class Magnebot(FloorplanController):
         :param random_seed: The seed used for random numbers. If None, this is chosen randomly. In the Magnebot API this is used only when randomly selecting a start position for the Magnebot (see the `room` parameter of `init_scene()`). The same random seed is used in higher-level APIs such as the Transport Challenge.
         :param debug: If True, enable debug mode. This controller will output messages to the console, including any warnings or errors sent by the build. It will also create 3D plots of arm articulation IK solutions.
         :param img_is_png: If True, the `img` pass images will be .png files. If False,  the `img` pass images will be .jpg files, which are smaller; the build will run approximately 2% faster.
-        :param skip_frames: The build will return output data this many frames per `communicate()` call. This will greatly speed up the simulation, but eventually there will be a noticeable loss in physics accuracy. If you want to render every frame, set this to 0.
+        :param skip_frames: The build will return output data this many physics frames per simulation frame (`communicate()` call). This will greatly speed up the simulation, but eventually there will be a noticeable loss in physics accuracy. If you want to render every frame, set this to 0.
         """
 
         self._debug = debug
@@ -182,7 +184,22 @@ class Magnebot(FloorplanController):
         self._rng = np.random.RandomState(random_seed)
 
         """:field
-        Dynamic data for all of the most recent frame (i.e. the frame after doing an action such as `move_to()`). [Read this](scene_state.md) for a full API.
+        [Dynamic data for all of the most recent frame after doing an action.](scene_state.md) This includes image data, physics metadata, etc.       
+        
+        ```python
+        from magnebot import Magnebot
+        
+        m = Magnebot()
+        m.init_scene(scene="2a", layout=1)
+        
+        # Print the initial position of the Magnebot.
+        print(m.state.magnebot_transform.position)
+        
+        m.move_by(1)
+        
+        # Print the new position of the Magnebot.
+        print(m.state.magnebot_transform.position)
+        ```
         """
         self.state: Optional[SceneState] = None
 
@@ -215,7 +232,7 @@ class Magnebot(FloorplanController):
         self._skip_frames: int = skip_frames
 
         """:field
-        Data for all objects in the scene that that doesn't change between frames, such as object IDs, mass, etc. Key = the ID of the object. [Read the full API here](object_static.md).
+        [Data for all objects in the scene that that doesn't change between frames, such as object IDs, mass, etc.](object_static.md) Key = the ID of the object..
         
         ```python
         from magnebot import Magnebot
@@ -232,7 +249,7 @@ class Magnebot(FloorplanController):
         self.objects_static: Dict[int, ObjectStatic] = dict()
 
         """:field
-        Data for the Magnebot that doesn't change between frames. [Read this for a full API](magnebot_static.md)
+        [Data for the Magnebot that doesn't change between frames.](magnebot_static.md)
         
         ```python
         from magnebot import Magnebot
@@ -245,7 +262,7 @@ class Magnebot(FloorplanController):
         self.magnebot_static: Optional[MagnebotStatic] = None
 
         """:field
-        A numpy array of the occupancy map. This is None until you call `init_scene()`
+        A numpy array of the occupancy map. This is None until you call `init_scene()`.
         
         Shape = `(1, width, length)` where `width` and `length` are the number of cells in the grid. Each grid cell has a radius of 0.245. To convert from occupancy map `(x, y)` coordinates to worldspace `(x, z)` coordinates, see: `get_occupancy_position()`.
         
@@ -273,10 +290,7 @@ class Magnebot(FloorplanController):
         
         The occupancy map is static, meaning that it won't update when objects are moved.
 
-        Note that it is possible for the Magnebot to go to positions that aren't "free". Reasons for this include:
-        
-        - The Magnebot's base is a rectangle that is longer on the sides than the front and back. The occupancy grid cell size is defined by the longer axis, so it is possible for the Magnebot to move forward and squeeze into a smaller space.
-        - The Magnebot can push, lift, or otherwise move objects out of its way.
+        Note that it is possible for the Magnebot to go to positions that aren't "free". The Magnebot's base is a rectangle that is longer on the sides than the front and back. The occupancy grid cell size is defined by the longer axis, so it is possible for the Magnebot to move forward and squeeze into a smaller space. The Magnebot can also push, lift, or otherwise move objects out of its way.
         """
         self.occupancy_map: Optional[np.array] = None
 
@@ -326,11 +340,9 @@ class Magnebot(FloorplanController):
 
     def init_scene(self, scene: str, layout: int, room: int = None) -> ActionStatus:
         """
-        Initialize a scene, populate it with objects, and add the Magnebot. The simulation will advance through frames until the Magnebot's body is in its neutral position.
+        **Always call this function before any other API calls.** Initialize a scene, populate it with objects, and add the Magnebot.
 
-        **Always call this function before any other API calls.**
-
-        It might take a few minutes to initialize the scene.
+        It might take a few minutes to initialize the scene. You can call `init_scene()` more than once to reset the simulation; subsequent resets at runtime should be extremely fast.
 
         Set the `scene` and `layout` parameters in `init_scene()` to load an interior scene with furniture and props. Set the `room` to spawn the avatar in the center of a specific room.
 
@@ -355,8 +367,6 @@ class Magnebot(FloorplanController):
         Images of each scene+layout combination can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/floorplans). Images are named `[scene]_[layout].jpg` For example, the image for scene "2a" layout 0 is: `2a_0.jpg`.
 
         Images of where each room in a scene is can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/rooms). Images are named `[scene].jpg` For example, the image for scene "2a" layout 0 is: `2.jpg`.
-
-        You can call `init_scene()` more than once to reset the simulation.
 
         Possible [return values](action_status.md):
 
@@ -661,7 +671,7 @@ class Magnebot(FloorplanController):
         """
         Move the Magnebot to a target object or position.
 
-        The Magnebot will first try to turn to face the target by internally calling a `turn_to()` action.
+        This is a wrapper function for `turn_to()` followed by `move_by()`.
 
         Possible [return values](action_status.md):
 
@@ -851,7 +861,7 @@ class Magnebot(FloorplanController):
 
         :param target: The ID of the object currently held by the magnet.
         :param arm: The arm of the magnet holding the object.
-        :param wait_for_objects: If True, the action will continue until the objects have finished falling. If False, the action will require 1 `communicate()` call (see "Frame skipping" at the top of this document).
+        :param wait_for_objects: If True, the action will continue until the objects have finished falling. If False, the action advances the simulation by exactly 1 frame.
 
         :return: An `ActionStatus` indicating if the magnet at the end of the `arm` dropped the `target`.
         """
@@ -898,7 +908,7 @@ class Magnebot(FloorplanController):
 
     def rotate_camera(self, roll: float = 0, pitch: float = 0, yaw: float = 0) -> ActionStatus:
         """
-        Rotate the Magnebot's camera by the (roll, pitch, yaw) axes. This action takes exactly 1 frame.
+        Rotate the Magnebot's camera by the (roll, pitch, yaw) axes.
 
         Each axis of rotation is constrained (see `Magnebot.CAMERA_RPY_CONSTRAINTS`).
 
@@ -964,7 +974,7 @@ class Magnebot(FloorplanController):
 
     def reset_camera(self) -> ActionStatus:
         """
-        Reset the rotation of the Magnebot's camera to its default angles. This action takes exactly 1 frame.
+        Reset the rotation of the Magnebot's camera to its default angles.
 
         ```python
         from magnebot import Magnebot

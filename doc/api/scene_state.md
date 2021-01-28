@@ -44,8 +44,6 @@ print(m.state.magnebot_transform.position)
 
 - `body_part_transforms` The [transform data](transform.md) of the Magnebot's body parts. Key = The ID of the body part.
 
-Some of these body parts aren't joints and aren't included in the [static data](magnebot_static.md).
-
 ```python
 from magnebot import Magnebot
 

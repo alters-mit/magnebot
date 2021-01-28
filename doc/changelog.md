@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.2
+
+### `DemoController`
+
+- Removed `DemoController` because it isn't being used and includes obsolete code.
+
+### Promo controllers
+
+- Renamed the directory `demos/` to `promos/` so that it's clearer that these aren't example use-cases.
+
+### Documentation
+
+- Various minor edits throughout the API documentation.
+
 ## 0.4.1
 
 ### `Magnebot`
