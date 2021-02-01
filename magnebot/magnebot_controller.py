@@ -214,6 +214,8 @@ class Magnebot(FloorplanController):
         self.images_directory = Path(images_directory)
         if not self.images_directory.exists():
             self.images_directory.mkdir(parents=True)
+        if self.auto_save_images:
+            print(f"Images will be saved to: {self.images_directory.resolve()}")
 
         """:field
         The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees as a numpy array. This is handled outside of `self.state` because it isn't calculated using output data from the build. See: `Magnebot.CAMERA_RPY_CONSTRAINTS` and `self.rotate_camera()`
@@ -1890,6 +1892,8 @@ class Magnebot(FloorplanController):
         self._next_frame_commands.clear()
         self._trigger_events.clear()
         self._per_frame_commands.clear()
+        self._object_init_commands.clear()
+        self._about_to_tip = False
 
     def _stop_arms(self, state: SceneState) -> None:
         """

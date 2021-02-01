@@ -88,4 +88,4 @@ class PickUp(Magnebot):
 
 
 if __name__ == "__main__":
-    PickUp(launch_build=False).run()
+    PickUp().run()

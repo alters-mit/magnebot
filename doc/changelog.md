@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.3
+
+### `Magnebot`
+
+- If `self.auto_save_images == True`, the script will print the output directory to the console.
+- Fixed: objects are created multiple times in subsequent `init_scene()` calls.
+- Fixed: If `init_scene()` is called while the Magnebot is tipping over, the controller thinks that the Magnebot is still tipping over in the new scene.
+
+### Example controllers
+
+- Added: `custom_api.py` Example of a custom scene and a custom action.
+
+### Documentation
+
+- Added a table of example controllers to the README.
+
 ## 0.4.2
 
 ### `DemoController`

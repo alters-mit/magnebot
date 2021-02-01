@@ -73,7 +73,15 @@ m.end()
 
 # Examples
 
-- [Example controllers](https://github.com/alters-mit/magnebot/tree/main/controllers/examples) show actual examples for an actual use-case.
+[Example controllers](https://github.com/alters-mit/magnebot/tree/main/controllers/examples) show actual examples for an actual use-case.
+
+| Controller      | Description                                                  |
+| --------------- | ------------------------------------------------------------ |
+| `pick_up.py`    | A simple example of how to pick up an object in the scene. You should try and review this example first. |
+| `custom_api.py` | An example of how to create a custom scene and a custom action. This is meant for more advanced users. |
+
+#### Other controllers in this repo
+
 - [Promo controllers](https://github.com/alters-mit/magnebot/tree/main/controllers/promos) are meant to be use to generate promo videos or images; they include low-level TDW commands that you won't need to ordinarily use.
 - [Test controllers](https://github.com/alters-mit/magnebot/tree/main/controllers/tests) load the Magnebot into an empty room using the [`TestController`](https://github.com/alters-mit/magnebot/blob/main/doc/api/test_controller.md) class and test basic functionality.
 
