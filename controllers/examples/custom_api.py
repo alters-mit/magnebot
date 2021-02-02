@@ -75,12 +75,10 @@ class CustomAPI(Magnebot):
 
         # Grasp the object.
         status = self.grasp(target=target, arm=arm)
-        # If the grasp action failed, stop here.
-        if status != ActionStatus.success:
-            self._end_action()
-            return status
-        # Immediately drop the object.
-        self._append_drop_commands(object_id=target, arm=arm)
+        # We don't care if we actually grasped the object, so long as the magnet is nearby.
+        if status == ActionStatus.success:
+            # Immediately drop the object.
+            self._append_drop_commands(object_id=target, arm=arm)
 
         # First, request bounds data for just the target object.
         resp = self.communicate([{"$type": "send_bounds",
@@ -98,7 +96,7 @@ class CustomAPI(Magnebot):
 
         # Get the position of the magnet. Note that we're using `state` (the current state),
         # not `self.state` (the state at the beginning of the action).
-        magnet_position = state.body_part_transforms[magnet_id].position
+        magnet_position = state.joint_positions[magnet_id]
 
         # Get the directional vector from the magnet to the center of the object.
         direction = position - magnet_position
@@ -198,7 +196,6 @@ class CustomAPI(Magnebot):
             status = self.grasp(target=self.object_1, arm=Arm.left)
             self.reset_arm(arm=Arm.left)
             print(f"Grasped the object: {status}")
-            self.move_by(1)
 
     def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
         """

@@ -162,7 +162,7 @@ class Magnebot(FloorplanController):
 
     def __init__(self, port: int = 1071, launch_build: bool = False, screen_width: int = 256, screen_height: int = 256,
                  debug: bool = False, auto_save_images: bool = False, images_directory: str = "images",
-                 random_seed: int = None, img_is_png: bool = False, skip_frames: int = 20):
+                 random_seed: int = None, img_is_png: bool = False, skip_frames: int = 10):
         """
         :param port: The socket port. [Read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md#command-line-arguments) for more information.
         :param launch_build: If True, the build will launch automatically on the default port (1071). If False, you will need to launch the build yourself (for example, from a Docker container).
@@ -775,7 +775,7 @@ class Magnebot(FloorplanController):
 
         # Check how close the magnet is to the expected relative position.
         magnet_position = Magnebot._absolute_to_relative(
-            position=self.state.body_part_transforms[self.magnebot_static.magnets[arm]].position,
+            position=self.state.joint_positions[self.magnebot_static.magnets[arm]],
             state=self.state)
         d = np.linalg.norm(destination - magnet_position)
         if d < arrived_at:
@@ -816,7 +816,7 @@ class Magnebot(FloorplanController):
         sides, resp = self._get_bounds_sides(target=target)
         state = SceneState(resp=resp)
         # Get the position of the magnet.
-        magnet_position = state.body_part_transforms[self.magnebot_static.magnets[arm]].position
+        magnet_position = state.joint_positions[self.magnebot_static.magnets[arm]]
         # Get the closest side to the magnet.
         closest: np.array = sides[0]
         d = np.inf
@@ -1600,7 +1600,7 @@ class Magnebot(FloorplanController):
                         break
             state_0 = state_1
             attempts += 1
-        self._stop_arms(state=state_0)
+        self._stop_joints(state=state_0, joint_ids=joint_ids)
         if moving:
             return ActionStatus.failed_to_bend
         else:
@@ -1689,8 +1689,8 @@ class Magnebot(FloorplanController):
             obj_position = np.array(get_data(resp=resp, d_type=Bounds).get_center(0))
             # Get the position of the magnet.
             state = SceneState(resp=resp)
-            magnet = state.body_part_transforms[self.magnebot_static.magnets[arm]]
-            translation_vector = magnet.position - obj_position
+            magnet = state.joint_positions[self.magnebot_static.magnets[arm]]
+            translation_vector = magnet - obj_position
             # Add the object as an IK link.
             links.append(URDFLink(name="obj",
                                   translation_vector=translation_vector,
@@ -1810,7 +1810,7 @@ class Magnebot(FloorplanController):
         """
 
         magnet_position = Magnebot._absolute_to_relative(
-            position=state.body_part_transforms[self.magnebot_static.magnets[arm]].position,
+            position=state.joint_positions[self.magnebot_static.magnets[arm]],
             state=state)
         return np.linalg.norm(magnet_position - target) < 0.001
 
@@ -1895,17 +1895,22 @@ class Magnebot(FloorplanController):
         self._object_init_commands.clear()
         self._about_to_tip = False
 
-    def _stop_arms(self, state: SceneState) -> None:
+    def _stop_joints(self, state: SceneState, joint_ids: List[int] = None) -> None:
         """
-        Stop arm motion for both arms.
+        Set the target angle of joints to their current angle.
 
         :param state: The SceneState.
+        :param joint_ids: The joints to stop. If empty, stop all arm joints.
         """
-        for arm_joint in self.magnebot_static.arm_joints:
-            joint_id = self.magnebot_static.arm_joints[arm_joint]
+
+        if joint_ids is None:
+            joint_ids = self.magnebot_static.arm_joints.values()
+
+        for joint_id in joint_ids:
             joint_angles = state.joint_angles[joint_id]
+            arm_joint = ArmJoint[self.magnebot_static.joints[joint_id].name]
             # Ignore the prismatic joint.
-            if arm_joint == ArmJoint.torso:
+            if self.magnebot_static.joints[joint_id].name == "torso":
                 continue
             joint_axis = Magnebot._JOINT_AXES[arm_joint]
             # Set the arm joints to their current positions.

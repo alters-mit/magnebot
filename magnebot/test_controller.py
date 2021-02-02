@@ -10,7 +10,7 @@ class TestController(Magnebot):
     This can be useful for testing the Magnebot.
     """
 
-    def __init__(self, port: int = 1071, screen_width: int = 256, screen_height: int = 256, skip_frames: int = 20):
+    def __init__(self, port: int = 1071, screen_width: int = 256, screen_height: int = 256, skip_frames: int = 10):
         super().__init__(port=port, launch_build=False, screen_height=screen_height, screen_width=screen_width,
                          debug=True, skip_frames=skip_frames)
 

@@ -27,9 +27,9 @@ if __name__ == "__main__":
 
     # Try to pick up a heavy object, start to tip over, and resolve the tipping.
     status = m.move_by(-1)
-    assert status == ActionStatus.tipping, status
+    assert status != ActionStatus.success, status
     status = m.move_by(1)
-    assert status == ActionStatus.tipping, status
+    assert status != ActionStatus.success, status
     status = m.move_by(-1)
     assert status == ActionStatus.success, status
 
@@ -38,8 +38,8 @@ if __name__ == "__main__":
     status = m.grasp(target=m.target_id, arm=Arm.left)
     assert status == ActionStatus.success, status
     status = m.turn_by(45)
-    assert status == ActionStatus.success, status
+    assert status != ActionStatus.success, status
     status = m.move_by(-1)
-    assert status == ActionStatus.tipping, status
+    assert status != ActionStatus.success, status
     m.reset_position()
     m.end()

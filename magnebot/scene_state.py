@@ -58,18 +58,20 @@ class SceneState:
                                                        rotation=np.array(r.get_rotation()),
                                                        forward=np.array(r.get_forward()))
         """:field
-        The [transform data](transform.md) of the Magnebot's body parts. Key = The ID of the body part.
+        The `[x, y, z]` coordinates of the Magnebot's joints as numpy arrays. Key = The ID of the joint.
 
         ```python
         from magnebot import Magnebot
     
         m = Magnebot()
         m.init_scene(scene="2a", layout=1, room=1)
-        for j_id in m.state.body_part_transforms:
-            print(m.state.body_part_transforms[j_id].position)
+        for j_id in m.state.joint_positions:
+            position = m.state.joint_positions[j_id]
+            name = m.magnebot_static.joints[j_id].name
+            print(position, name)
         ```
         """
-        self.body_part_transforms: Dict[int, Transform] = dict()
+        self.joint_positions: Dict[int, np.array] = dict()
         """:field
         The angles of each Magnebot joint. Key = The ID of the joint. Value = The angles of the joint in degrees as a numpy array. This is mainly useful for the backend code.
         """
@@ -77,19 +79,8 @@ class SceneState:
         # Get data for the robot body parts.
         for i in range(r.get_num_joints()):
             j_id = r.get_joint_id(i)
-            self.body_part_transforms[j_id] = Transform(
-                position=np.array(r.get_joint_position(i)),
-                rotation=np.array(r.get_joint_rotation(i)),
-                forward=np.array(r.get_joint_forward(i)))
+            self.joint_positions[j_id] = r.get_joint_position(i)
             self.joint_angles[j_id] = r.get_joint_positions(i)
-
-        # Get data for the non-joint robot body parts.
-        for i in range(r.get_num_non_moving()):
-            j_id = r.get_non_moving_id(i)
-            self.body_part_transforms[j_id] = Transform(
-                position=np.array(r.get_non_moving_position(i)),
-                rotation=np.array(r.get_non_moving_rotation(i)),
-                forward=np.array(r.get_non_moving_forward(i)))
 
         m = get_data(resp=resp, d_type=Magnebot)
         """:field

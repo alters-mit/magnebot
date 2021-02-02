@@ -42,15 +42,17 @@ m.init_scene(scene="2a", layout=1, room=1)
 print(m.state.magnebot_transform.position)
 ```
 
-- `body_part_transforms` The [transform data](transform.md) of the Magnebot's body parts. Key = The ID of the body part.
+- `joint_positions` The `[x, y, z]` coordinates of the Magnebot's joints as numpy arrays. Key = The ID of the joint.
 
 ```python
 from magnebot import Magnebot
 
 m = Magnebot()
 m.init_scene(scene="2a", layout=1, room=1)
-for j_id in m.state.body_part_transforms:
-    print(m.state.body_part_transforms[j_id].position)
+for j_id in m.state.joint_positions:
+    position = m.state.joint_positions[j_id]
+    name = m.magnebot_static.joints[j_id].name
+    print(position, name)
 ```
 
 - `joint_angles` The angles of each Magnebot joint. Key = The ID of the joint. Value = The angles of the joint in degrees as a numpy array. This is mainly useful for the backend code.

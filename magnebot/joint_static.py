@@ -18,22 +18,22 @@ class JointStatic:
         """:field
         The unique ID of the body part object.
         """
-        self.id = sr.get_joint_id(index)
+        self.id: int = sr.get_joint_id(index)
 
         """:field
         The mass of the body part.
         """
-        self.mass = sr.get_joint_mass(index)
+        self.mass: float = sr.get_joint_mass(index)
 
         """:field
         The segmentation color of the object as a numpy array: `[r, g, b]`
         """
-        self.segmentation_color = np.array(sr.get_joint_segmentation_color(index))
+        self.segmentation_color: np.array = np.array(sr.get_joint_segmentation_color(index))
 
         """:field
         The name of the body part object.
         """
-        self.name = sr.get_joint_name(index)
+        self.name: str = sr.get_joint_name(index)
 
         """:field
         Static data for the joint's drives. Key = axis. Value = [drive data](drive.md).
@@ -42,3 +42,7 @@ class JointStatic:
         for j in range(sr.get_joint_num_drives(index)):
             axis = sr.get_joint_drive_axis(index, j)
             self.drives[axis] = Drive(sr=sr, joint_index=index, drive_index=j)
+        """:field
+        The type of joint. Optionals: `"revolute"`, `"spherical"`, `"prismatic"`, and `"fixed_joint"`.
+        """
+        self.joint_type: str = sr.get_joint_type(index)

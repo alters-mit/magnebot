@@ -18,6 +18,8 @@ Static data for a joint of the Magnebot.
 
 - `drives` Static data for the joint's drives. Key = axis. Value = [drive data](drive.md).
 
+- `joint_type` The type of joint. Optionals: `"revolute"`, `"spherical"`, `"prismatic"`, and `"fixed_joint"`.
+
 ***
 
 ## Functions

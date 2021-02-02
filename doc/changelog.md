@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.5.0
+
+### `Magnebot`
+
+- Set default `skip_frames` value to 10 (was 20)
+- Backend:
+  - Renamed `_stop_arms()` to `_stop_joints()` and added optional `joint_ids` parameter.
+
+### `SceneState`
+
+- Replaced `body_part_transforms` with `joint_positions`. These are numpy arrays of `[x, y, z]` positions instead of `Transform` objects. It only includes joints (not non-moving body parts).
+
+### `JointStatic`
+
+- Added field: `joint_type` 
+
+### Example controllers
+
+- `custom_api.py`: Improved the `push()`.
+
+### Test controllers
+
+- Fixed: `pick_up.py` and `pick_up_heavy.py` don't work.
+
 ## 0.4.3
 
 ### `Magnebot`
