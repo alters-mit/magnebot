@@ -23,3 +23,7 @@ OCCUPANCY_MAPS_DIRECTORY = SCENE_DATA_DIRECTORY.joinpath("occupancy_maps")
 ROOM_MAPS_DIRECTORY = SCENE_DATA_DIRECTORY.joinpath("room_maps")
 # The path to the scene bounds data.
 SCENE_BOUNDS_PATH = SCENE_DATA_DIRECTORY.joinpath("scene_bounds.json")
+# The directory of Magnebot data.
+MAGNEBOT_DIRECTORY = DATA_DIRECTORY.joinpath("magnebot")
+# The path to the turn constants data.
+TURN_CONSTANTS_PATH = MAGNEBOT_DIRECTORY.joinpath("turn_constants.csv")

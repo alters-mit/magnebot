@@ -5,12 +5,14 @@
 ### `Magnebot`
 
 - Set default `skip_frames` value to 10 (was 20)
+- Improved the speed of `turn_by()` and `turn_to()` by using different turn constants for different ranges of angles.
 - Backend:
   - Renamed `_stop_arms()` to `_stop_joints()` and added optional `joint_ids` parameter.
+  - Added: `TurnConstants`. Used  to set constants for turn actions.
 
 ### `SceneState`
 
-- Replaced `body_part_transforms` with `joint_positions`. These are numpy arrays of `[x, y, z]` positions instead of `Transform` objects. It only includes joints (not non-moving body parts).
+- Replaced `body_part_transforms` with `joint_positions`. These are numpy arrays of `[x, y, z]` positions instead of `Transform` objects. It only includes joints (not non-moving body parts). As a result, the simulation is slightly faster.
 
 ### `JointStatic`
 
@@ -22,7 +24,12 @@
 
 ### Test controllers
 
+- `turn_constants.py` runs tests for multiple angles.
 - Fixed: `pick_up.py` and `pick_up_heavy.py` don't work.
+
+### Documentation
+
+- Updated benchmark.
 
 ## 0.4.3
 

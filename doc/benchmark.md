@@ -12,23 +12,23 @@ To run the benchmark:
 
 #### `turn_by()`
 
-Average time elapsed during `turn_by(45)`: 0.3626535892486572 seconds
+Average time elapsed during `turn_by(45)`: 0.28042638301849365 seconds
 
 #### `move_by()`
 
-Average time elapsed during `move_by(0.5)`: 0.18326703310012818 seconds
+Average time elapsed during `move_by(0.5)`: 0.13557246923446656 seconds
 
 #### Skipped frames
 
 These tests measure the average time elapsed during `move_by(0.5)` with varying quantities of skipped frames per `communicate()` call (see the `skip_frames` parameter in the `Magnebot` constructor).
 
-| Skipped frames | Time elapsed        |
-| -------------- | ------------------- |
-| 0              | 0.6230585694313049  |
-| 5              | 0.2050017833709717  |
-| 10             | 0.18139997720718384 |
-| 15             | 0.17385331392288209 |
-| 20             | 0.17365176677703859 |
+| Skipped frames | Time elapsed |
+| --- | --- |
+| 0 | 0.34852654933929444 |
+| 5 | 0.14801830053329468 |
+| 10 | 0.13034409284591675 |
+| 15 | 0.14144458770751953 |
+| 20 | 0.14268385171890258 |
 
 ## `floorplan_benchmark.py`
 

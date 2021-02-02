@@ -22,11 +22,13 @@ from magnebot.object_static import ObjectStatic
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.scene_state import SceneState
 from magnebot.action_status import ActionStatus
-from magnebot.paths import SPAWN_POSITIONS_PATH, TORSO_Y, OCCUPANCY_MAPS_DIRECTORY, SCENE_BOUNDS_PATH
+from magnebot.paths import SPAWN_POSITIONS_PATH, TORSO_Y, OCCUPANCY_MAPS_DIRECTORY, SCENE_BOUNDS_PATH, \
+    TURN_CONSTANTS_PATH
 from magnebot.arm import Arm
 from magnebot.joint_type import JointType
 from magnebot.arm_joint import ArmJoint
 from magnebot.constants import MAGNEBOT_RADIUS, OCCUPANCY_CELL_SIZE
+from magnebot.turn_constants import TurnConstants
 
 
 class Magnebot(FloorplanController):
@@ -118,13 +120,6 @@ class Magnebot(FloorplanController):
     """
     CAMERA_RPY_CONSTRAINTS: List[float] = [55, 70, 85]
 
-    # In `turn_by()` and `turn_to`(), this is a "magic number" used to set the spin speed relative to the target angle.
-    _TURN_MAGIC_NUMBER: float = 2.6
-    # In `turn_by()` and `turn_to()`, turn the outer track wheels this much faster than the inner track wheels.
-    _TURN_OUTER_TRACK: float = 1.5
-    # In `turn_by()` and `turn_to()`, turn the front wheels this much faster than the back wheels.
-    _TURN_FRONT: float = 1.1
-
     # The order in which joint angles will be set.
     _JOINT_ORDER: Dict[Arm, List[ArmJoint]] = {Arm.left: [ArmJoint.column,
                                                           ArmJoint.shoulder_left,
@@ -152,6 +147,16 @@ class Magnebot(FloorplanController):
             _TORSO_Y[float(row["prismatic"])] = float(row["actual"])
     # The default height of the torso.
     _DEFAULT_TORSO_Y: float = 1
+
+    # Turn constants by angle.
+    _TURN_CONSTANTS: Dict[int, TurnConstants] = dict()
+    with TURN_CONSTANTS_PATH.open(encoding='utf-8-sig') as f:
+        r = DictReader(f)
+        for row in r:
+            _TURN_CONSTANTS[int(row["angle"])] = TurnConstants(angle=int(row["angle"]),
+                                                               magic_number=float(row["magic_number"]),
+                                                               outer_track=float(row["outer_track"]),
+                                                               front=float(row["front"]))
 
     # The circumference of the Magnebot.
     _MAGNEBOT_CIRCUMFERENCE: float = np.pi * 2 * MAGNEBOT_RADIUS
@@ -442,14 +447,24 @@ class Magnebot(FloorplanController):
         target_angle = angle
         delta_angle = target_angle
         while attempts < num_attempts:
+            # Get the nearest turn constants.
+            da = np.abs(delta_angle)
+            if da >= 179:
+                turn_constants = Magnebot._TURN_CONSTANTS[179]
+            else:
+                turn_constants = Magnebot._TURN_CONSTANTS[120]
+                for turn_constants_angle in Magnebot._TURN_CONSTANTS:
+                    if da <= turn_constants_angle:
+                        turn_constants = Magnebot._TURN_CONSTANTS[turn_constants_angle]
+                        break
+
             attempts += 1
 
             # Calculate the delta angler of the wheels, given the target angle of the Magnebot.
             # Source: https://answers.unity.com/questions/1120115/tank-wheels-and-treads.html
             # The distance that the Magnebot needs to travel, defined as a fraction of its circumference.
             d = (delta_angle / 360.0) * Magnebot._MAGNEBOT_CIRCUMFERENCE
-            # The 3 is a magic number. Who knows what it means??
-            spin = (d / Magnebot._WHEEL_CIRCUMFERENCE) * 360 * Magnebot._TURN_MAGIC_NUMBER
+            spin = (d / Magnebot._WHEEL_CIRCUMFERENCE) * 360 * turn_constants.magic_number
             # Set the direction of the wheels for the turn and send commands.
             commands = []
             if spin > 0:
@@ -460,9 +475,9 @@ class Magnebot(FloorplanController):
                 if inner_track in wheel.name:
                     wheel_spin = spin
                 else:
-                    wheel_spin = spin * Magnebot._TURN_OUTER_TRACK
+                    wheel_spin = spin * turn_constants.outer_track
                 if "front" in wheel.name:
-                    wheel_spin *= Magnebot._TURN_FRONT
+                    wheel_spin *= turn_constants.front
                 # Spin one side of the wheels forward and the other backward to effect a turn.
                 if "left" in wheel.name:
                     target = wheel_state.joint_angles[self.magnebot_static.wheels[wheel]][0] + wheel_spin
