@@ -448,7 +448,7 @@ class Magnebot(FloorplanController):
         delta_angle = target_angle
         while attempts < num_attempts:
             # Get the nearest turn constants.
-            da = np.abs(delta_angle)
+            da = int(np.abs(delta_angle))
             if da >= 179:
                 turn_constants = Magnebot._TURN_CONSTANTS[179]
             else:

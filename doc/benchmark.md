@@ -12,7 +12,7 @@ To run the benchmark:
 
 #### `turn_by()`
 
-Average time elapsed during `turn_by(45)`: 0.24957315921783446 seconds
+Average time elapsed during `turn_by(45)`: 0.24716432094573976 seconds
 
 #### `move_by()`
 
