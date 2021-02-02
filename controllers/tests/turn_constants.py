@@ -94,7 +94,7 @@ class TurnConstants(TestController):
 if __name__ == "__main__":
     m = TurnConstants()
 
-    for a in [30, 60, 90, 120, 179]:
+    for a in [15, 45]:
         m.run(angle=a)
     m.end()
 
