@@ -4,7 +4,6 @@ from csv import DictReader
 from pathlib import Path
 import numpy as np
 from _tkinter import TclError
-import matplotlib.pyplot
 from ikpy.chain import Chain
 from ikpy.link import OriginLink, URDFLink, Link
 from ikpy.utils import geometry
@@ -317,8 +316,8 @@ class Magnebot(FloorplanController):
         # Key = The trigger collider object.
         # Value = A list of trigger events that started and have continued (enter with an exit).
         self._trigger_events: Dict[int, List[int]] = dict()
-
         super().__init__(port=port, launch_build=launch_build)
+
 
         # Set image encoding to .png (default) or .jpg
         # Set the highest render quality.
@@ -1398,6 +1397,7 @@ class Magnebot(FloorplanController):
                 # Plot the IK solution.
                 # This won't always work on a remote server.
                 try:
+                    import matplotlib.pyplot
                     ax = matplotlib.pyplot.figure().add_subplot(111, projection='3d')
                     ax.set_xlabel("X")
                     ax.set_ylabel("Y")

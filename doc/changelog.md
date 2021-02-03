@@ -4,8 +4,9 @@
 
 ### `Magnebot`
 
-- Set default `skip_frames` value to 10 (was 20)
+- Set default `skip_frames` value to 10 (was 20).
 - Improved the speed of `turn_by()` and `turn_to()` by using different turn constants for different ranges of angles.
+- Fixed: Controllers take a very long time to load on certain Linux machines.
 - Backend:
   - Renamed `_stop_arms()` to `_stop_joints()` and added optional `joint_ids` parameter.
   - Added: `TurnConstants`. Used  to set constants for turn actions.
