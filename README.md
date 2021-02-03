@@ -7,7 +7,7 @@ Magnebot is a high-level robotics-like API for [TDW](https://github.com/threedwo
 **[Read the Magnebot API documentation here.](https://github.com/alters-mit/magnebot/blob/main/doc/api/magnebot_controller.md)**
 
 - The Magnebot can be loaded into a [wide variety of scenes populated by interactable objects](https://github.com/alters-mit/magnebot/tree/main/doc/images/floorplans). 
-- All of the Magnebot's possible movements are divided into "actions", each corresponding to an API call, such as `turn_by()` and `move_to()`. Arm articulation is driven by an inverse kinematics (IK) system: specify a target position or object in the action `reach_for(target, arm)` and the `arm` will calculate a solution to reach the `target`. 
+- At a low level, the Magnebot is driven by robotics commands such as set_revolute_target, which will turn a revolute drive. The high-level API combines the low-level commands into "actions", such as `grasp(target_object)` or `move_by(distance)`.
 - At the end of every action, the Magnebot controller script will return [scene state data](https://github.com/alters-mit/magnebot/blob/main/doc/scene_state.md), which includes an image, a depth map, a segmentation color map, and physics metadata for each body part of the robot and each object in the scene.
 
 # Requirements
