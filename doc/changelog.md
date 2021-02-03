@@ -14,6 +14,10 @@
 
 - Replaced `body_part_transforms` with `joint_positions`. These are numpy arrays of `[x, y, z]` positions instead of `Transform` objects. It only includes joints (not non-moving body parts). As a result, the simulation is slightly faster.
 
+### `MagnebotStatic`
+
+- `body_parts` is now a dictionary where the key is an object ID and the value is a segmentation color (was a list of object IDs)
+
 ### `JointStatic`
 
 - Added field: `joint_type` 
@@ -25,6 +29,7 @@
 ### Test controllers
 
 - `turn_constants.py` runs tests for multiple angles.
+- Added: `magnebot_color_segmentation.py` Tests color segmentation for Magnebot body parts.
 - Fixed: `pick_up.py` and `pick_up_heavy.py` don't work.
 
 ### Documentation

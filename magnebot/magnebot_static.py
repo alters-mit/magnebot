@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, Tuple
 from tdw.output_data import StaticRobot
 from magnebot.joint_static import JointStatic
 from magnebot.arm import Arm
@@ -42,7 +42,13 @@ class MagnebotStatic:
         self.joints: Dict[int, JointStatic] = dict()
 
         """:field
-        A list of the object IDs of every part of the Magnebot. Includes everything in `self.joints` as well as non-moving parts.
+        A dictionary of the object IDs of every part of the Magnebot. Includes everything in `self.joints` as well as non-moving parts.
+        
+        Key = the unique ID of the body part. Value = The segmentation color of the body part.
+        
+        Each body part has a different segmentation color:
+        
+        ![](images/magnebot_segmentation.png)
         
         
         ```python
@@ -51,12 +57,12 @@ class MagnebotStatic:
         m = Magnebot()
         m.init_scene(scene="2a", layout=1)
 
-        # Print the object ID of each body part.
+        # Print the object ID and segmentation color of each body part.
         for b_id in m.magnebot_static.body_parts:
-            print(b_id)
+            print(b_id, m.magnebot_static.body_parts[b_id])
         ```
         """
-        self.body_parts: List[int] = list()
+        self.body_parts: Dict[int, Tuple[float, float, float]] = dict()
 
         """:field
         The name and ID of each arm joint. Key = The [`ArmJoint` enum value](arm_joint.md). Value = The object ID.
@@ -117,7 +123,7 @@ class MagnebotStatic:
             joint_id = static_robot.get_joint_id(i)
             # Cache the body parts.
             self.joints[joint_id] = JointStatic(sr=static_robot, index=i)
-            self.body_parts.append(joint_id)
+            self.body_parts[joint_id] = static_robot.get_joint_segmentation_color(i)
             # Cache the wheels.
             joint_name = static_robot.get_joint_name(i)
             if "wheel" in joint_name:
@@ -129,4 +135,4 @@ class MagnebotStatic:
             else:
                 self.arm_joints[ArmJoint[joint_name]] = joint_id
         for i in range(static_robot.get_num_non_moving()):
-            self.body_parts.append(static_robot.get_non_moving_id(i))
+            self.body_parts[static_robot.get_non_moving_id(i)] = static_robot.get_non_moving_segmentation_color(i)

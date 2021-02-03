@@ -30,7 +30,13 @@ for b_id in m.magnebot_static.joints:
     print(b_id, m.magnebot_static.joints[b_id].segmentation_color)
 ```
 
-- `body_parts` A list of the object IDs of every part of the Magnebot. Includes everything in `self.joints` as well as non-moving parts.
+- `body_parts` A dictionary of the object IDs of every part of the Magnebot. Includes everything in `self.joints` as well as non-moving parts.
+
+Key = the unique ID of the body part. Value = The segmentation color of the body part.
+
+Each body part has a different segmentation color:
+
+![](images/magnebot_segmentation.png)
 
 
 ```python
@@ -39,9 +45,9 @@ from magnebot import Magnebot
 m = Magnebot()
 m.init_scene(scene="2a", layout=1)
 
-# Print the object ID of each body part.
+# Print the object ID and segmentation color of each body part.
 for b_id in m.magnebot_static.body_parts:
-    print(b_id)
+    print(b_id, m.magnebot_static.body_parts[b_id])
 ```
 
 - `arm_joints` The name and ID of each arm joint. Key = The [`ArmJoint` enum value](arm_joint.md). Value = The object ID.
