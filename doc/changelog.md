@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.0
+
+### Documentation
+
+- Updated the gif in the README.
+- Added a section in `custom_apis.md` about arm articulation actions.
+
 ## 0.5.0
 
 ### `Magnebot`

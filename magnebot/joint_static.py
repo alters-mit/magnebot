@@ -39,7 +39,7 @@ class JointStatic:
         Static data for the joint's drives. Key = axis. Value = [drive data](drive.md).
         """
         self.drives: Dict[str, Drive] = dict()
-        for j in range(sr.get_joint_num_drives(index)):
+        for j in range(sr.get_num_joint_drives(index)):
             axis = sr.get_joint_drive_axis(index, j)
             self.drives[axis] = Drive(sr=sr, joint_index=index, drive_index=j)
         """:field
