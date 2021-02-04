@@ -79,7 +79,7 @@ If you want to send the same command every time `communicate()` is called (for e
 
 ### Other useful functions
 
-These functions aren't in the API documentation because they are intended for only backend coding.
+These functions aren't in the API documentation because they are intended for only backend coding. For further documentation, including a description of their parameters, please see the docstrings for each of these functions in the `magnebot.py` code.
 
 | Function                     | Description                                                  |
 | ---------------------------- | ------------------------------------------------------------ |
