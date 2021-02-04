@@ -2,13 +2,11 @@
 
 The Magnebot API is designed to be easily extendable for specialized APIs. Generally, we expect that frontend users won't need to write their own specialized APIs, but if they do, here are some helpful notes on the backend programming.
 
+[This controller](https://github.com/alters-mit/magnebot/blob/main/controllers/examples/custom_api.py) is an example of a custom scene setup and a custom action.
+
 ## Scene initialization
 
 `self._get_init_scene_commands()` returns the list of commands used to initialize the scene. Extend or override this list to create a custom scene.
-
-See `magnebot/demo_controller.py` and `magnebot/test_controller.py` for examples of custom scene initialization.
-
-## Adding objects
 
 To add custom objects to the scene, call `_add_object()` within `_get_scene_init_commands()`. This will create a list of commands for adding an object, and then append that list to `super()._get_scene_init_commands()`. It will return the ID of the object.
 
