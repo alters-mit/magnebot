@@ -20,10 +20,10 @@ See [Getting Started With TDW](https://github.com/threedworld-mit/tdw/blob/maste
 - The build requires a GPU.
 - The Magnebot API doesn't include audio/visual recording or Flex; you can ignore the requirements for those features.
 
-# Installation
+# Installation 
 
-2. **`pip3 install magnebot`**
-8. [Download the latest TDW build](https://github.com/threedworld-mit/tdw/releases/latest) and unzip it.
+1. **`pip3 install magnebot`**
+2. [Download the latest TDW build](https://github.com/threedworld-mit/tdw/releases/latest) and unzip it.
 
 #### Update an existing installation
 
