@@ -4,3 +4,4 @@ magnebot.egg-info/
 pypi.py
 controllers/tests/data
 controllers/examples/images/
+dist/
