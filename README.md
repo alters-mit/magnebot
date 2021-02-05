@@ -22,14 +22,14 @@ See [Getting Started With TDW](https://github.com/threedworld-mit/tdw/blob/maste
 
 # Installation
 
-1. Clone the `tdw` repo if you haven't already
-2. `cd path/to/tdw/Python` (replace `path/to` with the actual path)
-3. `git checkout magnebot`
-4. `pip3 install -e .`
-5. Clone this repo
-6. `cd path/to/magnebot` (replace `path/to` with the actual path)
-7. `pip3 install -e .`
-8. [Download a test build](https://github.com/threedworld-mit/tdw/releases/tag/magnebot_test) and unzip it.
+2. **`pip3 install magnebot`**
+8. [Download the latest TDW build](https://github.com/threedworld-mit/tdw/releases/latest) and unzip it.
+
+#### Update an existing installation
+
+1. `pip3 install tdw -U`
+2. `pip3 install magnebot -U`
+3. [Download the latest TDW build](https://github.com/threedworld-mit/tdw/releases/latest) and unzip it.
 
 # Usage
 
