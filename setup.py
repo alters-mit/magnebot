@@ -1,11 +1,15 @@
 from pathlib import Path
 from setuptools import setup, find_packages
 
+readme = Path('README.md').read_text(encoding='utf-8')
+readme = readme.replace('"https://raw.githubusercontent.com/alters-mit/magnebot/main/doc/images/reach_high.gif"',
+                        '"https://github.com/alters-mit/magnebot/raw/main/social.jpg"')
+
 setup(
     name='magnebot',
-    version="1.0.0.3",
+    version="1.0.0.5",
     description='High-level API for the Magnebot in TDW.',
-    long_description=Path('README.md').read_text(encoding='utf-8'),
+    long_description=readme,
     long_description_content_type='text/markdown',
     url='https://github.com/alters-mit/magnebot',
     author='Seth Alter',
