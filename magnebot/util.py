@@ -54,8 +54,7 @@ def check_version(module: str = "magnebot") -> None:
     """
 
     v_local = get_distribution(module).version
-    # v_remote = loads(get(f"https://pypi.org/pypi/{module}/json").content)["info"]["version"]
-    v_remote = v_local
+    v_remote = loads(get(f"https://pypi.org/pypi/{module}/json").content)["info"]["version"]
 
     if v_remote != v_local:
         print(f"You have {module} v{v_local} but version v{v_local} is available. "
