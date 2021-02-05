@@ -2,7 +2,7 @@
 
 Magnebot is a high-level robotics-like API for [TDW](https://github.com/threedworld-mit/tdw). The Magnebot can move around the scene and manipulate objects by picking them up with "magnets". The simulation is entirely driven by physics.
 
-![](doc/images/reach_high.gif)
+<img src="https://raw.githubusercontent.com/alters-mit/magnebot/1.0.0/doc/images/reach_high.gif" />
 
 **[Read the Magnebot API documentation here.](https://github.com/alters-mit/magnebot/blob/main/doc/api/magnebot_controller.md)**
 
@@ -91,7 +91,7 @@ The Magnebot API relies on the `tdw` Python module.  Every action in this API us
 
 This API is designed to be used as-is or as the base for an API with higher-level actions, such as the [Transport Challenge](https://github.com/alters-mit/transport_challenge). To learn how to write your own API extension, [read this](https://github.com/alters-mit/magnebot/blob/main/doc/custom_apis.md).
 
-<img src="doc/images/api_hierarchy.png" style="zoom:67%;" />
+<img src="https://raw.githubusercontent.com/alters-mit/magnebot/1.0.0/doc/images/api_hierarchy.png" style="zoom:67%;" />
 
 | API                                                          | Description                                                  |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
