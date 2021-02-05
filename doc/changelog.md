@@ -2,9 +2,12 @@
 
 ## 1.0.0
 
+- **Created a pip module.**
+
 ### Documentation
 
 - Updated the gif in the README.
+- Updated installation instructions in the README.
 - Added a section in `custom_apis.md` about arm articulation actions.
 
 ## 0.5.0
