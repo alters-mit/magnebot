@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+- Fixed: pip module is missing the `data/` folder.
+
 ## 1.0.0
 
 - **Created a pip module.**
