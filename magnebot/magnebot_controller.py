@@ -1296,7 +1296,9 @@ class Magnebot(FloorplanController):
                     {"$type": "enable_image_sensor",
                      "enable": False},
                     {"$type": "set_anti_aliasing",
-                     "mode": "subpixel"}]
+                     "mode": "subpixel"},
+                     {"$type": "set_field_of_view",
+                     "field_of_view": 90, "avatar_id": "a"}]
         # Add the objects.
         for object_id in self._object_init_commands:
             commands.extend(self._object_init_commands[object_id])
