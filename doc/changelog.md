@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2
+
+- Backend:
+  - Added field `room_id` in the `Room` class
+  - Renamed field `x_min` to `x_0` in the `Room` class
+
 ## 1.0.1
 
 - Fixed: pip module is missing the `data/` folder.

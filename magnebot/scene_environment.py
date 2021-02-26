@@ -15,6 +15,10 @@ class Room:
         """
 
         """:field
+        The ID of the room.
+        """
+        self.room_id: int = env.get_id(i)
+        """:field
         The center of the room.
         """
         self.center = env.get_center(i)
@@ -25,7 +29,7 @@ class Room:
         """:field
         Minimum x positional coordinate of the room.
         """
-        self.x_min: float = self.center[0] - (self.bounds[0] / 2)
+        self.x_0: float = self.center[0] - (self.bounds[0] / 2)
         """:field
         Minimum z positional coordinate of the room.
         """
@@ -47,7 +51,7 @@ class Room:
         :return: True if position (x, z) is in the environment.
         """
 
-        return self.x_min <= x <= self.x_1 and self.z_0 <= z <= self.z_1
+        return self.x_0 <= x <= self.x_1 and self.z_0 <= z <= self.z_1
 
 
 class SceneEnvironment:
@@ -85,8 +89,8 @@ class SceneEnvironment:
         self.rooms: List[Room] = list()
         for i in range(env.get_num()):
             e = Room(env=env, i=i)
-            if e.x_min < self.x_min:
-                self.x_min = e.x_min
+            if e.x_0 < self.x_min:
+                self.x_min = e.x_0
             if e.z_0 < self.z_min:
                 self.z_min = e.z_0
             if e.x_1 > self.x_max:
