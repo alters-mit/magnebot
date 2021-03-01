@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.3
+
+### `Magnebot`
+
+- Fixed: If `turn_by()` or `turn_to()` is called and the Magnebot is already aligned with the target, the function returns `failed_to_turn` (should return `success`)
+
 ## 1.0.2
 
 - Backend:

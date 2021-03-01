@@ -427,9 +427,6 @@ class Magnebot(FloorplanController):
         :return: An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
         """
 
-        self._start_action()
-        self._start_move_or_turn()
-
         if np.abs(angle) > 180:
             if angle > 0:
                 angle -= 360
@@ -439,6 +436,13 @@ class Magnebot(FloorplanController):
         # Get the angle to the target.
         # The approximate number of iterations required, given the distance and speed.
         num_attempts = int((np.abs(angle) + 1) / 2)
+
+        # If 0 attempts are required, then we're already aligned.
+        if num_attempts == 0:
+            return ActionStatus.success
+
+        self._start_action()
+        self._start_move_or_turn()
         attempts = 0
         if self._debug:
             print(f"turn_by: {angle}")
