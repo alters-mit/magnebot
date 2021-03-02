@@ -385,6 +385,8 @@ class Magnebot(FloorplanController):
         :return: An `ActionStatus` (always success).
         """
 
+        # Clear all data from the previous scene.
+        self._clear_data()
         # Load the occupancy map.
         self.occupancy_map = np.load(str(OCCUPANCY_MAPS_DIRECTORY.joinpath(f"{scene[0]}_{layout}.npy").resolve()))
         # Get the scene bounds.
@@ -1901,10 +1903,9 @@ class Magnebot(FloorplanController):
 
     def _clear_data(self) -> None:
         """
-        Clear persistent simulation data.
+        Clear persistent simulation data from the previous simulation.
         """
 
-        # Clear data from the previous simulation.
         self.objects_static.clear()
         self.colliding_objects.clear()
         self.camera_rpy: np.array = np.array([0, 0, 0])

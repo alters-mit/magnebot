@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.4
+
+### `Magnebot`
+
+- Fixed: `init_scene()` doesn't clear the data from the previous simulation
+
 ## 1.0.3
 
 ### `Magnebot`
