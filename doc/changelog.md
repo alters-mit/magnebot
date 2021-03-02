@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.5
+
+### `ObjectStatic`
+
+- Fixed: `KeyError` in constructor if the object's category isn't in `categories.json`. As a fallback, the constructor will try to get the category from a record in `models_core.json`. 
+
 ## 1.0.4
 
 ### `Magnebot`

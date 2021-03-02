@@ -1,5 +1,6 @@
 import numpy as np
 from json import loads
+from tdw.object_init_data import TransformInitData
 from magnebot.paths import OBJECT_CATEGORIES_PATH
 
 
@@ -25,9 +26,9 @@ class ObjectStatic:
                    'cabinet_24_two_drawer_white_wood', 'cabinet_24_two_drawer_wood_beach_honey',
                    'cabinet_24_white_wood', 'cabinet_24_wood_beach_honey', 'cabinet_36_white_wood',
                    'cabinet_36_wood_beach_honey', 'cabinet_full_height_white_wood',
-                 'cabinet_full_height_wood_beach_honey', 'elf_painting', 'framed_painting', 'fruit_basket',
-                 'its_about_time_painting', 'silver_frame_painting', 'sink_base_white_wood',
-                 'sink_base_wood_beach_honey']
+                   'cabinet_full_height_wood_beach_honey', 'elf_painting', 'framed_painting', 'fruit_basket',
+                   'its_about_time_painting', 'silver_frame_painting', 'sink_base_white_wood',
+                   'sink_base_wood_beach_honey']
 
     # A dictionary of object categories. Key = object name. Value = category.
     __CATEGORIES = loads(OBJECT_CATEGORIES_PATH.read_text(encoding="utf-8"))
@@ -49,10 +50,13 @@ class ObjectStatic:
         [The name of the model.](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/librarian/model_librarian.md)
         """
         self.name = name.lower()
-        """:field
-        The semantic category of the object.
-        """
-        self.category = ObjectStatic.__CATEGORIES[self.name]
+        if self.name in ObjectStatic.__CATEGORIES:
+            """:field
+            The semantic category of the object.
+            """
+            self.category = ObjectStatic.__CATEGORIES[self.name]
+        else:
+            self.category = TransformInitData.LIBRARIES["models_core.json"].get_record(self.name).wcategory
         """:field
         If True, this object is kinematic, and won't respond to physics. 
         Examples: a painting hung on a wall or built-in furniture like a countertop.
