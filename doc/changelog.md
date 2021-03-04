@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.6
+
+### `Magnebot`
+
+- Fixed: Magnebot sometimes spins in circles if the target angle is close to -180 degrees
+
 ## 1.0.5
 
 ### `ObjectStatic`

@@ -11,4 +11,5 @@ if __name__ == "__main__":
     m.turn_by(-30)
     m.turn_by(112)
     m.turn_by(-121)
+    m.turn_by(-167)
     m.end()

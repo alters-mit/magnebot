@@ -3,7 +3,8 @@ from pkg_resources import get_distribution
 from typing import Dict, Type, TypeVar, List, Optional
 from requests import get
 from tdw.output_data import OutputData, Transforms, Rigidbodies, Bounds, Images, SegmentationColors, Volumes, Raycast, \
-    CompositeObjects, CameraMatrices, Environments, Overlap, Version, StaticRobot, Robot, Magnebot, NavMeshPath
+    CompositeObjects, CameraMatrices, Environments, Overlap, Version, StaticRobot, Robot, Magnebot, NavMeshPath, \
+    ScreenPosition, AudioSources
 
 
 T = TypeVar("T", bound=OutputData)
@@ -23,7 +24,9 @@ __OUTPUT_IDS: Dict[Type[OutputData], str] = {Transforms: "tran",
                                              StaticRobot: "srob",
                                              Robot: "robo",
                                              Magnebot: "magn",
-                                             NavMeshPath: "path"}
+                                             NavMeshPath: "path",
+                                             ScreenPosition: "scre",
+                                             AudioSources: "audi"}
 
 
 def get_data(resp: List[bytes], d_type: Type[T]) -> Optional[T]:

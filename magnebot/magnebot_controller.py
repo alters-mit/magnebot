@@ -519,7 +519,7 @@ class Magnebot(FloorplanController):
             # Course-correct the angle.
             delta_angle = angle - theta
             # Handle cases where we flip over the axis.
-            if angle + delta_angle <= -180:
+            if angle + delta_angle <= -180 and (theta > 0 or theta < angle):
                 delta_angle *= -1
             if self._debug:
                 print(f"angle: {angle}", f"delta_angle: {delta_angle}", f"spin: {spin}", f"d: {d}", f"theta: {theta}")
