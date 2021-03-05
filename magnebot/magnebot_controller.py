@@ -1060,7 +1060,7 @@ class Magnebot(FloorplanController):
                                               "avatar_id": camera_id,
                                               "position": position})
         # Set the initial rotation.
-        for angle, axis in zip([roll, pitch, yaw], ["roll", "yaw", "pitch"]):
+        for angle, axis in zip([roll, pitch, yaw], ["roll", "pitch", "yaw"]):
             self._next_frame_commands.append({"$type": "rotate_sensor_container_by",
                                               "axis": axis,
                                               "angle": angle,

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.7
+
+### `Magnebot`
+
+- Fixed: The `pitch` and `yaw` parameters of `add_camera()` are flipped (`pitch` will yaw, and `yaw` will pitch)
+
 ## 1.0.6
 
 ### `Magnebot`
