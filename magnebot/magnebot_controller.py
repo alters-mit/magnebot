@@ -1045,9 +1045,12 @@ class Magnebot(FloorplanController):
         """
 
         self._next_frame_commands.extend(TDWUtils.create_avatar(avatar_id="c"))
-        self._next_frame_commands.append({"$type": "set_pass_masks",
-                                          "pass_masks": ["_img"],
-                                          "avatar_id": camera_id})
+        self._next_frame_commands.extend([{"$type": "set_pass_masks",
+                                           "pass_masks": ["_img"],
+                                           "avatar_id": camera_id},
+                                          {"$type": "set_anti_aliasing",
+                                           "mode": "subpixel",
+                                           "avatar_id": camera_id}])
 
         if follow:
             # Follow the Magnebot. `object_id` is the Magnebot's assumed ID.

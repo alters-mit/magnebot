@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.8
+
+### `Magnebot`
+
+- Fixed: Avatars created via `add_camera()` don't use subpixel antialising
+
 ## 1.0.7
 
 ### `Magnebot`
