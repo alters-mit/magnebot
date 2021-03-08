@@ -1,9 +1,7 @@
 from typing import Dict, List
 import numpy as np
-from tdw.output_data import Bounds
 from tdw.tdw_utils import TDWUtils
-from magnebot import Magnebot, ActionStatus, Arm
-from magnebot.util import get_data
+from magnebot import Magnebot, ActionStatus, Arm, ArmJoint
 from magnebot.scene_state import SceneState
 
 
@@ -72,46 +70,27 @@ class CustomAPI(Magnebot):
 
         # Get the current position of the object.
         p_0 = self.state.object_transforms[target].position
-
-        # Grasp the object.
-        status = self.grasp(target=target, arm=arm)
-        # We don't care if we actually grasped the object, so long as the magnet is nearby.
-        if status == ActionStatus.success:
-            # Immediately drop the object.
-            self._append_drop_commands(object_id=target, arm=arm)
-
-        # First, request bounds data for just the target object.
-        resp = self.communicate([{"$type": "send_bounds",
-                                  "ids": [target],
-                                  "frequency": "once"}])
-        # Get the bounds of the object. From the bounds, get the center of the object.
-        bounds = get_data(resp=resp, d_type=Bounds)
-        position = np.array(bounds.get_center(0))
-        # Get an updated SceneState because `self.state` refers to the end of the `grasp()` action,
-        # and the object might have moved.
-        state = SceneState(resp=resp)
-
-        # Get the ID of the magnet.
-        magnet_id = self.magnebot_static.magnets[arm]
-
-        # Get the position of the magnet. Note that we're using `state` (the current state),
-        # not `self.state` (the state at the beginning of the action).
-        magnet_position = state.joint_positions[magnet_id]
-
-        # Get the directional vector from the magnet to the center of the object.
-        direction = position - magnet_position
-        direction = direction / np.linalg.norm(direction)
-        # Get a position past the target object's position.
-        target_position = position + (direction * 0.3)
-        # Convert the target position to a Vector3 dictionary.
-        target_position = TDWUtils.array_to_vector3(target_position)
-
+        # Slide the torso up and above the target object.
+        torso_position = 0
+        for k in Magnebot._TORSO_Y:
+            torso_position = k
+            if Magnebot._TORSO_Y[k] - 0.2 > p_0[1]:
+                break
+        torso = self.magnebot_static.arm_joints[ArmJoint.torso]
+        self._next_frame_commands.append({"$type": "set_prismatic_target",
+                                          "joint_id": torso,
+                                          "target": torso_position})
+        # Wait for the torso to stop moving.
+        self._do_arm_motion(joint_ids=[torso])
+        # Get a SceneState of where everything is right now.
+        state = SceneState(resp=self.communicate([]))
         # Start the IK motion.
         # Note the `orientation_mode` and `target_orientation` parameters, which will make the arm slide laterally.
         # `do_prismatic_first` means that the torso will move up or down before the arm bends rather than the arm bends.
         # We also need to set the `state` parameter so that we're using the current state.
-        status = self._start_ik(target=target_position, arm=arm, do_prismatic_first=True, orientation_mode="Z",
-                                target_orientation=[1, 0, 0], state=state)
+        status = self._start_ik(target=TDWUtils.array_to_vector3(p_0), arm=arm, fixed_torso_prismatic=torso_position,
+                                state=state, do_prismatic_first=True, orientation_mode="X",
+                                target_orientation=[0, 1, 0])
         # If the arm motion isn't possible, end the action here.
         if status != ActionStatus.success:
             self._end_action()
@@ -187,7 +166,7 @@ class CustomAPI(Magnebot):
             num_attempts = 0
             while status != ActionStatus.success and num_attempts < 4:
                 num_attempts += 1
-                self.turn_by(-15)
+                self.turn_by(-25)
                 self.move_by(-0.5)
                 status = self.move_to(self.object_1)
             if status != ActionStatus.success:
