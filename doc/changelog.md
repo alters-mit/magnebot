@@ -1,10 +1,16 @@
 # Changelog
 
+## 1.0.9
+
+### `Magnebot`
+
+- Added optional parameter `check_pypi_version` to the constructor
+
 ## 1.0.8
 
 ### `Magnebot`
 
-- Fixed: Avatars created via `add_camera()` don't use subpixel antialising
+- Fixed: Avatars created via `add_camera()` don't use subpixel antialiasing
 
 ## 1.0.7
 

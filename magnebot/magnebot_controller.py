@@ -166,7 +166,8 @@ class Magnebot(FloorplanController):
 
     def __init__(self, port: int = 1071, launch_build: bool = False, screen_width: int = 256, screen_height: int = 256,
                  debug: bool = False, auto_save_images: bool = False, images_directory: str = "images",
-                 random_seed: int = None, img_is_png: bool = False, skip_frames: int = 10):
+                 random_seed: int = None, img_is_png: bool = False, skip_frames: int = 10,
+                 check_pypi_version: bool = True):
         """
         :param port: The socket port. [Read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md#command-line-arguments) for more information.
         :param launch_build: If True, the build will launch automatically on the default port (1071). If False, you will need to launch the build yourself (for example, from a Docker container).
@@ -178,6 +179,7 @@ class Magnebot(FloorplanController):
         :param debug: If True, enable debug mode. This controller will output messages to the console, including any warnings or errors sent by the build. It will also create 3D plots of arm articulation IK solutions.
         :param img_is_png: If True, the `img` pass images will be .png files. If False,  the `img` pass images will be .jpg files, which are smaller; the build will run approximately 2% faster.
         :param skip_frames: The build will return output data this many physics frames per simulation frame (`communicate()` call). This will greatly speed up the simulation, but eventually there will be a noticeable loss in physics accuracy. If you want to render every frame, set this to 0.
+        :param check_pypi_version: If True, compare the locally installed version of TDW and Magnebot to the most recent versions on PyPi.
         """
 
         self._debug = debug
@@ -316,9 +318,7 @@ class Magnebot(FloorplanController):
         # Key = The trigger collider object.
         # Value = A list of trigger events that started and have continued (enter with an exit).
         self._trigger_events: Dict[int, List[int]] = dict()
-        super().__init__(port=port, launch_build=launch_build)
-
-
+        super().__init__(port=port, launch_build=launch_build, check_version=check_pypi_version)
         # Set image encoding to .png (default) or .jpg
         # Set the highest render quality.
         # Set global physics values.
@@ -342,7 +342,8 @@ class Magnebot(FloorplanController):
                 print(f"Your installed version of tdw ({python_version}) doesn't match the version of the build "
                       f"{build_version}. This might cause errors!")
         # Make sure that the Magnebot API is up to date.
-        check_version()
+        if check_pypi_version:
+            check_version()
 
     def init_scene(self, scene: str, layout: int, room: int = None) -> ActionStatus:
         """

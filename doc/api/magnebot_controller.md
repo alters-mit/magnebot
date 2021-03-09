@@ -179,7 +179,7 @@ Note that it is possible for the Magnebot to go to positions that aren't "free".
 
 **`Magnebot()`**
 
-**`Magnebot(port=1071, launch_build=False, screen_width=256, screen_height=256, auto_save_images=False, images_directory="images", random_seed=None, debug=False, img_is_png=False, skip_frames=10)`**
+**`Magnebot(port=1071, launch_build=False, screen_width=256, screen_height=256, auto_save_images=False, images_directory="images", random_seed=None, debug=False, img_is_png=False, skip_frames=10, check_pypi_version=True)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -193,6 +193,7 @@ Note that it is possible for the Magnebot to go to positions that aren't "free".
 | debug |  bool  | False | If True, enable debug mode. This controller will output messages to the console, including any warnings or errors sent by the build. It will also create 3D plots of arm articulation IK solutions. |
 | img_is_png |  bool  | False | If True, the `img` pass images will be .png files. If False,  the `img` pass images will be .jpg files, which are smaller; the build will run approximately 2% faster. |
 | skip_frames |  int  | 10 | The build will return output data this many physics frames per simulation frame (`communicate()` call). This will greatly speed up the simulation, but eventually there will be a noticeable loss in physics accuracy. If you want to render every frame, set this to 0. |
+| check_pypi_version |  bool  | True | If True, compare the locally installed version of TDW and Magnebot to the most recent versions on PyPi. |
 
 ***
 
