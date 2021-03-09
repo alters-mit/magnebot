@@ -1,44 +1,35 @@
 # Changelog
 
-## 1.0.9
+## 1.0.10
 
-### `Magnebot`
+- (Backend): Added some functions to make collision detection more customizable: `_is_stoppable_collision()`, `_includes_magnebot_joint_and_object()`, and `_is_high_mass()`
+- Made this changelog more readable
+
+## 1.0.9
 
 - Added optional parameter `check_pypi_version` to the constructor
 
 ## 1.0.8
 
-### `Magnebot`
-
 - Fixed: Avatars created via `add_camera()` don't use subpixel antialiasing
 
 ## 1.0.7
-
-### `Magnebot`
 
 - Fixed: The `pitch` and `yaw` parameters of `add_camera()` are flipped (`pitch` will yaw, and `yaw` will pitch)
 
 ## 1.0.6
 
-### `Magnebot`
-
 - Fixed: Magnebot sometimes spins in circles if the target angle is close to -180 degrees
 
 ## 1.0.5
 
-### `ObjectStatic`
-
-- Fixed: `KeyError` in constructor if the object's category isn't in `categories.json`. As a fallback, the constructor will try to get the category from a record in `models_core.json`. 
+- Fixed: `KeyError` in `ObjectStatic` constructor if the object's category isn't in `categories.json`. As a fallback, the constructor will try to get the category from a record in `models_core.json`. 
 
 ## 1.0.4
-
-### `Magnebot`
 
 - Fixed: `init_scene()` doesn't clear the data from the previous simulation
 
 ## 1.0.3
-
-### `Magnebot`
 
 - Fixed: If `turn_by()` or `turn_to()` is called and the Magnebot is already aligned with the target, the function returns `failed_to_turn` (should return `success`)
 

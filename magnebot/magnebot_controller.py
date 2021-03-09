@@ -15,6 +15,7 @@ from tdw.tdw_utils import TDWUtils, QuaternionUtils
 from tdw.object_init_data import AudioInitData
 from tdw.py_impact import PyImpact, ObjectInfo
 from tdw.collisions import Collisions
+from tdw.int_pair import IntPair
 from tdw.release.pypi import PyPi
 from magnebot.util import get_data, check_version
 from magnebot.object_static import ObjectStatic
@@ -643,22 +644,13 @@ class Magnebot(FloorplanController):
                 for id_pair in collisions.obj_collisions:
                     if collisions.obj_collisions[id_pair].state != "enter":
                         continue
-                    # Listen only for collisions between a body part and a scene object.
-                    if (id_pair.int1 in self.magnebot_static.joints and
-                        id_pair.int2 not in self.magnebot_static.joints) or \
-                            (id_pair.int1 not in self.magnebot_static.joints and
-                             id_pair.int2 in self.magnebot_static.joints):
-                        # Ignore very small objects.
-                        if (id_pair.int1 in self.objects_static and
-                            self.objects_static[id_pair.int1].mass > 8) or \
-                                (id_pair.int2 in self.objects_static and
-                                 self.objects_static[id_pair.int2].mass > 8):
-                            self._stop_wheels(state=move_state_1)
-                            if self._debug:
-                                print("Collision. Stopping movement.")
-                            self._end_action()
-                            return ActionStatus.collision
-
+                    # Stop on certain collisions between the Magnebot and other objects.
+                    if self._is_stoppable_collision(id_pair=id_pair):
+                        self._stop_wheels(state=move_state_1)
+                        if self._debug:
+                            print("Collision. Stopping movement.")
+                        self._end_action()
+                        return ActionStatus.collision
             wheel_state = move_state_0
             # Check if we're at the destination.
             p1 = wheel_state.magnebot_transform.position
@@ -1946,3 +1938,33 @@ class Magnebot(FloorplanController):
                 self._next_frame_commands.append({"$type": "set_spherical_target",
                                                   "joint_id": joint_id,
                                                   "target": TDWUtils.array_to_vector3(joint_angles)})
+
+    def _is_stoppable_collision(self, id_pair: IntPair) -> bool:
+        """
+        :param id_pair: A pair of IDs in a collision.
+
+        :return: True if this collision should make the Magnebot stop.
+        """
+
+        return self._includes_magnebot_joint_and_object(id_pair=id_pair) and self._is_high_mass(id_pair=id_pair)
+
+    def _includes_magnebot_joint_and_object(self, id_pair: IntPair) -> bool:
+        """
+        :param id_pair: A pair of IDs.
+
+        :return: True if one of the IDs is for a Magnebot joint and the other is for an object.
+        """
+
+        return (id_pair.int1 in self.magnebot_static.joints and id_pair.int2 not in self.magnebot_static.joints) or \
+               (id_pair.int1 not in self.magnebot_static.joints and id_pair.int2 in self.magnebot_static.joints)
+
+    def _is_high_mass(self, id_pair: IntPair, mass: float = 8) -> bool:
+        """
+        :param id_pair: A pair of IDs. One of them must be an object (as opposed to a joint).
+        :param mass: If the object has more than this much mass, it has high mass.
+
+        :return: True if one of the IDs in `id_pair` is an object and that object's mass is greater than `mass`.
+        """
+
+        return (id_pair.int1 in self.objects_static and self.objects_static[id_pair.int1].mass > mass) or \
+               (id_pair.int2 in self.objects_static and self.objects_static[id_pair.int2].mass > mass)
