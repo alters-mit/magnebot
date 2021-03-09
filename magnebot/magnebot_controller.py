@@ -137,7 +137,7 @@ class Magnebot(FloorplanController):
                                               ArmJoint.elbow_right: JointType.revolute,
                                               ArmJoint.wrist_right: JointType.spherical}
 
-    # The ratio of prismatic joint y values for the torso vs. worldspace y values.
+    # The ratio of prisimatic joint y values for the torso vs. worldspace y values.
     # These aren't always an exact ratio (ok, Unity...), so they're cached here.
     _TORSO_Y: Dict[float, float] = dict()
     with TORSO_Y.open(encoding='utf-8-sig') as f:
@@ -838,30 +838,21 @@ class Magnebot(FloorplanController):
         # Get the position of the magnet.
         magnet_position = state.joint_positions[self.magnebot_static.magnets[arm]]
         # Get the closest side to the magnet.
-        closest: np.array = np.array([0, 0, 0])
+        closest: np.array = sides[0]
         d = np.inf
-        side_key = ""
-        for k in sides:
-            dd = np.linalg.norm(sides[k] - magnet_position)
+        for side in sides:
+            dd = np.linalg.norm(side - magnet_position)
             if dd < d:
-                closest = sides[k]
-                side_key = k
+                closest = side
                 d = dd
         target_position = TDWUtils.array_to_vector3(closest)
 
         if self._debug:
             self._next_frame_commands.append({"$type": "add_position_marker",
                                               "position": target_position})
-        if side_key == "top" or side_key == "bottom":
-            target_orientation = None
-            orientation_mode = None
-        else:
-            target_orientation = [0, 1, 0]
-            orientation_mode = "X"
         # Start the IK action.
         status = self._start_ik(target=target_position, arm=arm, absolute=True,
-                                do_prismatic_first=target_position["y"] > Magnebot._TORSO_Y[Magnebot._DEFAULT_TORSO_Y],
-                                target_orientation=target_orientation, orientation_mode=orientation_mode)
+                                do_prismatic_first=target_position["y"] > Magnebot._TORSO_Y[Magnebot._DEFAULT_TORSO_Y])
         if status != ActionStatus.success:
             # Disable grasping.
             self._next_frame_commands.append({"$type": "set_magnet_targets",
@@ -1437,6 +1428,7 @@ class Magnebot(FloorplanController):
             # If so, this IK solution is expected to succeed.
             end_node = np.array(nodes[-1][:-1])
             d = np.linalg.norm(end_node - target)
+            print(d, end_node, target)
             # Return whether the IK solution is expected to succeed; and the IK solution.
             return d <= arrived_at, ik
 
@@ -1882,11 +1874,11 @@ class Magnebot(FloorplanController):
         # Wait for the objects to stop moving.
         self._wait_until_objects_stop(object_ids=held_objects)
 
-    def _get_bounds_sides(self, target: int) -> Tuple[Dict[str, np.array], List[bytes]]:
+    def _get_bounds_sides(self, target: int) -> Tuple[List[np.array], List[bytes]]:
         """
         :param target: The ID of the target object.
 
-        :return: Tuple: A dictionary of bounds sizes where the key is the name of the side; the response from the build.
+        :return: Tuple: Sides on the bounds of the object that can be used for an action; the response from the build.
         """
 
         # Reach for the center of the object.
@@ -1895,13 +1887,9 @@ class Magnebot(FloorplanController):
                                   "frequency": "once"}])
         # Get the side on the bounds closet to the magnet.
         bounds = get_data(resp=resp, d_type=Bounds)
-        sides = {"left": np.array(bounds.get_left(0)),
-                 "right": np.array(bounds.get_right(0)),
-                 "front": np.array(bounds.get_front(0)),
-                 "back": np.array(bounds.get_back(0)),
-                 "top": np.array(bounds.get_top(0)),
-                 "bottom": np.array(bounds.get_bottom(0))}
-        return sides, resp
+        sides = [bounds.get_left(0), bounds.get_right(0), bounds.get_front(0), bounds.get_back(0),
+                 bounds.get_top(0), bounds.get_bottom(0)]
+        return [np.array(s) for s in sides], resp
 
     def _wheels_are_turning(self, state_0: SceneState, state_1: SceneState) -> bool:
         """
