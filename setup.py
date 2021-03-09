@@ -7,7 +7,7 @@ readme = readme.replace('"https://raw.githubusercontent.com/alters-mit/magnebot/
 
 setup(
     name='magnebot',
-    version="1.0.10",
+    version="1.1.0",
     description='High-level API for the Magnebot in TDW.',
     long_description=readme,
     long_description_content_type='text/markdown',

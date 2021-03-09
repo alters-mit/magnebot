@@ -260,7 +260,7 @@ _While moving, the Magnebot might start to tip over (usually because it's holdin
 
 **`self.turn_by(angle)`**
 
-**`self.turn_by(angle, aligned_at=3)`**
+**`self.turn_by(angle, aligned_at=3, stop_on_collision=True)`**
 
 Turn the Magnebot by an angle.
 
@@ -271,12 +271,14 @@ Possible [return values](action_status.md):
 - `success`
 - `failed_to_turn`
 - `tipping`
+- `collision`
 
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | angle |  float |  | The target angle in degrees. Positive value = clockwise turn. |
 | aligned_at |  float  | 3 | If the difference between the current angle and the target angle is less than this value, then the action is successful. |
+| stop_on_collision |  bool  | True | If True, if the Magnebot collides with the environment or a heavy object it will stop turning. Usually this should be True; set it to False if you need the Magnebot to move away from a bad position (for example, to reverse direction if it's starting to tip over). |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
 
@@ -284,7 +286,7 @@ _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and
 
 **`self.turn_to(target)`**
 
-**`self.turn_to(target, aligned_at=3)`**
+**`self.turn_to(target, aligned_at=3, stop_on_collision=True)`**
 
 Turn the Magnebot to face a target object or position.
 
@@ -295,12 +297,14 @@ Possible [return values](action_status.md):
 - `success`
 - `failed_to_turn`
 - `tipping`
+- `collision`
 
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | target |  Union[int, Dict[str, float] |  | Either the ID of an object or a Vector3 position. |
 | aligned_at |  float  | 3 | If the different between the current angle and the target angle is less than this value, then the action is successful. |
+| stop_on_collision |  bool  | True | If True, if the Magnebot collides with the environment or a heavy object it will stop turning. Usually this should be True; set it to False if you need the Magnebot to move away from a bad position (for example, to reverse direction if it's starting to tip over). |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
 
@@ -308,7 +312,7 @@ _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and
 
 **`self.move_by(distance)`**
 
-**`self.move_by(distance, arrived_at=0.3)`**
+**`self.move_by(distance, arrived_at=0.3, stop_on_collision=True)`**
 
 Move the Magnebot forward or backward by a given distance.
 
@@ -324,6 +328,7 @@ Possible [return values](action_status.md):
 | --- | --- | --- | --- |
 | distance |  float |  | The target distance. If less than zero, the Magnebot will move backwards. |
 | arrived_at |  float  | 0.3 | If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
+| stop_on_collision |  bool  | True | If True, if the Magnebot collides with the environment or a heavy object it will stop moving. Usually this should be True; set it to False if you need the Magnebot to move away from a bad position (for example, to reverse direction if it's starting to tip over). |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot moved by `distance` and if not, why.
 
@@ -331,7 +336,7 @@ _Returns:_  An `ActionStatus` indicating if the Magnebot moved by `distance` and
 
 **`self.move_to(target)`**
 
-**`self.move_to(target, arrived_at=0.3, aligned_at=3)`**
+**`self.move_to(target, arrived_at=0.3, aligned_at=3, stop_on_collision=True)`**
 
 Move the Magnebot to a target object or position.
 
@@ -351,6 +356,7 @@ Possible [return values](action_status.md):
 | target |  Union[int, Dict[str, float] |  | Either the ID of an object or a Vector3 position. |
 | arrived_at |  float  | 0.3 | While moving, if at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
 | aligned_at |  float  | 3 | While turning, if the different between the current angle and the target angle is less than this value, then the action is successful. |
+| stop_on_collision |  bool  | True | If True, if the Magnebot collides with the environment or a heavy object it will stop moving or turning. Usually this should be True; set it to False if you need the Magnebot to move away from a bad position (for example, to reverse direction if it's starting to tip over). |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot moved to the target and if not, why.
 
