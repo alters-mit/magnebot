@@ -1345,7 +1345,17 @@ class Magnebot(FloorplanController):
                                            "targets": []}])
         # Send the commands (see `communicate()` for how `_next_frame_commands` are handled).
         self.state = SceneState(resp=self.communicate([]))
-
+        # Remove any held objects from the list of colliding objects.
+        temp: List[int] = list()
+        for object_id in self.colliding_objects:
+            good = True
+            for arm in self.state.held:
+                if object_id in self.state.held[arm]:
+                    good = False
+                    break
+            if good:
+                temp.append(object_id)
+        self.colliding_objects = temp
         # Save images.
         if self.auto_save_images:
             self.state.save_images(output_directory=self.images_directory)
