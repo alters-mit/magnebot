@@ -2,8 +2,17 @@
 
 ## 1.1.0
 
-- By default, `turn_by()` and `turn_to()` will stop on a collision, using the exact same logic as `move_by()` and `move_to()` (previously, turn actions ignored collisions)
-- Added optional parameter `stop_on_collision` to `move_by()`, `move_to()`, `turn_by()` and `turn_to()`
+- Requires: TDW 1.8.4
+- **Fixed: Build frequently crashes to desktop.** This was due to the simulation frequently entering impossible physics states. The following changes have been made to prevent this:
+  - By default, `turn_by()` and `turn_to()` will stop on a collision, using the exact same logic as `move_by()` and `move_to()` (previously, turn actions ignored collisions)
+  - Added optional parameter `stop_on_collision` to `move_by()`, `move_to()`, `turn_by()` and `turn_to()` Set this to False to ignore collision detection during the action
+  - If the previous action was a move or turn and it ended in a collision and the next action in the same direction, it will immediately fail. For example, if `turn_by(-45)` ended in a collision, `turn_by(-70)` will immediately fail (but `move_by(-1)` might succeed).
+    - (Backend) This is handled via `self._previous_collision`, which is set to a value of a new `CollisionAction` enum class
+    - (Backend) `move_by()` and `turn_by()` have an internal function `__set_collision_action()` to set whether there was a collision and if so, what type (`none`, `move_positive`, etc.)
+  - Collision detection is far more accurate, especially for walls
+  - Sequential moves and turns would try to reset the torso and column positions, which is only necessary after an arm articulation action. This might've caused physics crashes because the Magnebot is briefly immovable (and regardless was unnecessarily slow). Now, if the current action is a move or turn and the previous action was also a move or a turn, the Magnebot doesn't waste time trying to reset the torso and column
+    - (Backend) `_end_action()` now has an optional parameter `previous_action_was_move` which should be always True if called from a move or turn action and always be False for any other action (default is False).
+- Added field: `colliding_with_wall` If True, the Magnebot is currently colliding with a wall.
 - (Backend): Added some functions to make collision detection more customizable: `_is_stoppable_collision()`, `_includes_magnebot_joint_and_object()`, and `_is_high_mass()`
 - Made this changelog more readable
 

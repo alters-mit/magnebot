@@ -530,8 +530,7 @@ class Magnebot(FloorplanController):
             # Wait until the wheels are done turning.
             state_0 = SceneState(resp=self.communicate(commands))
             turn_done = False
-            num_frames = 0
-            while not turn_done and num_frames < 2000:
+            while not turn_done:
                 resp = self.communicate([])
                 state_1 = SceneState(resp=resp)
                 # If the Magnebot is about to tip over, stop the action and try to correct the tip.
@@ -553,14 +552,7 @@ class Magnebot(FloorplanController):
                 if not self._wheels_are_turning(state_0=state_0, state_1=state_1):
                     turn_done = True
                 state_0 = state_1
-                num_frames += 1
             wheel_state = state_0
-            # If the wheels are still turning, something weird happened. Stop trying to turn.
-            if not turn_done:
-                self._stop_wheels(state=wheel_state)
-                self._end_action(previous_action_was_move=True)
-                __set_collision_action(True)
-                return ActionStatus.failed_to_turn
             # Get the change in angle from the initial rotation.
             theta = QuaternionUtils.get_y_angle(self.state.magnebot_transform.rotation,
                                                 wheel_state.magnebot_transform.rotation)
@@ -696,8 +688,7 @@ class Magnebot(FloorplanController):
             # Wait for the wheels to stop turning.
             move_state_0 = SceneState(resp=self.communicate(commands))
             move_done = False
-            num_frames = 0
-            while not move_done and num_frames < 2000:
+            while not move_done:
                 resp = self.communicate([])
                 move_state_1 = SceneState(resp=resp)
                 # If we're about to tip over, immediately stop and try to correct the tip.
@@ -721,14 +712,7 @@ class Magnebot(FloorplanController):
                     self._end_action(previous_action_was_move=True)
                     __set_collision_action(True)
                     return ActionStatus.collision
-                num_frames += 1
             wheel_state = move_state_0
-            # If the wheels are still turning, something weird happened. Stop trying to move.
-            if not move_done:
-                self._stop_wheels(state=wheel_state)
-                self._end_action(previous_action_was_move=True)
-                __set_collision_action(True)
-                return ActionStatus.failed_to_move
             # Check if we're at the destination.
             p1 = wheel_state.magnebot_transform.position
             d = np.linalg.norm(target_position - p1)
