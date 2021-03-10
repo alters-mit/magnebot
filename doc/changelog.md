@@ -3,6 +3,7 @@
 ## 1.1.0
 
 - Requires: TDW 1.8.4
+  - (Fixed in TDW): `rotate_camera()` and the `pitch`, `yaw`, `roll` parameters of `add_camera()` rotate around a local axis instead of a world axis
 - **Fixed: Build frequently crashes to desktop.** This was due to the simulation frequently entering impossible physics states. The following changes have been made to prevent this:
   - By default, `turn_by()` and `turn_to()` will stop on a collision, using the exact same logic as `move_by()` and `move_to()` (previously, turn actions ignored collisions)
   - Added optional parameter `stop_on_collision` to `move_by()`, `move_to()`, `turn_by()` and `turn_to()` Set this to False to ignore collision detection during the action
