@@ -9,7 +9,7 @@ from ikpy.link import OriginLink, URDFLink, Link
 from ikpy.utils import geometry
 from tdw.floorplan_controller import FloorplanController
 from tdw.output_data import OutputData, Version, StaticRobot, SegmentationColors, Bounds, Rigidbodies, LogMessage,\
-    Robot, TriggerCollision
+    Robot, TriggerCollision, Raycast
 from tdw.output_data import Magnebot as Mag
 from tdw.tdw_utils import TDWUtils, QuaternionUtils
 from tdw.object_init_data import AudioInitData
@@ -834,20 +834,7 @@ class Magnebot(FloorplanController):
         self._next_frame_commands.append({"$type": "set_magnet_targets",
                                           "arm": arm.name,
                                           "targets": [target]})
-        sides, resp = self._get_bounds_sides(target=target)
-        state = SceneState(resp=resp)
-        # Get the position of the magnet.
-        magnet_position = state.joint_positions[self.magnebot_static.magnets[arm]]
-        # Get the closest side to the magnet.
-        closest: np.array = sides[0]
-        d = np.inf
-        for side in sides:
-            dd = np.linalg.norm(side - magnet_position)
-            if dd < d:
-                closest = side
-                d = dd
-        target_position = TDWUtils.array_to_vector3(closest)
-
+        target_position = self._get_grasp_target(target=target, arm=arm)
         if self._debug:
             self._next_frame_commands.append({"$type": "add_position_marker",
                                               "position": target_position})
@@ -1873,6 +1860,53 @@ class Magnebot(FloorplanController):
         self._stop_wheels(state=state)
         # Wait for the objects to stop moving.
         self._wait_until_objects_stop(object_ids=held_objects)
+
+    def _get_grasp_target(self, target: int, arm: Arm) -> Dict[str, float]:
+        """
+        :param target: The ID of the target object.
+        :param arm: The arm that will grasp the object.
+
+        :return: A target position for a `grasp()` action.
+        """
+
+        nearest_side, magnet_position = self._get_nearest_side(target=target, arm=arm)
+        nearest_side = TDWUtils.array_to_vector3(nearest_side)
+
+        # Send a ray to the target position.
+        resp = self.communicate({"$type": "send_raycast",
+                                 "position": TDWUtils.array_to_vector3(magnet_position),
+                                 "destination": nearest_side})
+        raycast = get_data(resp=resp, d_type=Raycast)
+        # If the raycast hit the target, use the point of contact as the target.
+        if raycast.get_hit() and raycast.get_hit_object() and raycast.get_object_id() == target:
+            if self._debug:
+                print("Raycast hit: ", raycast.get_point())
+            return TDWUtils.array_to_vector3(raycast.get_point())
+        # Otherwise, use the nearest bounds side.
+        else:
+            return nearest_side
+
+    def _get_nearest_side(self, target: int, arm: Arm) -> Tuple[np.array, np.array]:
+        """
+        :param target: The ID of the target object.
+        :param arm: The arm that will grasp the object.
+
+        :return: Tuple: The bounds side closest to the magnet; the position of the magnet.
+        """
+
+        sides, resp = self._get_bounds_sides(target=target)
+        state = SceneState(resp=resp)
+        # Get the position of the magnet.
+        magnet_position = state.joint_positions[self.magnebot_static.magnets[arm]]
+        # Get the closest side to the magnet.
+        closest: np.array = sides[0]
+        d = np.inf
+        for side in sides:
+            dd = np.linalg.norm(side - magnet_position)
+            if dd < d:
+                closest = side
+                d = dd
+        return closest, magnet_position
 
     def _get_bounds_sides(self, target: int) -> Tuple[List[np.array], List[bytes]]:
         """
