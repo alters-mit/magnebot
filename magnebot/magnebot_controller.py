@@ -530,7 +530,8 @@ class Magnebot(FloorplanController):
             # Wait until the wheels are done turning.
             state_0 = SceneState(resp=self.communicate(commands))
             turn_done = False
-            while not turn_done:
+            turn_frames = 0
+            while not turn_done and turn_frames < 2000:
                 resp = self.communicate([])
                 state_1 = SceneState(resp=resp)
                 # If the Magnebot is about to tip over, stop the action and try to correct the tip.
@@ -551,8 +552,17 @@ class Magnebot(FloorplanController):
 
                 if not self._wheels_are_turning(state_0=state_0, state_1=state_1):
                     turn_done = True
+                turn_frames += 1
                 state_0 = state_1
             wheel_state = state_0
+            # If the turn took too long, assume there was a collision.
+            if not turn_done:
+                self._stop_wheels(state=wheel_state)
+                if self._debug:
+                    print("Couldn't complete turn! Stopping movement.")
+                self._end_action(previous_action_was_move=True)
+                __set_collision_action(True)
+                return ActionStatus.collision
             # Get the change in angle from the initial rotation.
             theta = QuaternionUtils.get_y_angle(self.state.magnebot_transform.rotation,
                                                 wheel_state.magnebot_transform.rotation)
@@ -688,7 +698,8 @@ class Magnebot(FloorplanController):
             # Wait for the wheels to stop turning.
             move_state_0 = SceneState(resp=self.communicate(commands))
             move_done = False
-            while not move_done:
+            move_frames = 0
+            while not move_done and move_frames < 2000:
                 resp = self.communicate([])
                 move_state_1 = SceneState(resp=resp)
                 # If we're about to tip over, immediately stop and try to correct the tip.
@@ -702,6 +713,7 @@ class Magnebot(FloorplanController):
                 dt = np.linalg.norm(move_state_1.magnebot_transform.position - move_state_0.magnebot_transform.position)
                 if dt < 0.001:
                     move_done = True
+                move_frames += 1
                 move_state_0 = move_state_1
 
                 # Check if we collided with the environment or with any objects.
@@ -713,6 +725,14 @@ class Magnebot(FloorplanController):
                     __set_collision_action(True)
                     return ActionStatus.collision
             wheel_state = move_state_0
+            # If the move took too long, assume there was a collision.
+            if not move_done:
+                self._stop_wheels(state=wheel_state)
+                if self._debug:
+                    print("Couldn't complete move! Stopping movement.")
+                self._end_action(previous_action_was_move=True)
+                __set_collision_action(True)
+                return ActionStatus.collision
             # Check if we're at the destination.
             p1 = wheel_state.magnebot_transform.position
             d = np.linalg.norm(target_position - p1)
