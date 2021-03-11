@@ -834,6 +834,11 @@ class Magnebot(FloorplanController):
         self._next_frame_commands.append({"$type": "set_magnet_targets",
                                           "arm": arm.name,
                                           "targets": [target]})
+        # Choose a position on the object to aim for.
+        # This is either a point derived via a raycast from the magnet to the object (if the raycast hits the object),
+        # or the nearest side on the object bounds.
+        # This has been divided into many functions so that the logic can be overridden on a more granular level
+        # (which is required in the Transport Challenge API).
         target_position = self._get_grasp_target(target=target, arm=arm)
         if self._debug:
             self._next_frame_commands.append({"$type": "add_position_marker",
@@ -849,7 +854,7 @@ class Magnebot(FloorplanController):
             self._end_action()
             return status
 
-        # Wait for the arm motion to end.
+        # Wait for the arm motion to end. Stop the action if the Magnebot is grasping the object.
         self._do_arm_motion(conditional=lambda s: Magnebot._is_grasping(target, arm, s))
         self._end_action()
 
