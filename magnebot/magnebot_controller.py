@@ -1108,7 +1108,7 @@ class Magnebot(FloorplanController):
         :return: A list of IDs of visible objects.
         """
 
-        colors = [c[1] for c in self.state.get_pil_images()["id"].getcolors()]
+        colors = [c[1] for c in self.state.get_pil_images()["id"].getcolors(maxcolors=1024)]
         return [o for o in self.objects_static if self.objects_static[o].segmentation_color in colors]
 
     def end(self) -> None:
