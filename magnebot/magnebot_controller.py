@@ -1187,9 +1187,17 @@ class Magnebot(FloorplanController):
         :return: A list of IDs of visible objects.
         """
 
-        colors = [c[1] for c in self.state.get_pil_images()["id"].getcolors(maxcolors=1024)]
-        return [o for o in self.objects_static if self.objects_static[o].segmentation_color in colors]
-
+        # Try to get unique colors with a reasonable number of max colors.
+        # If the number of colors exceeds this, `getcolors()` returns None.
+        for max_colors in [256, 512, 1024]:
+            try:
+                colors = [c[1] for c in self.state.get_pil_images()["id"].getcolors(maxcolors=max_colors)]
+                return [o for o in self.objects_static if self.objects_static[o].segmentation_color in colors]
+            except TypeError:
+                continue
+        # This should never happen, but it's better to prevent the build rom crashing.
+        return []
+        
     def end(self) -> None:
         """
         End the simulation. Terminate the build process.
