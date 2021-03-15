@@ -843,9 +843,31 @@ class Magnebot(FloorplanController):
         if self._debug:
             self._next_frame_commands.append({"$type": "add_position_marker",
                                               "position": target_position})
+
+        # Choose a target orientation and an orientation mode.
+        # These have been tested iteratively and may still be a work in progress.
+        # For more information: https://notebook.community/Phylliade/ikpy/tutorials/Orientation
+        magnet_position = self.state.joint_positions[self.magnebot_static.magnets[arm]]
+        if magnet_position[1] > target_position["y"]:
+            if target_position["y"] < 0.1:
+                orientation_mode = "X"
+                target_orientation = [0, 0, 1]
+            else:
+                orientation_mode = None
+                target_orientation = None
+        else:
+            q = np.linalg.norm(self.state.object_transforms[target].position - TDWUtils.vector3_to_array(target_position))
+            if q < 0.1:
+                orientation_mode = "X"
+            else:
+                orientation_mode = "Z"
+            target_orientation = [0, 1, 0]
+
         # Start the IK action.
         status = self._start_ik(target=target_position, arm=arm, absolute=True,
-                                do_prismatic_first=target_position["y"] > Magnebot._TORSO_Y[Magnebot._DEFAULT_TORSO_Y])
+                                do_prismatic_first=target_position["y"] > Magnebot._TORSO_Y[Magnebot._DEFAULT_TORSO_Y],
+                                orientation_mode=orientation_mode, target_orientation=target_orientation,
+                                arrived_at=0.05)
         if status != ActionStatus.success:
             # Disable grasping.
             self._next_frame_commands.append({"$type": "set_magnet_targets",
