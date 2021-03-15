@@ -3,6 +3,8 @@ import numpy as np
 from tdw.tdw_utils import TDWUtils
 from magnebot import Magnebot, ActionStatus, Arm, ArmJoint
 from magnebot.scene_state import SceneState
+from magnebot.ik.target_orientation import TargetOrientation
+from magnebot.ik.orientation_mode import OrientationMode
 
 
 class CustomAPI(Magnebot):
@@ -76,21 +78,13 @@ class CustomAPI(Magnebot):
             torso_position = k
             if Magnebot._TORSO_Y[k] - 0.2 > p_0[1]:
                 break
-        torso = self.magnebot_static.arm_joints[ArmJoint.torso]
-        self._next_frame_commands.append({"$type": "set_prismatic_target",
-                                          "joint_id": torso,
-                                          "target": torso_position})
-        # Wait for the torso to stop moving.
-        self._do_arm_motion(joint_ids=[torso])
-        # Get a SceneState of where everything is right now.
-        state = SceneState(resp=self.communicate([]))
         # Start the IK motion.
         # Note the `orientation_mode` and `target_orientation` parameters, which will make the arm slide laterally.
         # `do_prismatic_first` means that the torso will move up or down before the arm bends rather than the arm bends.
         # We also need to set the `state` parameter so that we're using the current state.
         status = self._start_ik(target=TDWUtils.array_to_vector3(p_0), arm=arm, fixed_torso_prismatic=torso_position,
-                                state=state, do_prismatic_first=True, orientation_mode="X",
-                                target_orientation=[0, 1, 0])
+                                do_prismatic_first=True, target_orientation=TargetOrientation.up,
+                                orientation_mode=OrientationMode.z)
         # If the arm motion isn't possible, end the action here.
         if status != ActionStatus.success:
             self._end_action()
@@ -132,22 +126,22 @@ class CustomAPI(Magnebot):
             self.move_by(-0.1, arrived_at=0.05)
         print("Moved to the box.")
         # Pick up the first object.
-        status = self.grasp(target=self.object_0, arm=Arm.right)
+        status = self.grasp(target=self.object_0, arm=Arm.left)
         print("Picked up the object.")
         # If we failed to pick up the object, turn the Magnebot a bit and try again.
         num_attempts = 0
         while status != ActionStatus.success and num_attempts < 4:
             num_attempts += 1
-            self.reset_arm(arm=Arm.right, reset_torso=False)
+            self.reset_arm(arm=Arm.left, reset_torso=False)
             self.turn_by(-10)
-            status = self.grasp(target=self.object_0, arm=Arm.right)
+            status = self.grasp(target=self.object_0, arm=Arm.left)
         if status != ActionStatus.success:
             print("Failed to pick up the object!")
             return
         # Reset the position of the arm but now the torso, which will slide the object away from the box.
-        self.reset_arm(arm=Arm.right, reset_torso=False)
+        self.reset_arm(arm=Arm.left, reset_torso=False)
         # Push the other object.
-        status = self.push(target=self.object_1, arm=Arm.left)
+        status = self.push(target=self.object_1, arm=Arm.right)
         print(f"Pushed the other object: {status}")
         if status != ActionStatus.success:
             return

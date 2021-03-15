@@ -5,3 +5,4 @@ pypi.py
 controllers/tests/data
 controllers/examples/images/
 dist/
+magnebot/ik/__pycache__/

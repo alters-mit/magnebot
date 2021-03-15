@@ -789,6 +789,10 @@ class Magnebot(FloorplanController):
         if absolute:
             destination = Magnebot._absolute_to_relative(position=destination, state=self.state)
 
+        # Try to get an orientation mode.
+        if target_orientation == TargetOrientation.auto and orientation_mode == OrientationMode.auto:
+            target_orientation, orientation_mode = self._get_ik_orientation(arm=arm, target=target)
+
         # Start the IK action.
         status = self._start_ik(target=target, arm=arm, absolute=absolute, arrived_at=arrived_at,
                                 do_prismatic_first=target["y"] > Magnebot._TORSO_Y[Magnebot._DEFAULT_TORSO_Y],
@@ -1925,6 +1929,16 @@ class Magnebot(FloorplanController):
         state = SceneState(resp=resp)
         # Get the position of the magnet.
         magnet_position = state.joint_positions[self.magnebot_static.magnets[arm]]
+
+        # If the object is higher up than the magnet, remove the lowest side.
+        if state.object_transforms[target].position[1] > magnet_position[1]:
+            lowest: int = -1
+            y = np.inf
+            for i in range(len(sides)):
+                if sides[i][1] < y:
+                    lowest = i
+                    y = sides[i][1]
+            del sides[lowest]
         # Get the closest side to the magnet.
         closest: np.array = sides[0]
         d = np.inf
@@ -2008,7 +2022,7 @@ class Magnebot(FloorplanController):
                                                   "joint_id": joint_id,
                                                   "target": TDWUtils.array_to_vector3(joint_angles)})
                 
-    def _get_ik_orientation(self, arm: Arm, target: Dict[str, float]) -> Tuple[TargetOrientation, OrientationMode]:
+    def _get_ik_orientation(self, arm: Arm, target: np.array) -> Tuple[TargetOrientation, OrientationMode]:
         """
         Try to automatically choose an orientation for an IK solution.
         This is a complex problem to solve and we're still finding the best solutions for any given scenario.
@@ -2021,14 +2035,20 @@ class Magnebot(FloorplanController):
         """
 
         magnet_position = self.state.joint_positions[self.magnebot_static.magnets[arm]]
-        if magnet_position[1] > target["y"]:
-            if target["y"] < 0.1:
+        if magnet_position[1] > target[1]:
+            if target[1] < 0.1:
                 orientation_mode = OrientationMode.x
                 target_orientation = TargetOrientation.forward
             else:
                 orientation_mode = OrientationMode.none
                 target_orientation = TargetOrientation.none
         else:
-            orientation_mode = OrientationMode.x
+            # The angle between the magnet and the object seems to affect the best orientation mode.
+            angle = TDWUtils.get_angle_between(v1=self.state.magnebot_transform.forward,
+                                               v2=target - magnet_position)
+            if np.abs(angle) < 15:
+                orientation_mode = OrientationMode.x
+            else:
+                orientation_mode = OrientationMode.z
             target_orientation = TargetOrientation.up
         return target_orientation, orientation_mode
