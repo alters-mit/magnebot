@@ -28,6 +28,8 @@ from magnebot.joint_type import JointType
 from magnebot.arm_joint import ArmJoint
 from magnebot.constants import MAGNEBOT_RADIUS, OCCUPANCY_CELL_SIZE
 from magnebot.turn_constants import TurnConstants
+from magnebot.ik.target_orientation import TargetOrientation
+from magnebot.ik.orientation_mode import OrientationMode
 
 
 class Magnebot(FloorplanController):
@@ -754,11 +756,15 @@ class Magnebot(FloorplanController):
         self._end_action()
         return ActionStatus.success
 
-    def reach_for(self, target: Dict[str, float], arm: Arm, absolute: bool = True, arrived_at: float = 0.125) -> ActionStatus:
+    def reach_for(self, target: Dict[str, float], arm: Arm, absolute: bool = True, arrived_at: float = 0.125,
+                  target_orientation: TargetOrientation = TargetOrientation.auto,
+                  orientation_mode: OrientationMode = OrientationMode.auto) -> ActionStatus:
         """
         Reach for a target position.
 
         The action ends when the arm stops moving. The arm might stop moving if it succeeded at finishing the motion, in which case the action is successful. Or, the arms might stop moving because the motion is impossible, there's an obstacle in the way, if the arm is holding something heavy, and so on.
+
+        Regarding `target_orientation` and `orientation_mode`: These affect the IK solution and end pose of the arm. The action might succeed or fail depending on these settings. If both parameters are set to `auto`, the Magnebot will try to choose the best possible settings. For more information, [read this](https://notebook.community/Phylliade/ikpy/tutorials/Orientation).
 
         Possible [return values](action_status.md):
 
@@ -770,6 +776,8 @@ class Magnebot(FloorplanController):
         :param arm: The arm that will reach for the target.
         :param absolute: If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot.
         :param arrived_at: If the magnet is this distance or less from `target`, then the action is successful.
+        :param target_orientation: The [target orientation](target_orientation.md) of the IK solution (see above).
+        :param orientation_mode: The [orientation mode](orientation_mode.md) of the IK solution (see above).
 
         :return: An `ActionStatus` indicating if the magnet at the end of the `arm` is at the `target` and if not, why.
         """
@@ -783,7 +791,8 @@ class Magnebot(FloorplanController):
 
         # Start the IK action.
         status = self._start_ik(target=target, arm=arm, absolute=absolute, arrived_at=arrived_at,
-                                do_prismatic_first=target["y"] > Magnebot._TORSO_Y[Magnebot._DEFAULT_TORSO_Y])
+                                do_prismatic_first=target["y"] > Magnebot._TORSO_Y[Magnebot._DEFAULT_TORSO_Y],
+                                target_orientation=target_orientation, orientation_mode=orientation_mode)
         if status != ActionStatus.success:
             self._end_action()
             return status
@@ -806,11 +815,14 @@ class Magnebot(FloorplanController):
                 print(f"Tried and failed to reach for target: {d}")
             return ActionStatus.failed_to_reach
 
-    def grasp(self, target: int, arm: Arm) -> ActionStatus:
+    def grasp(self, target: int, arm: Arm, target_orientation: TargetOrientation = TargetOrientation.auto,
+              orientation_mode: OrientationMode = OrientationMode.auto) -> ActionStatus:
         """
         Try to grasp the target object with the arm. The Magnebot will reach for the nearest position on the object.
 
         If the magnet grasps the object, the arm will stop moving and the action is successful.
+
+        Regarding `target_orientation` and `orientation_mode`: These affect the IK solution and end pose of the arm. The action might succeed or fail depending on these settings. If both parameters are set to `auto`, the Magnebot will try to choose the best possible settings. For more information, [read this](https://notebook.community/Phylliade/ikpy/tutorials/Orientation).
 
         Possible [return values](action_status.md):
 
@@ -820,6 +832,8 @@ class Magnebot(FloorplanController):
 
         :param target: The ID of the target object.
         :param arm: The arm of the magnet that will try to grasp the object.
+        :param target_orientation: The [target orientation](target_orientation.md) of the IK solution (see above).
+        :param orientation_mode: The [orientation mode](orientation_mode.md) of the IK solution (see above).
 
         :return: An `ActionStatus` indicating if the magnet at the end of the `arm` is holding the `target` and if not, why.
         """
@@ -843,26 +857,6 @@ class Magnebot(FloorplanController):
         if self._debug:
             self._next_frame_commands.append({"$type": "add_position_marker",
                                               "position": target_position})
-
-        # Choose a target orientation and an orientation mode.
-        # These have been tested iteratively and may still be a work in progress.
-        # For more information: https://notebook.community/Phylliade/ikpy/tutorials/Orientation
-        magnet_position = self.state.joint_positions[self.magnebot_static.magnets[arm]]
-        if magnet_position[1] > target_position["y"]:
-            if target_position["y"] < 0.1:
-                orientation_mode = "X"
-                target_orientation = [0, 0, 1]
-            else:
-                orientation_mode = None
-                target_orientation = None
-        else:
-            q = np.linalg.norm(self.state.object_transforms[target].position - TDWUtils.vector3_to_array(target_position))
-            if q < 0.1:
-                orientation_mode = "X"
-            else:
-                orientation_mode = "Z"
-            target_orientation = [0, 1, 0]
-
         # Start the IK action.
         status = self._start_ik(target=target_position, arm=arm, absolute=True,
                                 do_prismatic_first=target_position["y"] > Magnebot._TORSO_Y[Magnebot._DEFAULT_TORSO_Y],
@@ -1381,7 +1375,8 @@ class Magnebot(FloorplanController):
     def _start_ik(self, target: Dict[str, float], arm: Arm, absolute: bool = True, arrived_at: float = 0.125,
                   state: SceneState = None, allow_column: bool = True, fixed_torso_prismatic: float = None,
                   object_id: int = None, do_prismatic_first: bool = False,
-                  orientation_mode: str = None, target_orientation: np.array = None) -> ActionStatus:
+                  orientation_mode: OrientationMode = OrientationMode.auto,
+                  target_orientation: TargetOrientation = OrientationMode.auto) -> ActionStatus:
         """
         Start an IK action.
 
@@ -1415,7 +1410,8 @@ class Magnebot(FloorplanController):
             # Get the IK solution.
             ik = chain.inverse_kinematics(target_position=target,
                                           initial_position=initial_angles,
-                                          orientation_mode=orientation_mode, target_orientation=target_orientation)
+                                          orientation_mode=orientation_mode.value,
+                                          target_orientation=target_orientation.value)
 
             if self._debug:
                 # Plot the IK solution.
@@ -1454,6 +1450,10 @@ class Magnebot(FloorplanController):
         # Convert to relative coordinates.
         if absolute:
             target = self._absolute_to_relative(position=target, state=state)
+
+        # Try to get an orientation mode.
+        if target_orientation == TargetOrientation.auto and orientation_mode == OrientationMode.auto:
+            target_orientation, orientation_mode = self._get_ik_orientation(arm=arm, target=target)
 
         # Get the initial angles of each joint.
         # The first angle is always 0 (the origin link).
@@ -2007,3 +2007,28 @@ class Magnebot(FloorplanController):
                 self._next_frame_commands.append({"$type": "set_spherical_target",
                                                   "joint_id": joint_id,
                                                   "target": TDWUtils.array_to_vector3(joint_angles)})
+                
+    def _get_ik_orientation(self, arm: Arm, target: Dict[str, float]) -> Tuple[TargetOrientation, OrientationMode]:
+        """
+        Try to automatically choose an orientation for an IK solution.
+        This is a complex problem to solve and we're still finding the best solutions for any given scenario.
+        For more information: https://notebook.community/Phylliade/ikpy/tutorials/Orientation
+
+        :param arm: The arm doing the motion.
+        :param target: The target position.
+
+        :return: Tuple: A TargetOrientation and an OrientationMode (see documentation).
+        """
+
+        magnet_position = self.state.joint_positions[self.magnebot_static.magnets[arm]]
+        if magnet_position[1] > target["y"]:
+            if target["y"] < 0.1:
+                orientation_mode = OrientationMode.x
+                target_orientation = TargetOrientation.forward
+            else:
+                orientation_mode = OrientationMode.none
+                target_orientation = TargetOrientation.none
+        else:
+            orientation_mode = OrientationMode.x
+            target_orientation = TargetOrientation.up
+        return target_orientation, orientation_mode

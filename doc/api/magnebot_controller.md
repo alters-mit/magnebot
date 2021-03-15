@@ -179,7 +179,7 @@ Note that it is possible for the Magnebot to go to positions that aren't "free".
 
 **`Magnebot()`**
 
-**`Magnebot(port=1071, launch_build=False, screen_width=256, screen_height=256, auto_save_images=False, images_directory="images", random_seed=None, debug=False, img_is_png=False, skip_frames=10)`**
+**`Magnebot(port=1071, launch_build=False, screen_width=256, screen_height=256, auto_save_images=False, images_directory="images", random_seed=None, debug=False, img_is_png=False, skip_frames=10, check_pypi_version=True)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -193,6 +193,7 @@ Note that it is possible for the Magnebot to go to positions that aren't "free".
 | debug |  bool  | False | If True, enable debug mode. This controller will output messages to the console, including any warnings or errors sent by the build. It will also create 3D plots of arm articulation IK solutions. |
 | img_is_png |  bool  | False | If True, the `img` pass images will be .png files. If False,  the `img` pass images will be .jpg files, which are smaller; the build will run approximately 2% faster. |
 | skip_frames |  int  | 10 | The build will return output data this many physics frames per simulation frame (`communicate()` call). This will greatly speed up the simulation, but eventually there will be a noticeable loss in physics accuracy. If you want to render every frame, set this to 0. |
+| check_pypi_version |  bool  | True | If True, compare the locally installed version of TDW and Magnebot to the most recent versions on PyPi. |
 
 ***
 
@@ -379,11 +380,13 @@ _During an arm articulation action, the Magnebot is always "immovable", meaning 
 
 **`self.reach_for(target, arm)`**
 
-**`self.reach_for(target, arm, absolute=True, arrived_at=0.125)`**
+**`self.reach_for(target, arm, absolute=True, arrived_at=0.125, target_orientation=TargetOrientation.auto, orientation_mode=OrientationMode.auto)`**
 
 Reach for a target position.
 
 The action ends when the arm stops moving. The arm might stop moving if it succeeded at finishing the motion, in which case the action is successful. Or, the arms might stop moving because the motion is impossible, there's an obstacle in the way, if the arm is holding something heavy, and so on.
+
+Regarding `target_orientation` and `orientation_mode`: These affect the IK solution and end pose of the arm. The action might succeed or fail depending on these settings. If both parameters are set to `auto`, the Magnebot will try to choose the best possible settings. For more information, [read this](https://notebook.community/Phylliade/ikpy/tutorials/Orientation).
 
 Possible [return values](action_status.md):
 
@@ -398,6 +401,8 @@ Possible [return values](action_status.md):
 | arm |  Arm |  | The arm that will reach for the target. |
 | absolute |  bool  | True | If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot. |
 | arrived_at |  float  | 0.125 | If the magnet is this distance or less from `target`, then the action is successful. |
+| target_orientation |  TargetOrientation  | TargetOrientation.auto | The [target orientation](target_orientation.md) of the IK solution (see above). |
+| orientation_mode |  OrientationMode  | OrientationMode.auto | The [orientation mode](orientation_mode.md) of the IK solution (see above). |
 
 _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` is at the `target` and if not, why.
 
@@ -405,9 +410,13 @@ _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` i
 
 **`self.grasp(target, arm)`**
 
+**`self.grasp(target, arm, target_orientation=TargetOrientation.auto, orientation_mode=OrientationMode.auto)`**
+
 Try to grasp the target object with the arm. The Magnebot will reach for the nearest position on the object.
 
 If the magnet grasps the object, the arm will stop moving and the action is successful.
+
+Regarding `target_orientation` and `orientation_mode`: These affect the IK solution and end pose of the arm. The action might succeed or fail depending on these settings. If both parameters are set to `auto`, the Magnebot will try to choose the best possible settings. For more information, [read this](https://notebook.community/Phylliade/ikpy/tutorials/Orientation).
 
 Possible [return values](action_status.md):
 
@@ -420,6 +429,8 @@ Possible [return values](action_status.md):
 | --- | --- | --- | --- |
 | target |  int |  | The ID of the target object. |
 | arm |  Arm |  | The arm of the magnet that will try to grasp the object. |
+| target_orientation |  TargetOrientation  | TargetOrientation.auto | The [target orientation](target_orientation.md) of the IK solution (see above). |
+| orientation_mode |  OrientationMode  | OrientationMode.auto | The [orientation mode](orientation_mode.md) of the IK solution (see above). |
 
 _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` is holding the `target` and if not, why.
 
