@@ -1480,9 +1480,9 @@ class Magnebot(FloorplanController):
         if not got_solution:
             torso_prismatic = self._DEFAULT_TORSO_Y
             while not got_solution and torso_prismatic <= 1.5:
-                    got_solution, angles = __get_ik_solution()
-                    if not got_solution:
-                        torso_prismatic += 0.1
+                got_solution, angles = __get_ik_solution()
+                if not got_solution:
+                    torso_prismatic += 0.1
         # If we couldn't find a solution at any torso height, then there isn't a solution.
         if not got_solution:
             return ActionStatus.cannot_reach
