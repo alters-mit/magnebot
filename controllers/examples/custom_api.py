@@ -1,8 +1,10 @@
 from typing import Dict, List
 import numpy as np
 from tdw.tdw_utils import TDWUtils
-from magnebot import Magnebot, ActionStatus, Arm, ArmJoint
+from tdw.output_data import Bounds
+from magnebot import Magnebot, ActionStatus, Arm
 from magnebot.scene_state import SceneState
+from magnebot.util import get_data
 from magnebot.ik.target_orientation import TargetOrientation
 from magnebot.ik.orientation_mode import OrientationMode
 
@@ -15,9 +17,8 @@ class CustomAPI(Magnebot):
     def __init__(self, port: int = 1071, screen_width: int = 1024, screen_height: int = 1024):
         super().__init__(port=port, screen_height=screen_height, screen_width=screen_width, auto_save_images=True,
                          skip_frames=0)
-        # The IDs of target objects.
-        self.object_0: int = -1
-        self.object_1: int = -1
+        # The IDs of target object.
+        self.object_id: int = -1
         # The ID of a surface.
         self.surface_id: int = -1
         # The starting y positional coordinate for each object on the surface.
@@ -70,21 +71,39 @@ class CustomAPI(Magnebot):
 
         self._start_action()
 
-        # Get the current position of the object.
-        p_0 = self.state.object_transforms[target].position
+        # Get center of the object.
+        resp = self.communicate([{"$type": "send_bounds",
+                                  "ids": [target],
+                                  "frequency": "once"}])
+        # Get the side on the bounds closet to the magnet.
+        bounds = get_data(resp=resp, d_type=Bounds)
+        center = np.array(bounds.get_center(0))
+        state = SceneState(resp=resp)
+        # Get the position of the magnet.
+        magnet_position = state.joint_positions[self.magnebot_static.magnets[arm]]
+
+        # Get a position opposite the center of the object from the magnet.
+        v = magnet_position - center
+        v = v / np.linalg.norm(v)
+        target_position = center - (v * 0.1)
         # Slide the torso up and above the target object.
         torso_position = 0
         for k in Magnebot._TORSO_Y:
             torso_position = k
-            if Magnebot._TORSO_Y[k] - 0.2 > p_0[1]:
+            if Magnebot._TORSO_Y[k] - 0.2 > target_position[1]:
                 break
-        # Start the IK motion.
-        # Note the `orientation_mode` and `target_orientation` parameters, which will make the arm slide laterally.
-        # `do_prismatic_first` means that the torso will move up or down before the arm bends rather than the arm bends.
-        # We also need to set the `state` parameter so that we're using the current state.
-        status = self._start_ik(target=TDWUtils.array_to_vector3(p_0), arm=arm, fixed_torso_prismatic=torso_position,
-                                do_prismatic_first=True, target_orientation=TargetOrientation.up,
-                                orientation_mode=OrientationMode.z)
+
+        # Remember the original position of the object.
+        p_0 = state.object_transforms[target].position
+
+        # Start the IK motion. Some notes regarding these parameters:
+        # - We need to explicitly set `state` because of the extra simulation step invoked by `communicate()`.
+        # - `fixed_torso_prismatic` means that we'll use the position defined above rather than set it automatically.
+        # - `do_prismatic_first` means that the torso will move before the rest of the arm movement.
+        # - See docstring for `self._start_ik()` regarding `orientation_mode` and `target_orientation`.
+        status = self._start_ik(target=TDWUtils.array_to_vector3(target_position), arm=arm, state=state,
+                                fixed_torso_prismatic=torso_position, do_prismatic_first=True,
+                                target_orientation=TargetOrientation.up, orientation_mode=OrientationMode.z)
         # If the arm motion isn't possible, end the action here.
         if status != ActionStatus.success:
             self._end_action()
@@ -125,50 +144,17 @@ class CustomAPI(Magnebot):
         if status == ActionStatus.collision:
             self.move_by(-0.1, arrived_at=0.05)
         print("Moved to the box.")
-        # Pick up the first object.
-        status = self.grasp(target=self.object_0, arm=Arm.left)
-        print("Picked up the object.")
-        # If we failed to pick up the object, turn the Magnebot a bit and try again.
-        num_attempts = 0
-        while status != ActionStatus.success and num_attempts < 4:
-            num_attempts += 1
-            self.reset_arm(arm=Arm.left, reset_torso=False)
-            self.turn_by(-10)
-            status = self.grasp(target=self.object_0, arm=Arm.left)
-        if status != ActionStatus.success:
-            print("Failed to pick up the object!")
-            return
-        # Reset the position of the arm but now the torso, which will slide the object away from the box.
-        self.reset_arm(arm=Arm.left, reset_torso=False)
         # Push the other object.
-        status = self.push(target=self.object_1, arm=Arm.right)
+        status = self.push(target=self.object_id, arm=Arm.right)
         print(f"Pushed the other object: {status}")
         if status != ActionStatus.success:
+            print(f"Failed to push the other object: {status}")
             return
+        print("Pushed the other object.")
         # Reset the arms.
+        self.move_by(-0.5)
         self.reset_arm(arm=Arm.left)
         self.reset_arm(arm=Arm.right)
-        # Check if the object fell off the surface.
-        object_y = self.state.object_transforms[self.object_1].position[1]
-        if object_y < self.object_y:
-            print("The object fell off the surface.")
-            # Back away from the surface.
-            self.move_by(-0.8)
-            self.reset_arm(arm=Arm.right)
-            # Go to the object.
-            status = self.move_to(self.object_1)
-            num_attempts = 0
-            while status != ActionStatus.success and num_attempts < 4:
-                num_attempts += 1
-                self.turn_by(-25)
-                self.move_by(-0.5)
-                status = self.move_to(self.object_1)
-            if status != ActionStatus.success:
-                print("Failed to move to object.")
-                return
-            status = self.grasp(target=self.object_1, arm=Arm.left)
-            self.reset_arm(arm=Arm.left)
-            print(f"Grasped the object: {status}")
 
     def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
         """
@@ -181,11 +167,9 @@ class CustomAPI(Magnebot):
                                            rotation={"x": 0, "y": -29, "z": 0},
                                            scale={"x": 1, "y": 0.8, "z": 1},
                                            mass=300)
-        # Put two objects on top of the surface. Remember their object IDs.
-        self.object_0 = self._add_object(model_name="vase_02",
-                                         position={"x": -1.969, "y": 0.794254, "z": 2.336})
-        self.object_1 = self._add_object(model_name="jug05",
-                                         position={"x": -1.857, "y": 0.794254, "z": 2.54})
+        # Put an object on top of the surface. Remember its ID.
+        self.object_id = self._add_object(model_name="vase_02",
+                                          position={"x": -1.969, "y": 0.794254, "z": 2.336})
 
         # Get the rest of the commands (this adds the Magnebot, requests output data, etc.)
         commands = super()._get_scene_init_commands(magnebot_position=magnebot_position)

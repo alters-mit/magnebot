@@ -1384,6 +1384,8 @@ class Magnebot(FloorplanController):
         """
         Start an IK action.
 
+        Regarding `target_orientation` and `orientation_mode`: These affect the IK solution and end pose of the arm. The action might succeed or fail depending on these settings. If both parameters are set to `auto`, the Magnebot will try to choose the best possible settings. For more information, [read this](https://notebook.community/Phylliade/ikpy/tutorials/Orientation).
+
         :param target: The target position.
         :param arm: The arm that will be bending.
         :param absolute: If True, `target` is in absolute world coordinates. If False, `target` is relative to the position and rotation of the Magnebot.
