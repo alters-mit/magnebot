@@ -11,6 +11,7 @@ class SimpleNavigation(Magnebot):
     """
 
     # A list of all possible actions. Remove the first element (none).
+    # For documentation, see: `doc/api/collision_action.md`
     ACTIONS = [a for a in CollisionAction][1:]
 
     def run(self) -> None:
