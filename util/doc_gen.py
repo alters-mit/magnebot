@@ -6,6 +6,7 @@ if __name__ == "__main__":
     files = ["action_status.py",
              "arm.py",
              "arm_joint.py",
+             "collision_action.py",
              "joint_static.py",
              "magnebot_controller.py",
              "magnebot_static.py",

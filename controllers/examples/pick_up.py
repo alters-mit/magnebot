@@ -32,7 +32,7 @@ class PickUp(Magnebot):
                 # Keep rotating the camera.
                 status = self.rotate_camera(yaw=d_cam_theta)
             # Turn the Magnebot.
-            self.turn_by(d_turn)
+            self.turn_by(d_turn, stop_on_collision=False)
             turn += d_turn
         nearby = list(set(nearby))
         print(f"Nearby objects:")
@@ -54,7 +54,7 @@ class PickUp(Magnebot):
         print(f"Target object: {target_object}\t{self.objects_static[target_object].name}")
 
         # Move to the target object.
-        status = self.move_to(target=target_object)
+        status = self.move_to(target=target_object, stop_on_collision=False)
         print(f"Move to target object: {status}")
         # Grasp the object.
         status = self.grasp(target_object, arm=Arm.left)
@@ -74,7 +74,7 @@ class PickUp(Magnebot):
         while status == ActionStatus.collision:
             print(f"Tried moving but got status: {status}")
             # If we collided with something, back up, re-orient, and try again.
-            self.move_by(-0.5)
+            self.move_by(-0.5, stop_on_collision=False)
             self.turn_by(15)
             status = self.move_by(1)
         print(f"Moved: {status}")

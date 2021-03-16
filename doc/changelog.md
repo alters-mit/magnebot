@@ -1,44 +1,51 @@
 # Changelog
 
-## 1.0.9
+## 1.1.0
 
-### `Magnebot`
+- Requires: TDW 1.8.4
+  - (Fixed in TDW): `rotate_camera()` and the `pitch`, `yaw`, `roll` parameters of `add_camera()` rotate around a local axis instead of a world axis
+- **Fixed: Build frequently crashes to desktop.** This was due to the simulation frequently entering impossible physics states. The following changes have been made to prevent this:
+  - By default, `turn_by()` and `turn_to()` will stop on a collision, using the exact same logic as `move_by()` and `move_to()` (previously, turn actions ignored collisions)
+  - Added optional parameter `stop_on_collision` to `move_by()`, `move_to()`, `turn_by()` and `turn_to()` Set this to False to ignore collision detection during the action
+  - If the previous action was a move or turn and it ended in a collision and the next action in the same direction, it will immediately fail. For example, if `turn_by(-45)` ended in a collision, `turn_by(-70)` will immediately fail (but `move_by(-1)` might succeed).
+    - (Backend) This is handled via `self._previous_collision`, which is set to a value of a new `CollisionAction` enum class
+    - (Backend) `move_by()` and `turn_by()` have an internal function `__set_collision_action()` to set whether there was a collision and if so, what type (`none`, `move_positive`, etc.)
+  - Collision detection is far more accurate, especially for walls
+  - Sequential moves and turns would try to reset the torso and column positions, which is only necessary after an arm articulation action. This might've caused physics crashes because the Magnebot is briefly immovable (and regardless was unnecessarily slow). Now, if the current action is a move or turn and the previous action was also a move or a turn, the Magnebot doesn't waste time trying to reset the torso and column
+    - (Backend) `_end_action()` now has an optional parameter `previous_action_was_move` which should be always True if called from a move or turn action and always be False for any other action (default is False).
+- Fixed: Rare near-infinite loop that can occur in move or turn actions due to the wheels turning very slowly for a very long time
+- Fixed: TypeError in `get_visible_objects()` if there are too many colors in the image
+- Added field: `colliding_with_wall` If True, the Magnebot is currently colliding with a wall.
+- Added example controller: `simple_navigation.py`
+- (Backend): Added some functions to make collision detection more customizable: `_is_stoppable_collision()`, `_includes_magnebot_joint_and_object()`, and `_is_high_mass()`
+- (Backend): Added `tqdm` as a required module
+- Made this changelog more readable
+
+## 1.0.9
 
 - Added optional parameter `check_pypi_version` to the constructor
 
 ## 1.0.8
 
-### `Magnebot`
-
 - Fixed: Avatars created via `add_camera()` don't use subpixel antialiasing
 
 ## 1.0.7
-
-### `Magnebot`
 
 - Fixed: The `pitch` and `yaw` parameters of `add_camera()` are flipped (`pitch` will yaw, and `yaw` will pitch)
 
 ## 1.0.6
 
-### `Magnebot`
-
 - Fixed: Magnebot sometimes spins in circles if the target angle is close to -180 degrees
 
 ## 1.0.5
 
-### `ObjectStatic`
-
-- Fixed: `KeyError` in constructor if the object's category isn't in `categories.json`. As a fallback, the constructor will try to get the category from a record in `models_core.json`. 
+- Fixed: `KeyError` in `ObjectStatic` constructor if the object's category isn't in `categories.json`. As a fallback, the constructor will try to get the category from a record in `models_core.json`. 
 
 ## 1.0.4
-
-### `Magnebot`
 
 - Fixed: `init_scene()` doesn't clear the data from the previous simulation
 
 ## 1.0.3
-
-### `Magnebot`
 
 - Fixed: If `turn_by()` or `turn_to()` is called and the Magnebot is already aligned with the target, the function returns `failed_to_turn` (should return `success`)
 
