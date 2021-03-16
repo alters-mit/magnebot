@@ -13,6 +13,7 @@
   - Collision detection is far more accurate, especially for walls
   - Sequential moves and turns would try to reset the torso and column positions, which is only necessary after an arm articulation action. This might've caused physics crashes because the Magnebot is briefly immovable (and regardless was unnecessarily slow). Now, if the current action is a move or turn and the previous action was also a move or a turn, the Magnebot doesn't waste time trying to reset the torso and column
     - (Backend) `_end_action()` now has an optional parameter `previous_action_was_move` which should be always True if called from a move or turn action and always be False for any other action (default is False).
+- Fixed: Rare near-infinite loop that can occur in move or turn actions due to the wheels turning very slowly for a very long time
 - Fixed: TypeError in `get_visible_objects()` if there are too many colors in the image
 - Added field: `colliding_with_wall` If True, the Magnebot is currently colliding with a wall.
 - Added example controller: `simple_navigation.py`
