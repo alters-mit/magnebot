@@ -11,6 +11,7 @@ if __name__ == "__main__":
              "magnebot_controller.py",
              "magnebot_static.py",
              "object_static.py",
+             "ik/orientation.py",
              "ik/orientation_mode.py",
              "scene_state.py",
              "ik/target_orientation.py",
