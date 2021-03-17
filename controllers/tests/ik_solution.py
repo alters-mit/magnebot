@@ -20,6 +20,12 @@ class IKSolution(TestController):
         super().__init__(port=port, screen_width=128, screen_height=128)
         self._debug = False
 
+    def get_positions(self):
+        # Source: https://stackoverflow.com/a/49575743
+        x_ = np.arange(-radius - 1, radius + 1, dtype=int)
+        y_ = np.arange(-radius - 1, radius + 1, dtype=int)
+        x, y = np.where((x_[:, np.newaxis]) ** 2 + (y_) ** 2 <= radius ** 2)
+
     def run(self) -> None:
         """
         Create a cloud of positions, reach for them, and store the orientation solution (if any).
