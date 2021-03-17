@@ -17,7 +17,7 @@ class IKSolution(TestController):
 
     def __init__(self, port: int = 1071):
         # Start the controller. Turn off debug mode.
-        super().__init__(port=port)
+        super().__init__(port=port, screen_width=128, screen_height=128)
         self._debug = False
 
     def run(self) -> None:
@@ -29,9 +29,9 @@ class IKSolution(TestController):
         # Get positions around the Magnebot.
         positions = list()
         origin = np.array([0, 0, 0])
+        # Get a range of radii from the Magnebot.
         for r in np.arange(0.3, 1.2, step=0.1):
-            # Get the number of positions per ring.
-            # The constant used is derived from: 10 objects if r == 0.7
+            # Get the number of positions per ring. The constant is derived from: 10 objects if r == 0.7
             num_positions = int(14.285714285714286 * r)
             d_theta = 360 / num_positions
             # Get each ring at increasing y values.
@@ -44,7 +44,6 @@ class IKSolution(TestController):
                     position[1] = y
                     positions.append(position)
                     theta += d_theta
-        # All of the positions.
         positions: np.array = np.array(positions)
         pbar = tqdm(total=len(positions) * 2)
 
