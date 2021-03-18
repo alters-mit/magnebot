@@ -22,7 +22,7 @@ from magnebot.magnebot_static import MagnebotStatic
 from magnebot.scene_state import SceneState
 from magnebot.action_status import ActionStatus
 from magnebot.paths import SPAWN_POSITIONS_PATH, TORSO_Y, OCCUPANCY_MAPS_DIRECTORY, SCENE_BOUNDS_PATH, \
-    TURN_CONSTANTS_PATH, IK_ORIENTATIONS_LEFT_PATH, IK_ORIENTATIONS_RIGHT_PATH
+    TURN_CONSTANTS_PATH, IK_ORIENTATIONS_LEFT_PATH, IK_ORIENTATIONS_RIGHT_PATH, IK_POSITIONS_PATH
 from magnebot.arm import Arm
 from magnebot.joint_type import JointType
 from magnebot.arm_joint import ArmJoint
@@ -332,21 +332,14 @@ class Magnebot(FloorplanController):
         # This way, we don't waste time resetting the torso and column.
         self._previous_action_was_move: bool = False
 
-        # Per-arm pre-calculated IK orientations per position.
-        # The positions in the cloud of IK targets.
-        self._ik_positions: Dict[Arm, np.array] = dict()
+        # Positions relative to the Magnebot with pre-calulated IK orientation solutions.
+        self._ik_positions: np.array = np.load(str(IK_POSITIONS_PATH.resolve()))
         # The orientations in the cloud of IK targets.
         self._ik_orientations: Dict[Arm, np.array] = dict()
         # Load the stored data and convert it to position and orientation data.
         for arm, ik_path in zip([Arm.left, Arm.right], [IK_ORIENTATIONS_LEFT_PATH, IK_ORIENTATIONS_RIGHT_PATH]):
-            arr = np.load(ik_path)
-            positions: np.array = np.zeros(shape=(len(arr), 3))
-            orientations: np.array = np.zeros(shape=(len(arr), 1), dtype=int)
-            for i in range(len(arr)):
-                positions[i] = np.array([arr[i][0], arr[i][1], arr[i][2]])
-                orientations[i] = int(arr[i][3])
-            self._ik_orientations[arm] = orientations
-            self._ik_positions[arm] = positions
+            continue
+            self._ik_orientations[arm] = np.load(str(ik_path))
 
         # Trigger events at the end of the most recent action.
         # Key = The trigger collider object.
@@ -887,8 +880,8 @@ class Magnebot(FloorplanController):
 
         # Try to get an orientation mode.
         if target_orientation == TargetOrientation.auto and orientation_mode == OrientationMode.auto:
-            target_orientation, orientation_mode = self._get_ik_orientation(arm=arm,
-                                                                            target=TDWUtils.vector3_to_array(target))
+            target_orientation, orientation_mode = self._get_ik_orientation(arm=arm, target=destination,
+                                                                            arrived_at=arrived_at)
 
         # Start the IK action.
         status = self._start_ik(target=target, arm=arm, absolute=absolute, arrived_at=arrived_at,
@@ -1591,7 +1584,8 @@ class Magnebot(FloorplanController):
 
         # Try to get an orientation mode.
         if target_orientation == TargetOrientation.auto and orientation_mode == OrientationMode.auto:
-            target_orientation, orientation_mode = self._get_ik_orientation(arm=arm, target=target)
+            target_orientation, orientation_mode = self._get_ik_orientation(arm=arm, target=target,
+                                                                            arrived_at=arrived_at)
 
         # Get the initial angles of each joint.
         # The first angle is always 0 (the origin link).
@@ -2159,25 +2153,45 @@ class Magnebot(FloorplanController):
                                                   "joint_id": joint_id,
                                                   "target": TDWUtils.array_to_vector3(joint_angles)})
 
-    def _get_ik_orientation(self, arm: Arm, target: np.array) -> Tuple[TargetOrientation, OrientationMode]:
+    def _get_ik_orientation(self, arm: Arm, target: np.array, arrived_at: float) -> Tuple[TargetOrientation, OrientationMode]:
         """
         Try to automatically choose an orientation for an IK solution.
         Our best-guess approach is to load a numpy array of known IK orientation solutions per position,
-        find the position in the array closests to `target`, and use that IK orientation solution.
+        find the position in the array closest to `target`, and use that IK orientation solution.
 
         For more information: https://notebook.community/Phylliade/ikpy/tutorials/Orientation
 
         :param arm: The arm doing the motion.
         :param target: The target position.
+        :param arrived_at: If there's a solution this close to the target, use it. Otherwise, use the nearest solution.
 
         :return: Tuple: A TargetOrientation and an OrientationMode (see documentation).
         """
 
-        # Find a position really close to the target and use that orientation.
-        for position, orientation in zip(self._ik_positions[arm], self._ik_orientations[arm]):
-            if np.linalg.norm(position - target) <= 0.05 and orientation != -1:
-                return ORIENTATIONS[orientation].target_orientation, ORIENTATIONS[orientation].orientation_mode
-        return TargetOrientation.none, OrientationMode.none
+        # Get all of the positions with a y value close to the target.
+        target_y = target[1]
+        min_distance = np.inf
+        orientation = -1
+        for p, o in zip(self._ik_positions, self._ik_orientations[arm]):
+            # Ignore positions that don't have a solution or with y values that are too far away.
+            if o == -1 or np.abs(p[1] - target_y) > arrived_at:
+                continue
+            # If there is a position that is really close that has a good solution, use it.
+            d = np.linalg.norm(p - target)
+            # If the position is really close to the target, use the corresponding orientation.
+            if d <= arrived_at:
+                return ORIENTATIONS[o].target_orientation, ORIENTATIONS[o].orientation_mode
+            # Try to get the nearest position from the target.
+            if d < min_distance:
+                min_distance = d
+                orientation = o
+        # If we couldn't find a solution, just opt for (none, none) and hope for the best.
+        # This can happen if the target position is further away than any of the pre-calculated positions.
+        if orientation == -1:
+            return TargetOrientation.none, OrientationMode.none
+        # Use our best-case IK orientation solution.
+        else:
+            return ORIENTATIONS[orientation].target_orientation, ORIENTATIONS[orientation].orientation_mode
 
     def _collided(self) -> bool:
         """

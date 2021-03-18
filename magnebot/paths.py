@@ -27,7 +27,11 @@ SCENE_BOUNDS_PATH = SCENE_DATA_DIRECTORY.joinpath("scene_bounds.json")
 MAGNEBOT_DIRECTORY = DATA_DIRECTORY.joinpath("magnebot")
 # The path to the turn constants data.
 TURN_CONSTANTS_PATH = MAGNEBOT_DIRECTORY.joinpath("turn_constants.csv")
+# The directory for IK orientation data.
+IK_DIRECTORY = MAGNEBOT_DIRECTORY.joinpath("ik")
+# The path to the IK target positions.
+IK_POSITIONS_PATH = IK_DIRECTORY.joinpath("positions.npy")
 # The path to the IK orientations data for the left arm.
-IK_ORIENTATIONS_LEFT_PATH = MAGNEBOT_DIRECTORY.joinpath("ik_orientations_left.npy")
+IK_ORIENTATIONS_LEFT_PATH = IK_DIRECTORY.joinpath("orientations_left.npy")
 # The path to the IK orientations data for the right arm.
-IK_ORIENTATIONS_RIGHT_PATH = MAGNEBOT_DIRECTORY.joinpath("ik_orientations_right.npy")
+IK_ORIENTATIONS_RIGHT_PATH = IK_DIRECTORY.joinpath("orientations_right.npy")
