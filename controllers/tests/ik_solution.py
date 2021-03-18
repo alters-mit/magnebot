@@ -84,24 +84,35 @@ class IKSolution(TestController):
             # Reach for every position.
             for i in range(start_index, len(positions)):
                 p = positions[i]
-                pbar.set_description(f"{p}: {str(ORIENTATIONS[previous_orientation])}")
+                pbar.set_description(f"{p} {str(ORIENTATIONS[0])}")
                 target = TDWUtils.array_to_vector3(p)
-                # Try the previous orientation. If it works, record it and continue to the next position.
+                # Always try (none, none) because it's the most-consistently "natural" motion and it's very fast.
                 self.init_scene()
                 status = self.reach_for(target=target,
                                         arm=arm,
-                                        orientation_mode=ORIENTATIONS[previous_orientation].orientation_mode,
-                                        target_orientation=ORIENTATIONS[previous_orientation].target_orientation)
+                                        orientation_mode=ORIENTATIONS[0].orientation_mode,
+                                        target_orientation=ORIENTATIONS[0].target_orientation)
                 if status == ActionStatus.success:
-                    orientations[i] = previous_orientation
+                    orientations[i] = 0
                     pbar.update(1)
                     continue
+                if previous_orientation != 0:
+                    # Try the previous orientation. If it works, record it and continue to the next position.
+                    self.init_scene()
+                    status = self.reach_for(target=target,
+                                            arm=arm,
+                                            orientation_mode=ORIENTATIONS[previous_orientation].orientation_mode,
+                                            target_orientation=ORIENTATIONS[previous_orientation].target_orientation)
+                    if status == ActionStatus.success:
+                        orientations[i] = previous_orientation
+                        pbar.update(1)
+                        continue
                 # Iterate through each possible orientation.
                 got_solution = False
-                for j in range(len(ORIENTATIONS)):
+                for j in range(1, len(ORIENTATIONS)):
                     if j == previous_orientation:
                         continue
-                    pbar.set_description(f"{p}: {str(ORIENTATIONS[j])}")
+                    pbar.set_description(f"{p} {str(ORIENTATIONS[j])}")
                     self.init_scene()
                     status = self.reach_for(target=target,
                                             arm=arm,
