@@ -78,8 +78,6 @@ class IKSolution(TestController):
                 if orientations[i] == -2:
                     start_index = i
                     break
-                elif orientations[i] != -1:
-                    previous_orientation = orientations[i]
                 pbar.update(1)
             # Reach for every position.
             for i in range(start_index, len(positions)):

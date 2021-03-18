@@ -30,7 +30,7 @@ from magnebot.constants import MAGNEBOT_RADIUS, OCCUPANCY_CELL_SIZE
 from magnebot.turn_constants import TurnConstants
 from magnebot.ik.target_orientation import TargetOrientation
 from magnebot.ik.orientation_mode import OrientationMode
-from magnebot.ik.orientation import ORIENTATIONS
+from magnebot.ik.orientation import Orientation, ORIENTATIONS
 from magnebot.collision_action import CollisionAction
 
 
@@ -338,8 +338,7 @@ class Magnebot(FloorplanController):
         self._ik_orientations: Dict[Arm, np.array] = dict()
         # Load the stored data and convert it to position and orientation data.
         for arm, ik_path in zip([Arm.left, Arm.right], [IK_ORIENTATIONS_LEFT_PATH, IK_ORIENTATIONS_RIGHT_PATH]):
-            continue
-            self._ik_orientations[arm] = np.load(str(ik_path))
+            self._ik_orientations[arm] = np.load(str(ik_path.resolve()))
 
         # Trigger events at the end of the most recent action.
         # Key = The trigger collider object.
@@ -877,11 +876,6 @@ class Magnebot(FloorplanController):
         destination = TDWUtils.vector3_to_array(target)
         if absolute:
             destination = Magnebot._absolute_to_relative(position=destination, state=self.state)
-
-        # Try to get an orientation mode.
-        if target_orientation == TargetOrientation.auto and orientation_mode == OrientationMode.auto:
-            target_orientation, orientation_mode = self._get_ik_orientation(arm=arm, target=destination,
-                                                                            arrived_at=arrived_at)
 
         # Start the IK action.
         status = self._start_ik(target=target, arm=arm, absolute=absolute, arrived_at=arrived_at,
@@ -1584,8 +1578,10 @@ class Magnebot(FloorplanController):
 
         # Try to get an orientation mode.
         if target_orientation == TargetOrientation.auto and orientation_mode == OrientationMode.auto:
-            target_orientation, orientation_mode = self._get_ik_orientation(arm=arm, target=target,
-                                                                            arrived_at=arrived_at)
+            orientation_solution, got_orientation = self._get_ik_orientation(arm=arm, target=target,
+                                                                             arrived_at=arrived_at)
+            target_orientation = orientation_solution.target_orientation
+            orientation_mode = orientation_solution.orientation_mode
 
         # Get the initial angles of each joint.
         # The first angle is always 0 (the origin link).
@@ -2153,7 +2149,7 @@ class Magnebot(FloorplanController):
                                                   "joint_id": joint_id,
                                                   "target": TDWUtils.array_to_vector3(joint_angles)})
 
-    def _get_ik_orientation(self, arm: Arm, target: np.array, arrived_at: float) -> Tuple[TargetOrientation, OrientationMode]:
+    def _get_ik_orientation(self, arm: Arm, target: np.array, arrived_at: float) -> Tuple[Orientation, bool]:
         """
         Try to automatically choose an orientation for an IK solution.
         Our best-guess approach is to load a numpy array of known IK orientation solutions per position,
@@ -2165,7 +2161,7 @@ class Magnebot(FloorplanController):
         :param target: The target position.
         :param arrived_at: If there's a solution this close to the target, use it. Otherwise, use the nearest solution.
 
-        :return: Tuple: A TargetOrientation and an OrientationMode (see documentation).
+        :return: Tuple: An `Orientation`; a boolean indicating whether a solution was found.
         """
 
         # Get all of the positions with a y value close to the target.
@@ -2180,7 +2176,7 @@ class Magnebot(FloorplanController):
             d = np.linalg.norm(p - target)
             # If the position is really close to the target, use the corresponding orientation.
             if d <= arrived_at:
-                return ORIENTATIONS[o].target_orientation, ORIENTATIONS[o].orientation_mode
+                return ORIENTATIONS[o], True
             # Try to get the nearest position from the target.
             if d < min_distance:
                 min_distance = d
@@ -2188,10 +2184,10 @@ class Magnebot(FloorplanController):
         # If we couldn't find a solution, just opt for (none, none) and hope for the best.
         # This can happen if the target position is further away than any of the pre-calculated positions.
         if orientation == -1:
-            return TargetOrientation.none, OrientationMode.none
+            return ORIENTATIONS[0], False
         # Use our best-case IK orientation solution.
         else:
-            return ORIENTATIONS[orientation].target_orientation, ORIENTATIONS[orientation].orientation_mode
+            return ORIENTATIONS[orientation], True
 
     def _collided(self) -> bool:
         """
