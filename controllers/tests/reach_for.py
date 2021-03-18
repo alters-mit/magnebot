@@ -58,7 +58,11 @@ class ReachFor(TestController):
                 pbar.update(1)
         pbar.close()
         print("Correct guesses:", correct_guesses / (num_trials_per_arm * 2))
-        print("Correct guesses when there was no orientation solution:", correct_no_orientation / total_no_orientation)
+        if total_no_orientation > 0:
+            no_orientation = correct_no_orientation / total_no_orientation
+        else:
+            no_orientation = "NaN"
+        print("Correct guesses when there was no orientation solution:", no_orientation)
         print("Averaged time elapsed per _get_ik_orientation() call:", sum(orientation_times) / len(orientation_times))
         self.end()
 
