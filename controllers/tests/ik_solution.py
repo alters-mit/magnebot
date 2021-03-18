@@ -96,7 +96,7 @@ class IKSolution(TestController):
                     orientations[i] = 0
                     pbar.update(1)
                     continue
-                if previous_orientation != 0:
+                if previous_orientation > 0:
                     # Try the previous orientation. If it works, record it and continue to the next position.
                     self.init_scene()
                     status = self.reach_for(target=target,

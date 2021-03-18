@@ -40,7 +40,7 @@ if __name__ == "__main__":
     # The width of the image in pixels.
     d = 256
     # The radius of each circle.
-    r = 4
+    r = 12
     # Make images for each arm.
     for arm, path in zip([Arm.left, Arm.right], [IK_ORIENTATIONS_LEFT_PATH, IK_ORIENTATIONS_RIGHT_PATH]):
         orientations = np.load(str(path.resolve()))
@@ -52,21 +52,20 @@ if __name__ == "__main__":
             x = 0
             # Draw the title text.
             header_font = ImageFont.truetype(font_path, 18)
-            header = f"y = {y}"
+            header = f"y = {round(y, 1)}"
             header_size = header_font.getsize(header)
             header_x = int((d / 2) - (header_size[0] / 2))
             header_y = 8
             draw.text((header_x, header_y), header, font=header_font, anchor="mg", fill=(171, 178, 191))
-
             for p, o in zip(positions, orientations):
                 # Only include positions with the correct y value.
-                if y - 0.1 >= p[1] >= y + 0.1 or o < 0:
+                if o < -0.01 or np.abs(y - p[1]) > 0.01:
                     continue
                 # Convert the position to image coordinates.
-                x = d * (1 - ((1 - p[0]) / 2))
+                x = d * (1 - ((1 - p[0]) / 2)) - 6
                 # Add a little padding to position this below the header text.
                 z = d * (1 - ((1 - p[2]) / 2)) + 30
                 # Draw a circle to mark the position. Colorize the orientation.
-                draw.ellipse((x, z, x + r, z + r), fill=colors[o], outline=colors[o])
+                draw.rectangle((x, z, x + r, z + r), fill=colors[o], outline=colors[o])
             # Save the image.
-            image.save(str(directory.joinpath(f"{y}.jpg").resolve()))
+            image.save(str(directory.joinpath(f"{round(y, 1)}.jpg").resolve()))
