@@ -25,8 +25,6 @@ status = m.reach_for(target={"x": 0.2, "y": 0.5, "z": 0.5}, arm=Arm.left, absolu
 m.end()
 ```
 
-For a complete list of enum values for `TargetOrientation` and `OrientationMode`, read [this](api/target_orientation.md) and [this](api/orientation_mode.md).
-
 ### Automatic IK orientation solver
 
 By default, `target_orientation=TargetOrientation.auto` and `orientation_mode=OrientationMode.auto`. This means that the Magnebot will automatically choose an orientation solution, given the target position. It does this by comparing the target position to an array of pre-calculated positions and orientations. The positions and orientations are pre-calculated using `ik_solution.py` which can be found in the `util/` directory of this repo. You can run this yourself with different parameters but be aware that it is a *long* process (at least 36 hours).
@@ -63,6 +61,7 @@ You can explicitly set the `target_orientation` and `orientation_mode` parameter
 
 Some guidelines regarding the orientation parameters:
 
+- For a complete list of enum values for `TargetOrientation` and `OrientationMode`, read [this](api/target_orientation.md) and [this](api/orientation_mode.md).
 - Both parameters must be `auto` or neither.
 - Both parameters must be `none` or neither.
 - Setting both parameters to `none` is the fastest option (but not always the most accurate).
