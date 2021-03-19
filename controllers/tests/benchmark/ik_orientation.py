@@ -136,7 +136,7 @@ class ReachFor(TestController):
                 # Reload the scene.
                 self.init_scene()
                 # Try multiple times to reach for the position.
-                for j in range(5):
+                for j in range(num_tries):
                     # Reach for the target.
                     status = self.reach_for(target=TDWUtils.array_to_vector3(self.positions[i]),
                                             arm=arm,
