@@ -2167,6 +2167,7 @@ class Magnebot(FloorplanController):
         :return: Tuple: An `Orientation`; a boolean indicating whether a solution was found.
         """
 
+        # Get the index of the nearest position using scipy, and use that index to get the corresponding orientation.
         # Source: https://stackoverflow.com/questions/52364222/find-closest-similar-valuevector-inside-a-matrix
         # noinspection PyArgumentList
         orientation = self._ik_orientations[arm][cKDTree(self._ik_positions).query(target, k=1)[1]]
