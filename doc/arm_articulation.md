@@ -89,6 +89,10 @@ Some guidelines regarding the orientation parameters:
 - Both parameters must be `none` or neither.
 - Setting both parameters to `none` will usually make the arm bend in the most "direct" path.
 
+### Setting the `arrived_at` parameter
+
+The `arrived_at` parameter in the `reach_for()` action determines minimum distance from the magnet to the target. The action immediately stops if the magnet is within this distance. Increasing `arrived_at` therefore "improves" accuracy and performance. 
+
 ## Torso movement
 
 The Magnebot's torso slides up and down on a prismatic joint. Prismatic joints aren't defined in the underlying `ikpy` module (though [apparently it *is* possible to implement one](https://github.com/Phylliade/ikpy/issues/96)).
