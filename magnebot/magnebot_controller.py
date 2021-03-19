@@ -2165,18 +2165,17 @@ class Magnebot(FloorplanController):
         """
 
         # Get all of the positions with a y value close to the target.
-        target_y = target[1]
         min_distance = np.inf
         orientation = -1
+        # Source: https://philbull.wordpress.com/2012/01/11/numpy-tip-getting-index-of-an-array-element-nearest-to-some-value/
+        idx = (np.abs(self._ik_positions - target)).argmin()
+        print(idx)
         for p, o in zip(self._ik_positions, self._ik_orientations[arm]):
-            # Ignore positions that don't have a solution or with y values that are too far away.
-            if o == -1 or np.abs(p[1] - target_y) > arrived_at:
-                continue
             # If there is a position that is really close that has a good solution, use it.
             d = np.linalg.norm(p - target)
             # If the position is really close to the target, use the corresponding orientation.
             if d <= arrived_at:
-                return ORIENTATIONS[o], True
+                return ORIENTATIONS[o], True if o >= 0 else False
             # Try to get the nearest position from the target.
             if d < min_distance:
                 min_distance = d
