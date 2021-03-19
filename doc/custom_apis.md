@@ -77,14 +77,7 @@ If you want to send the same command every time `communicate()` is called (for e
 
 ### Arm articulation (IK) actions
 
-We are still learning how to best develop arm articulation actions. The following guidelines will be updated continuously.
-
-- You should usually use `_start_ik()` to start an IK action. The `orientation_mode` and `target_orientation` parameters will affect the direction that the arm travels. [Read this for more information](https://notebook.community/Phylliade/ikpy/tutorials/Orientation).
-- If `self._debug == True`, then `_stark_ik()` will create a plot of the IK solution. This doesn't work on remote servers.
-- `_do_arm_motion()` will loop until the joints stop moving. If your action only involves a few specific joints, the action will generally run faster if you supply a `joint_ids` parameter.
-
-- Very small changes to parameters can result in dramatically different behavior. We're still in the process of learning how to best handle fine motor control with the Magnebot.
-- `_append_ik_commands()` converts a list of angles to TDW commands. Unlike `_start_ik()`, it doesn't actually plot an IK solution.
+[**Read this document.**](arm_articulation.md)
 
 ## Other useful functions
 

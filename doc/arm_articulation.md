@@ -35,14 +35,14 @@ The script `ik_images.py` (also located in `util/`) will generate images of vert
 
 ### Accuracy and performance
 
-We benchmark the IK orientation solver using `controllers/tests/benchmark/ik_orientation.py`. In this test controller, the Magnebot will `reach_for()` an array of target positions and record whether each action succeeded, the time elapsed, and so on.
+We benchmark the IK orientation solver using `controllers/tests/benchmark/ik_orientation.py`. In this test controller, the Magnebot will `reach_for()` an array of target positions and record whether the outcome of the action was guessed correctly:
 
 | `target_orientation`, `orientation_mode` | Accuracy | Total time elapsed   |
 | ---------------------------------------- | -------- | -------------------- |
-| `none`, `none`                           | 35%      | 3 minutes 48 seconds |
-| `auto`, `auto`                           | 88%      | 5 minutes 40 seconds |
+| `none`, `none`                           | 47.5%    | 3 minutes 48 seconds |
+| `auto`, `auto`                           | 72.5%    | 5 minutes 40 seconds |
 
-- `auto`, `auto` is slower because the underlying `ikpy` is slower if these parameters are explicitly set. We know this because `self._get_ik_orientation()` (the only additional code in Magnebot) is extremely fast: 0.002 seconds on average. Sometimes, the best pre-calculated parameters are `none`, `none` in which case `auto`, `auto` will be very fast.
+- `auto`, `auto` is slower *because* it's more accurate. Sometimes, it can find a solution when `none`, `none` can't; because the action doesn't immediately fail, the overall time elapsed for the benchmark will be somewhat longer. The function that actually picks the orientation solution, `self._get_ik_orientation()`, has been extremely optimized, requiring on average 0.002 seconds.
 - `ik_orientation.py` also tests whether the Magnebot can correctly guess if the action is going to fail no matter what orientation parameters are used (in which case the action fails immediately). 98% of the time, the Magnebot guesses correctly.
 
 ### Limitations to the IK orientation solver
@@ -64,11 +64,22 @@ Some guidelines regarding the orientation parameters:
 - For a complete list of enum values for `TargetOrientation` and `OrientationMode`, read [this](api/target_orientation.md) and [this](api/orientation_mode.md).
 - Both parameters must be `auto` or neither.
 - Both parameters must be `none` or neither.
-- Setting both parameters to `none` is the fastest option (but not always the most accurate).
+- Setting both parameters to `none` will usually make the arm bend in the most "direct" path.
+
+## Torso movement
+
+The Magnebot's torso slides up and down on a prismatic joint. Prismatic joints aren't defined in the underlying `ikpy` module (though [apparently it *is* possible to implement one](https://github.com/Phylliade/ikpy/issues/96)).
+
+In the Magnebot API, prismatic movement is handled *iteratively*. The function `self._start_ik()` will take a best-guess of the torso position and get an IK solution. If the IK solution fails (if the magnet won't be close enough to the target), a different torso position is tried.
 
 ## Defining your own arm articulation action
 
 You can define your own action that uses inverse kinematics by calling the hidden function `self._start_ik()`. For example implementation, see `controllers/examples/custom_api.py` which adds a `push()` action.
+
+Other useful functions:
+
+- `self._do_arm_motion()` will loop until the joints stop moving. If your action only involves a few specific joints, the action will generally run faster if you supply a `joint_ids` parameter.
+- `self._append_ik_commands()` converts a list of angles to TDW commands. Unlike `_start_ik()`, it doesn't actually plot an IK solution.
 
 ## Getting a target position for `grasp()`
 
@@ -77,3 +88,7 @@ In the `grasp()` action, the Magnebot needs to pick a target position on the sur
 - The Magnebot gets the side on the object closest to the Magnet using [`Bounds` data](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/output_data.md#Bounds) in the function `self._get_nearest_side()`
   - If the object is above the magnet, the Magnebot will ignore the lowest side (i.e. the base of the object), since that's usually impossible to reach.
 - The Magnebot [raycasts](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/output_data.md#Raycast) from the Magnet to that position on the bounds. If the raycast hits the target, the Magnebot opts for the raycast position instead (which is usually tighter-fitting to the actual geometry of the object). The raycast might fail if there is an object in the way.
+
+## Debug mode
+
+If `self._debug == True`, then `recach_for()`, `grasp()`, and any other custom action that calls `self._start_ik()` will create a plot of the IK solution. This doesn't work on remote servers.

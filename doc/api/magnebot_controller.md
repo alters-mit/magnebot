@@ -384,6 +384,8 @@ _These functions move and bend the joints of the Magnebots's arms._
 
 _During an arm articulation action, the Magnebot is always "immovable", meaning that its wheels are locked and it isn't possible for its root object to move or rotate._
 
+_For more information regarding how arm articulation works, [read this](../arm_articulation.md)._
+
 #### reach_for
 
 **`self.reach_for(target, arm)`**

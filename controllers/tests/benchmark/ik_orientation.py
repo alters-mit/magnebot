@@ -66,7 +66,7 @@ class ReachFor(TestController):
                                         orientation_mode=OrientationMode.none,
                                         arrived_at=self.arrived_at)
                 # We guessed the IK solution correctly if the action was successful.
-                if status == ActionStatus.success:
+                if status == ActionStatus.success or status == ActionStatus.cannot_reach:
                     successes += 1
                 pbar.update(1)
         pbar.close()
@@ -102,16 +102,15 @@ class ReachFor(TestController):
             for i in range(len(self.positions)):
                 # Reload the scene.
                 self.init_scene()
-                orientation, got_orientation = self._get_ik_orientation(arm=arm,
-                                                                        target=self.positions[i])
+                orientation, got_orientation = self._get_ik_orientation(arm=arm, target=self.positions[i])
                 # Reach for the target.
                 status = self.reach_for(target=TDWUtils.array_to_vector3(self.positions[i]),
                                         arm=arm,
                                         arrived_at=self.arrived_at,
                                         target_orientation=orientation.target_orientation,
                                         orientation_mode=orientation.orientation_mode)
-                # Record a successful action.
-                if status == ActionStatus.success:
+                # Record a successful action or an action that was unsuccessful that we guessed would be.
+                if status == ActionStatus.success or not got_orientation:
                     successes += 1
                 # Record how often we correctly guess that there's no solution (the action should fail).
                 if not got_orientation:
@@ -124,7 +123,7 @@ class ReachFor(TestController):
             no_orientation = correct_no_orientation / total_no_orientation
         else:
             no_orientation = "NaN"
-        return successes / len(self.positions * 2), no_orientation,
+        return successes / (len(self.positions) * 2), no_orientation
 
 
 if __name__ == "__main__":
