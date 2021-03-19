@@ -5,8 +5,6 @@ from tdw.output_data import Bounds
 from magnebot import Magnebot, ActionStatus, Arm
 from magnebot.scene_state import SceneState
 from magnebot.util import get_data
-from magnebot.ik.target_orientation import TargetOrientation
-from magnebot.ik.orientation_mode import OrientationMode
 
 
 class CustomAPI(Magnebot):
@@ -92,23 +90,19 @@ class CustomAPI(Magnebot):
             torso_position = k
             if Magnebot._TORSO_Y[k] - 0.2 > target_position[1]:
                 break
-
-        # Remember the original position of the object.
-        p_0 = state.object_transforms[target].position
-
         # Start the IK motion. Some notes regarding these parameters:
         # - We need to explicitly set `state` because of the extra simulation step invoked by `communicate()`.
         # - `fixed_torso_prismatic` means that we'll use the position defined above rather than set it automatically.
         # - `do_prismatic_first` means that the torso will move before the rest of the arm movement.
-        # - See docstring for `self._start_ik()` regarding `orientation_mode` and `target_orientation`.
         status = self._start_ik(target=TDWUtils.array_to_vector3(target_position), arm=arm, state=state,
-                                fixed_torso_prismatic=torso_position, do_prismatic_first=True,
-                                target_orientation=TargetOrientation.up, orientation_mode=OrientationMode.z)
+                                fixed_torso_prismatic=torso_position, do_prismatic_first=True)
         # If the arm motion isn't possible, end the action here.
         if status != ActionStatus.success:
             self._end_action()
             return status
 
+        # Remember the original position of the object.
+        p_0 = state.object_transforms[target].position
         # Wait for the arm to stop moving.
         # We don't need the action status returned by this function because we care about whether the object was pushed,
         # not whether the arm articulation was a "success".
@@ -152,7 +146,7 @@ class CustomAPI(Magnebot):
             return
         print("Pushed the other object.")
         # Reset the arms.
-        self.move_by(-0.5)
+        self.move_by(-0.5, stop_on_collision=False)
         self.reset_arm(arm=Arm.left)
         self.reset_arm(arm=Arm.right)
 

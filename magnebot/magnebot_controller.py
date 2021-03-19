@@ -1500,7 +1500,7 @@ class Magnebot(FloorplanController):
                   state: SceneState = None, allow_column: bool = True, fixed_torso_prismatic: float = None,
                   object_id: int = None, do_prismatic_first: bool = False,
                   orientation_mode: OrientationMode = OrientationMode.auto,
-                  target_orientation: TargetOrientation = OrientationMode.auto) -> ActionStatus:
+                  target_orientation: TargetOrientation = TargetOrientation.auto) -> ActionStatus:
         """
         Start an IK action.
 
