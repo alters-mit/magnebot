@@ -37,13 +37,11 @@ The script `ik_images.py` (also located in `util/`) will generate images of vert
 
 We benchmark the IK orientation solver using `controllers/tests/benchmark/ik_orientation.py`. In this test controller, the Magnebot will `reach_for()` an array of target positions and record whether the outcome of the action was guessed correctly:
 
-| `target_orientation`, `orientation_mode` | Accuracy | Total time elapsed   |
-| ---------------------------------------- | -------- | -------------------- |
-| `none`, `none`                           | 47.5%    | 3 minutes 48 seconds |
-| `auto`, `auto`                           | 72.5%    | 5 minutes 40 seconds |
-
-- `auto`, `auto` is slower *because* it's more accurate. Sometimes, it can find a solution when `none`, `none` can't; because the action doesn't immediately fail, the overall time elapsed for the benchmark will be somewhat longer. The function that actually picks the orientation solution, `self._get_ik_orientation()`, has been extremely optimized, requiring on average 0.002 seconds.
-- `ik_orientation.py` also tests whether the Magnebot can correctly guess if the action is going to fail no matter what orientation parameters are used (in which case the action fails immediately). 98% of the time, the Magnebot guesses correctly.
+| `target_orientation`, `orientation_mode`      | Accuracy | Total time elapsed   |
+| --------------------------------------------- | -------- | -------------------- |
+| `none`, `none`                                | 47.5%    | 3 minutes 48 seconds |
+| `auto`, `auto` (1 consecutive attempt)        | 79%      | 4 minutes 5 seconds  |
+| `auto`, `auto` (up to 5 consecutive attempts) | 81.5%    | 5 minutes 50 seconds |
 
 ### Limitations to the IK orientation solver
 

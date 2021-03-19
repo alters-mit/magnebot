@@ -87,15 +87,14 @@ class ReachFor(TestController):
                 orientation_times.append(time() - t0)
         return sum(orientation_times) / len(orientation_times)
 
-    def run_auto(self) -> Tuple[float, float]:
+    def no_orientation_guess(self) -> float:
         """
         Per arm, reach for targets and record whether the IK system correctly guessed the outcome.
 
-        :return: Tuple: The percentage of `reach_for()` actions that were successful; the percentage of times where we guessed the action would fail and it did.
+        :return: The percentage of times where we guessed the action would fail and it did.
         """
 
         pbar = tqdm(total=len(self.positions) * 2)
-        successes: int = 0
         correct_no_orientation: int = 0
         total_no_orientation: int = 0
         for arm in [Arm.left, Arm.right]:
@@ -109,9 +108,6 @@ class ReachFor(TestController):
                                         arrived_at=self.arrived_at,
                                         target_orientation=orientation.target_orientation,
                                         orientation_mode=orientation.orientation_mode)
-                # Record a successful action or an action that was unsuccessful that we guessed would be.
-                if status == ActionStatus.success or not got_orientation:
-                    successes += 1
                 # Record how often we correctly guess that there's no solution (the action should fail).
                 if not got_orientation:
                     total_no_orientation += 1
@@ -123,7 +119,35 @@ class ReachFor(TestController):
             no_orientation = correct_no_orientation / total_no_orientation
         else:
             no_orientation = "NaN"
-        return successes / (len(self.positions) * 2), no_orientation
+        return no_orientation
+
+    def run_auto(self, num_tries: int) -> float:
+        """
+        Benchmark whether the accuracy improves if the Magnebot tries more than once to reach the same position.
+
+        :param num_tries: The number of consecutive tries to attempt before giving up.
+
+        :return: The percentage of sequences of `reach_for()` actions (`num_tries` actions) that were successful.
+        """
+        pbar = tqdm(total=len(self.positions) * 2)
+        successes: int = 0
+        for arm in [Arm.left, Arm.right]:
+            for i in range(len(self.positions)):
+                # Reload the scene.
+                self.init_scene()
+                # Try multiple times to reach for the position.
+                for j in range(5):
+                    # Reach for the target.
+                    status = self.reach_for(target=TDWUtils.array_to_vector3(self.positions[i]),
+                                            arm=arm,
+                                            arrived_at=self.arrived_at)
+                    # Record a successful action or an action that was unsuccessful that we guessed would be.
+                    if status == ActionStatus.success or status == ActionStatus.cannot_reach:
+                        successes += 1
+                        break
+                pbar.update(1)
+        pbar.close()
+        return successes / (len(self.positions) * 2)
 
 
 if __name__ == "__main__":
@@ -132,7 +156,10 @@ if __name__ == "__main__":
     print("Success if orientation is (none, none):", successes_none)
     time_elapsed_auto = m.get_ik_orientation_speed()
     print("Average time elapsed per _get_ik_orientation() call:", time_elapsed_auto)
-    successes_auto, no_orientations_auto = m.run_auto()
+    no_orientation_speed = m.no_orientation_guess()
+    print("Accuracy of no solution prediction:", no_orientation_speed)
+    successes_auto = m.run_auto(1)
     print("Success if orientation is (auto, auto):", successes_auto)
-    print("Accuracy of no solution prediction:", no_orientations_auto)
+    successes_multi = m.run_auto(5)
+    print("Success if orientation is (auto, auto) (up to 5 consecutive attempts):", successes_multi)
     m.end()
