@@ -49,6 +49,7 @@ We benchmark the IK orientation solver using `controllers/tests/benchmark/ik_ori
 
 ### Limitations to the IK orientation solver
 
+- The automatic IK orientation solver can be inaccurate due to the granularity of the pre-calculated array; if the cloud of positions was denser, it could choose a more tightly-fitting solution. Due to the time required to generate these solutions, we haven't yet calculated how position cloud density actually affects accuracy and performance but we believe that the current data is a reasonable balance between the two.
 - The Magnebot IK orientation solver assumes that the Magnebot's arms are in their neutral position. If they're at any other position, the IK solution found using `auto`, `auto` parameters will be inaccurate. You can reset the arms to their neutral positions with the `reset_arm()` function.
 - The IK solver doesn't (and can't) handle situations where there are obstructions such as walls or other objects.
 
