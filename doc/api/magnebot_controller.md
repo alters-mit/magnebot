@@ -394,8 +394,6 @@ Reach for a target position.
 
 The action ends when the arm stops moving. The arm might stop moving if it succeeded at finishing the motion, in which case the action is successful. Or, the arms might stop moving because the motion is impossible, there's an obstacle in the way, if the arm is holding something heavy, and so on.
 
-Regarding `target_orientation` and `orientation_mode`: These affect the IK solution and end pose of the arm. The action might succeed or fail depending on these settings. If both parameters are set to `auto`, the Magnebot will try to choose the best possible settings. For more information, [read this](https://notebook.community/Phylliade/ikpy/tutorials/Orientation).
-
 Possible [return values](action_status.md):
 
 - `success`
@@ -409,8 +407,8 @@ Possible [return values](action_status.md):
 | arm |  Arm |  | The arm that will reach for the target. |
 | absolute |  bool  | True | If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot. |
 | arrived_at |  float  | 0.125 | If the magnet is this distance or less from `target`, then the action is successful. |
-| target_orientation |  TargetOrientation  | TargetOrientation.auto | The [target orientation](target_orientation.md) of the IK solution (see above). |
-| orientation_mode |  OrientationMode  | OrientationMode.auto | The [orientation mode](orientation_mode.md) of the IK solution (see above). |
+| target_orientation |  TargetOrientation  | TargetOrientation.auto | [The target orientation of the IK solution.](../arm_articulation.md) |
+| orientation_mode |  OrientationMode  | OrientationMode.auto | [The orientation mode of the IK solution.](../arm_articulation.md) |
 
 _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` is at the `target` and if not, why.
 
@@ -424,8 +422,6 @@ Try to grasp the target object with the arm. The Magnebot will reach for the nea
 
 If the magnet grasps the object, the arm will stop moving and the action is successful.
 
-Regarding `target_orientation` and `orientation_mode`: These affect the IK solution and end pose of the arm. The action might succeed or fail depending on these settings. If both parameters are set to `auto`, the Magnebot will try to choose the best possible settings. For more information, [read this](https://notebook.community/Phylliade/ikpy/tutorials/Orientation).
-
 Possible [return values](action_status.md):
 
 - `success`
@@ -437,8 +433,8 @@ Possible [return values](action_status.md):
 | --- | --- | --- | --- |
 | target |  int |  | The ID of the target object. |
 | arm |  Arm |  | The arm of the magnet that will try to grasp the object. |
-| target_orientation |  TargetOrientation  | TargetOrientation.auto | The [target orientation](target_orientation.md) of the IK solution (see above). |
-| orientation_mode |  OrientationMode  | OrientationMode.auto | The [orientation mode](orientation_mode.md) of the IK solution (see above). |
+| target_orientation |  TargetOrientation  | TargetOrientation.auto | [The target orientation of the IK solution.](../arm_articulation.md) |
+| orientation_mode |  OrientationMode  | OrientationMode.auto | [The orientation mode of the IK solution.](../arm_articulation.md) |
 
 _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` is holding the `target` and if not, why.
 

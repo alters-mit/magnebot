@@ -6,6 +6,8 @@ from magnebot.ik.target_orientation import TargetOrientation
 class Orientation:
     """
     A convenient wrapper for combinations of [`OrientationMode`](orientation_mode.md) and [`TargetOrientation`](target_orientation.md).
+
+    For an overview of how orientations work in the Magnebot API, [read this](../arm_articulation.md). This class is used to store and look up pre-calculated orientation parameters per pre-calculated position.
     """
 
     def __init__(self, orientation_mode: OrientationMode, target_orientation: TargetOrientation):
@@ -28,7 +30,7 @@ class Orientation:
 
 
 # A list of OrientationMode/TargetOrientation combinations. Combinations that are known to be bad aren't in the list.
-# These are in order of most-likely to be correct to least-likely.
+# These are roughly in order of most-likely to be correct to least-likely.
 ORIENTATIONS: List[Orientation] = [Orientation(orientation_mode=OrientationMode.none,
                                                target_orientation=TargetOrientation.none),
                                    Orientation(orientation_mode=OrientationMode.x,

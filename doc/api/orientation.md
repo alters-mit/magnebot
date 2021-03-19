@@ -4,6 +4,8 @@
 
 A convenient wrapper for combinations of [`OrientationMode`](orientation_mode.md) and [`TargetOrientation`](target_orientation.md).
 
+For an overview of how orientations work in the Magnebot API, [read this](../arm_articulation.md). This class is used to store and look up pre-calculated orientation parameters per pre-calculated position.
+
 ***
 
 ## Fields

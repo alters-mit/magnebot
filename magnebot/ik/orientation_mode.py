@@ -4,7 +4,8 @@ from enum import Enum
 class OrientationMode(Enum):
     """
     An orientation mode for an IK solution.
-    For more information, [read this](https://notebook.community/Phylliade/ikpy/tutorials/Orientation).
+
+    For more information, [read this](../arm_articulation.md).
     """
 
     none = None  # Default orientation.

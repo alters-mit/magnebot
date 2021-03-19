@@ -3,7 +3,8 @@
 `from magnebot.target_orientation import TargetOrientation`
 
 A target orientation vector for an IK solution.
-For more information, [read this](https://notebook.community/Phylliade/ikpy/tutorials/Orientation).
+
+For more information, [read this](../arm_articulation.md).
 
 | Value | Description |
 | --- | --- |

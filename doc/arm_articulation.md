@@ -29,9 +29,7 @@ For a complete list of enum values for `TargetOrientation` and `OrientationMode`
 
 ### Automatic IK orientation solver
 
-By default, `target_orientation=TargetOrientation.auto` and `orientation_mode=OrientationMode.auto`. This means that the Magnebot will automatically choose an orientation solution, given the target position. It does this by comparing the target position to an array of pre-calculated positions and orientations. See: `_get_ik_orientation()` in `magnebot_controller.py` for how this is implemented within the Magnebot API at runtime.
-
-The positions and orientations are pre-calculated using `ik_solution.py` which can be found in the `util/` directory of this repo. You can run this yourself with different parameters but be aware that it is a *long* process (at least 36 hours).
+By default, `target_orientation=TargetOrientation.auto` and `orientation_mode=OrientationMode.auto`. This means that the Magnebot will automatically choose an orientation solution, given the target position. It does this by comparing the target position to an array of pre-calculated positions and orientations. The positions and orientations are pre-calculated using `ik_solution.py` which can be found in the `util/` directory of this repo. You can run this yourself with different parameters but be aware that it is a *long* process (at least 36 hours).
 
 The script `ik_images.py` (also located in `util/`) will generate images of vertical slices of the orientation solutions, which can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/ik).
 
@@ -46,7 +44,7 @@ We benchmark the IK orientation solver using `controllers/tests/benchmark/ik_ori
 | `none`, `none`                           | 35%      | 3 minutes 48 seconds |
 | `auto`, `auto`                           | 88%      | 5 minutes 40 seconds |
 
-- `auto`, `auto` is slower because the underlying `ikpy` is slower if these parameters are explicitly set. We know this because `_get_ik_orientation()` (the only additional code in Magnebot) is extremely fast: 0.002 seconds on average.
+- `auto`, `auto` is slower because the underlying `ikpy` is slower if these parameters are explicitly set. We know this because `self._get_ik_orientation()` (the only additional code in Magnebot) is extremely fast: 0.002 seconds on average.
 - `ik_orientation.py` also tests whether the Magnebot can correctly guess if the action is going to fail no matter what orientation parameters are used (in which case the action fails immediately). 98% of the time, the Magnebot guesses correctly.
 
 ### Limitations to the IK orientation solver
