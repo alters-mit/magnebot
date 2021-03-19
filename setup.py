@@ -27,5 +27,5 @@ setup(
     keywords='unity simulation tdw robotics',
     packages=find_packages(),
     include_package_data=True,
-    install_requires=['tdw', 'numpy', 'ikpy', 'requests', 'matplotlib', 'pillow', "py_md_doc", "tqdm"],
+    install_requires=['tdw', 'numpy', 'ikpy', 'requests', 'matplotlib', 'pillow', "py_md_doc", "tqdm", "scipy"],
 )

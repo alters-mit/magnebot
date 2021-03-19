@@ -3,6 +3,7 @@ from typing import List, Dict, Optional, Union, Tuple
 from csv import DictReader
 from pathlib import Path
 import numpy as np
+from scipy.spatial import cKDTree
 from _tkinter import TclError
 from ikpy.chain import Chain
 from ikpy.link import OriginLink, URDFLink, Link
@@ -1578,8 +1579,11 @@ class Magnebot(FloorplanController):
 
         # Try to get an orientation mode.
         if target_orientation == TargetOrientation.auto and orientation_mode == OrientationMode.auto:
-            orientation_solution, got_orientation = self._get_ik_orientation(arm=arm, target=target,
-                                                                             arrived_at=arrived_at)
+            orientation_solution, got_orientation = self._get_ik_orientation(arm=arm, target=target)
+            # If we didn't get a solution, the action is VERY likely to fail.
+            # See: `controllers/tests/benchmark/ik_orientation.py`
+            if not got_orientation:
+                return ActionStatus.cannot_reach
             target_orientation = orientation_solution.target_orientation
             orientation_mode = orientation_solution.orientation_mode
 
@@ -2149,7 +2153,7 @@ class Magnebot(FloorplanController):
                                                   "joint_id": joint_id,
                                                   "target": TDWUtils.array_to_vector3(joint_angles)})
 
-    def _get_ik_orientation(self, arm: Arm, target: np.array, arrived_at: float) -> Tuple[Orientation, bool]:
+    def _get_ik_orientation(self, arm: Arm, target: np.array) -> Tuple[Orientation, bool]:
         """
         Try to automatically choose an orientation for an IK solution.
         Our best-guess approach is to load a numpy array of known IK orientation solutions per position,
@@ -2159,27 +2163,13 @@ class Magnebot(FloorplanController):
 
         :param arm: The arm doing the motion.
         :param target: The target position.
-        :param arrived_at: If there's a solution this close to the target, use it. Otherwise, use the nearest solution.
 
         :return: Tuple: An `Orientation`; a boolean indicating whether a solution was found.
         """
 
-        # Get all of the positions with a y value close to the target.
-        min_distance = np.inf
-        orientation = -1
-        # Source: https://philbull.wordpress.com/2012/01/11/numpy-tip-getting-index-of-an-array-element-nearest-to-some-value/
-        idx = (np.abs(self._ik_positions - target)).argmin()
-        print(idx)
-        for p, o in zip(self._ik_positions, self._ik_orientations[arm]):
-            # If there is a position that is really close that has a good solution, use it.
-            d = np.linalg.norm(p - target)
-            # If the position is really close to the target, use the corresponding orientation.
-            if d <= arrived_at:
-                return ORIENTATIONS[o], True if o >= 0 else False
-            # Try to get the nearest position from the target.
-            if d < min_distance:
-                min_distance = d
-                orientation = o
+        # Source: https://stackoverflow.com/questions/52364222/find-closest-similar-valuevector-inside-a-matrix
+        # noinspection PyArgumentList
+        orientation = self._ik_orientations[arm][cKDTree(self._ik_positions).query(target, k=1)[1]]
         # If we couldn't find a solution, just opt for (none, none) and hope for the best.
         # This can happen if the target position is further away than any of the pre-calculated positions.
         if orientation == -1:

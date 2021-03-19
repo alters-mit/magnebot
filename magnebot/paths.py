@@ -30,7 +30,7 @@ TURN_CONSTANTS_PATH = MAGNEBOT_DIRECTORY.joinpath("turn_constants.csv")
 # The directory for IK orientation data.
 IK_DIRECTORY = MAGNEBOT_DIRECTORY.joinpath("ik")
 # The path to the IK target positions.
-IK_POSITIONS_PATH = IK_DIRECTORY.joinpath("ik_positions.npy")
+IK_POSITIONS_PATH = IK_DIRECTORY.joinpath("positions.npy")
 # The path to the IK orientations data for the left arm.
 IK_ORIENTATIONS_LEFT_PATH = IK_DIRECTORY.joinpath("orientations_left.npy")
 # The path to the IK orientations data for the right arm.

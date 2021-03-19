@@ -78,17 +78,13 @@ class ReachFor(TestController):
         """
 
         orientation_times = list()
-        pbar = tqdm(total=len(self.positions) * 2)
         for arm in [Arm.left, Arm.right]:
             for i in range(len(self.positions)):
                 # Get the orientation.
                 t0 = time()
                 self._get_ik_orientation(arm=arm,
-                                         target=self.positions[i],
-                                         arrived_at=self.arrived_at)
+                                         target=self.positions[i])
                 orientation_times.append(time() - t0)
-                pbar.update(1)
-        pbar.close()
         return sum(orientation_times) / len(orientation_times)
 
     def run_auto(self) -> Tuple[float, float]:
@@ -107,8 +103,7 @@ class ReachFor(TestController):
                 # Reload the scene.
                 self.init_scene()
                 orientation, got_orientation = self._get_ik_orientation(arm=arm,
-                                                                        target=self.positions[i],
-                                                                        arrived_at=self.arrived_at)
+                                                                        target=self.positions[i])
                 # Reach for the target.
                 status = self.reach_for(target=TDWUtils.array_to_vector3(self.positions[i]),
                                         arm=arm,
@@ -134,8 +129,8 @@ class ReachFor(TestController):
 
 if __name__ == "__main__":
     m = ReachFor()
-    successes_none = m.run_none()
-    print("Success if orientation is (none, none):", successes_none)
+    #successes_none = m.run_none()
+    #print("Success if orientation is (none, none):", successes_none)
     time_elapsed_auto = m.get_ik_orientation_speed()
     print("Average time elapsed per _get_ik_orientation() call:", time_elapsed_auto)
     successes_auto, no_orientations_auto = m.run_auto()
