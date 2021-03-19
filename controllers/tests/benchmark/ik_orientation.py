@@ -129,8 +129,8 @@ class ReachFor(TestController):
 
 if __name__ == "__main__":
     m = ReachFor()
-    #successes_none = m.run_none()
-    #print("Success if orientation is (none, none):", successes_none)
+    successes_none = m.run_none()
+    print("Success if orientation is (none, none):", successes_none)
     time_elapsed_auto = m.get_ik_orientation_speed()
     print("Average time elapsed per _get_ik_orientation() call:", time_elapsed_auto)
     successes_auto, no_orientations_auto = m.run_auto()
