@@ -129,6 +129,7 @@ class ReachFor(TestController):
 
         :return: The percentage of sequences of `reach_for()` actions (`num_tries` actions) that were successful.
         """
+
         pbar = tqdm(total=len(self.positions) * 2)
         successes: int = 0
         for arm in [Arm.left, Arm.right]:
@@ -149,6 +150,38 @@ class ReachFor(TestController):
         pbar.close()
         return successes / (len(self.positions) * 2)
 
+    def run_smart(self) -> float:
+        """
+        Benchmark whether the a very basic multi-attempt algorithm improves accuracy.
+
+        :return: The percentage of sequences of `reach_for()` actions (`num_tries` actions) that were successful.
+        """
+
+        pbar = tqdm(total=len(self.positions) * 2)
+        successes: int = 0
+        for arm in [Arm.left, Arm.right]:
+            for i in range(len(self.positions)):
+                # Reload the scene.
+                self.init_scene()
+                # Reach for the target.
+                status = self.reach_for(target=TDWUtils.array_to_vector3(self.positions[i]),
+                                        arm=arm,
+                                        arrived_at=self.arrived_at)
+                if status == ActionStatus.success or status == ActionStatus.cannot_reach:
+                    successes += 1
+                # If the motion failed, try to reach with (none, none).
+                else:
+                    status = self.reach_for(target=TDWUtils.array_to_vector3(self.positions[i]),
+                                            arm=arm,
+                                            arrived_at=self.arrived_at,
+                                            orientation_mode=OrientationMode.none,
+                                            target_orientation=TargetOrientation.none)
+                    if status == ActionStatus.success or status == ActionStatus.cannot_reach:
+                        successes += 1
+                pbar.update(1)
+        pbar.close()
+        return successes / (len(self.positions) * 2)
+
 
 if __name__ == "__main__":
     m = ReachFor()
@@ -162,4 +195,6 @@ if __name__ == "__main__":
     print("Success if orientation is (auto, auto):", successes_auto)
     successes_multi = m.run_auto(5)
     print("Success if orientation is (auto, auto) (up to 5 consecutive attempts):", successes_multi)
+    successes_smart = m.run_smart()
+    print("Success with mixed consecutive parameters:", successes_smart)
     m.end()
