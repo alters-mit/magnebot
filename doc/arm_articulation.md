@@ -66,6 +66,10 @@ Some guidelines regarding the orientation parameters:
 - Both parameters must be `none` or neither.
 - Setting both parameters to `none` is the fastest option (but not always the most accurate).
 
+## Defining your own arm articulation action
+
+You can define your own action that uses inverse kinematics by calling the hidden function `self._start_ik()`. For example implementation, see `controllers/examples/custom_api.py` which adds a `push()` action.
+
 ## Getting a target position for `grasp()`
 
 In the `grasp()` action, the Magnebot needs to pick a target position on the surface of the object. The target is determined in `self._get_grasp_target()`.
