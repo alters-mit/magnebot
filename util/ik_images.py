@@ -26,7 +26,7 @@ if __name__ == "__main__":
     draw = ImageDraw.Draw(legend)
     y = 8
     x = 8
-    draw.text((x, y), "Key:", font=legend_font, anchor="mg", fill=(171, 178, 191))
+    draw.text((x, y), "Key:", font=legend_font, anchor="mb", fill=(171, 178, 191))
     y += 24
     x += 8
     for color, o in zip(colors, ORIENTATIONS):
