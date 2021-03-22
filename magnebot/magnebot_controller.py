@@ -1593,23 +1593,28 @@ class Magnebot(FloorplanController):
         if d > arrived_at:
             return ActionStatus.cannot_reach
 
-        # Convert radians to degrees. Remove the first node (the origin link).
         angles = list()
         torso_prismatic = 0
-        for i, j in zip(ik[1:], Magnebot._JOINT_ORDER[arm]):
-            if j == ArmJoint.torso:
+        # For the purposes of getting the angles, remove the origin link, the magnet, and the object.
+        if object_id is None:
+            ik_angles = ik[1:-1]
+        else:
+            ik_angles = ik[1:-2]
+        # Convert all of the angles or positions.
+        for i, angle in enumerate(ik_angles):
+            # This is the torso.
+            if i == 1:
                 if fixed_torso_prismatic is not None:
                     torso_prismatic = fixed_torso_prismatic
                     angles.append(fixed_torso_prismatic)
                 else:
-                    p = (i * (Magnebot.TORSO_MAX_Y - Magnebot.TORSO_MIN_Y)) + Magnebot.TORSO_MIN_Y
-                    # The number at the end is a magic number. The other numbers are the limits of the joint.
-                    torso_prismatic = float((p / (1.5 - 0.65)) + 0.65 - 0.03)
-                    print(i, p, torso_prismatic)
+                    # Convert the torso value to a percentage and then to a joint position.
+                    p = (angle * (Magnebot.TORSO_MAX_Y - Magnebot.TORSO_MIN_Y)) + Magnebot.TORSO_MIN_Y
+                    torso_prismatic = float((p / (1.5 - 0.65)) + 0.65)
                     angles.append(torso_prismatic)
+            # Append all other angles normally.
             else:
-                angles.append(float(np.rad2deg(i)))
-
+                angles.append(float(np.rad2deg(angle)))
         if self._debug:
             print(angles)
 
@@ -1629,7 +1634,7 @@ class Magnebot(FloorplanController):
             self._do_arm_motion(joint_ids=[torso_id])
 
         # Convert the IK solution into TDW commands, using the expected joint and axis order.
-        self._append_ik_commands(angles=angles, arm=arm, torso=fixed_torso_prismatic is None)
+        self._append_ik_commands(angles=angles, arm=arm, torso=fixed_torso_prismatic is None and not do_prismatic_first)
         return ActionStatus.success
 
     def _get_initial_angles(self, arm: Arm, has_object: bool = False) -> np.array:
@@ -1807,11 +1812,11 @@ class Magnebot(FloorplanController):
                                   orientation=np.array([0, 0, 0]),
                                   rotation=None))
         links.extend([URDFLink(name="torso",
-                               translation_vector=np.array([0, 0, 0]),
+                               translation_vector=np.array([0, Magnebot.TORSO_MIN_Y, 0]),
                                orientation=np.array([0, 0, 0]),
                                rotation=np.array([0, 1, 0]),
                                is_revolute=False,
-                               bounds=(Magnebot.TORSO_MIN_Y, Magnebot.TORSO_MAX_Y)),
+                               bounds=(0, Magnebot.TORSO_MAX_Y - Magnebot.TORSO_MIN_Y)),
                       URDFLink(name="shoulder_pitch",
                                translation_vector=np.array([0.215 * (-1 if arm == Arm.left else 1), 0.059, 0.019]),
                                orientation=np.array([0, 0, 0]),
