@@ -123,18 +123,33 @@ class Magnebot(FloorplanController):
     The camera roll, pitch, yaw constraints in degrees.
     """
     CAMERA_RPY_CONSTRAINTS: List[float] = [55, 70, 85]
+    """:class_var
+    The y value of the column's position assuming a level floor and angle.
+    """
+    COLUMN_Y: float = 0.159
+    """:class_var
+    The minimum y value of the torso, offset from the column (see `COLUMN_Y`).
+    """
+    TORSO_MIN_Y: float = 0.2244872
+    """:class_var
+    The maximum y value of the torso, offset from the column (see `COLUMN_Y`).
+    """
+    TORSO_MAX_Y: float = 1.07721
 
     # The order in which joint angles will be set.
     _JOINT_ORDER: Dict[Arm, List[ArmJoint]] = {Arm.left: [ArmJoint.column,
+                                                          ArmJoint.torso,
                                                           ArmJoint.shoulder_left,
                                                           ArmJoint.elbow_left,
                                                           ArmJoint.wrist_left],
                                                Arm.right: [ArmJoint.column,
+                                                           ArmJoint.torso,
                                                            ArmJoint.shoulder_right,
                                                            ArmJoint.elbow_right,
                                                            ArmJoint.wrist_right]}
     # The expected joint articulation per joint
     _JOINT_AXES: Dict[ArmJoint, JointType] = {ArmJoint.column: JointType.revolute,
+                                              ArmJoint.torso: JointType.prismatic,
                                               ArmJoint.shoulder_left: JointType.spherical,
                                               ArmJoint.elbow_left: JointType.revolute,
                                               ArmJoint.wrist_left: JointType.spherical,
@@ -1516,53 +1531,6 @@ class Magnebot(FloorplanController):
         :return: An `ActionStatus` describing whether the IK action began.
         """
 
-        def __get_ik_solution() -> Tuple[bool, List[float]]:
-            """
-            Get an IK solution to a target given the height of the torso.
-
-            :return: Tuple: True if this solution will bring the end of the IK chain to the target position; the IK solution.
-            """
-
-            # Generate an IK chain, given the current desired torso height.
-            # The extra height is the y position of the column's base.
-            chain = self.__get_ik_chain(arm=arm, torso_y=Magnebot._TORSO_Y[round(torso_prismatic, 2)],
-                                        allow_column=allow_column, object_id=object_id)
-
-            # Get the IK solution.
-            ik = chain.inverse_kinematics(target_position=target,
-                                          initial_position=initial_angles,
-                                          orientation_mode=orientation_mode.value,
-                                          target_orientation=target_orientation.value)
-
-            if self._debug:
-                # Plot the IK solution.
-                # This won't always work on a remote server.
-                try:
-                    import matplotlib.pyplot
-                    ax = matplotlib.pyplot.figure().add_subplot(111, projection='3d')
-                    ax.set_xlabel("X")
-                    ax.set_ylabel("Y")
-                    ax.set_zlabel("Z")
-                    chain.plot(ik, ax, target=target)
-                    matplotlib.pyplot.show()
-                except TclError as e:
-                    print(f"Tried creating a debug plot of the IK solution with but got an error:\n{e}\n"
-                          f"(This is probably because you're using a remote server.)")
-
-            # Get the forward kinematics matrix of the IK solution.
-            transformation_matrices = chain.forward_kinematics(ik, full_kinematics=True)
-            # Convert the matrix into positions (this is pulled from ikpy).
-            nodes = []
-            for (index, link) in enumerate(chain.links):
-                (node, orientation) = geometry.from_transformation_matrix(transformation_matrices[index])
-                nodes.append(node)
-            # Check if the last position on the node is very close to the target.
-            # If so, this IK solution is expected to succeed.
-            end_node = np.array(nodes[-1][:-1])
-            d = np.linalg.norm(end_node - target)
-            # Return whether the IK solution is expected to succeed; and the IK solution.
-            return d <= arrived_at, ik
-
         # If the `state` argument is None, work off of `self.state`.
         if state is None:
             state = self.state
@@ -1586,37 +1554,61 @@ class Magnebot(FloorplanController):
         # The first angle is always 0 (the origin link).
         initial_angles = self._get_initial_angles(arm=arm, has_object=object_id is not None)
 
-        # Try to get an IK solution from various heights.
-        # Start at the default height and incrementally raise the torso.
-        # We need to do this iteratively because ikpy doesn't support prismatic joints!
-        # But it should be ok because there's only one prismatic joint in this robot.
-        angles: List[float] = list()
-        target: np.array
-        if target[1] > Magnebot._TORSO_Y[Magnebot._DEFAULT_TORSO_Y]:
-            torso_prismatic = max(Magnebot._TORSO_Y.keys())
-        else:
-            torso_prismatic = Magnebot._DEFAULT_TORSO_Y
-        got_solution = False
-        while not got_solution and torso_prismatic > 0.6:
-            got_solution, angles = __get_ik_solution()
-            if not got_solution:
-                torso_prismatic -= 0.1
-        if not got_solution:
-            torso_prismatic = self._DEFAULT_TORSO_Y
-            while not got_solution and torso_prismatic <= 1.5:
-                got_solution, angles = __get_ik_solution()
-                if not got_solution:
-                    torso_prismatic += 0.1
-        # If we couldn't find a solution at any torso height, then there isn't a solution.
-        if not got_solution:
+        # Generate an IK chain, given the current desired torso height.
+        # The extra height is the y position of the column's base.
+        chain = self.__get_ik_chain(arm=arm, allow_column=allow_column, object_id=object_id)
+
+        # Get the IK solution.
+        ik = chain.inverse_kinematics(target_position=target,
+                                      initial_position=initial_angles,
+                                      orientation_mode=str(orientation_mode.value) if isinstance(orientation_mode.value, str) else None,
+                                      target_orientation=np.array(target_orientation.value) if isinstance(target_orientation.value, list) else None)
+        # Plot the IK solution.
+        if self._debug:
+            try:
+                import matplotlib.pyplot
+                ax = matplotlib.pyplot.figure().add_subplot(111, projection='3d')
+                ax.set_xlabel("X")
+                ax.set_ylabel("Y")
+                ax.set_zlabel("Z")
+                chain.plot(ik, ax, target=target,
+                           link_names=["column", "torso", "shoulder_pitch", "elbow_pitch", "wrist_pitch"])
+                matplotlib.pyplot.show()
+            # This won't always work on a remote server.
+            except TclError as e:
+                print(f"Tried creating a debug plot of the IK solution with but got an error:\n{e}\n"
+                      f"(This is probably because you're using a remote server.)")
+
+        # Get the forward kinematics matrix of the IK solution.
+        transformation_matrices = chain.forward_kinematics(ik, full_kinematics=True)
+        # Convert the matrix into positions (this is pulled from ikpy).
+        nodes = []
+        for (index, link) in enumerate(chain.links):
+            (node, orientation) = geometry.from_transformation_matrix(transformation_matrices[index])
+            nodes.append(node)
+        # Check if the last position on the node is very close to the target.
+        # If so, this IK solution is expected to succeed.
+        end_node = np.array(nodes[-1][:-1])
+        d = np.linalg.norm(end_node - target)
+        if d > arrived_at:
             return ActionStatus.cannot_reach
 
-        # Convert the angles to degrees. Remove the first node (the origin link) and last node (the magnet).
-        if object_id is not None:
-            # Remove the object.
-            angles = [float(np.rad2deg(a)) for a in angles[1:-2]]
-        else:
-            angles = [float(np.rad2deg(a)) for a in angles[1:-1]]
+        # Convert radians to degrees. Remove the first node (the origin link).
+        angles = list()
+        torso_prismatic = 0
+        for i, j in zip(ik[1:], Magnebot._JOINT_ORDER[arm]):
+            if j == ArmJoint.torso:
+                if fixed_torso_prismatic is not None:
+                    torso_prismatic = fixed_torso_prismatic
+                    angles.append(fixed_torso_prismatic)
+                else:
+                    # Convert the y position to a joint position.
+                    p = (i * (Magnebot.TORSO_MAX_Y - Magnebot.TORSO_MIN_Y)) + Magnebot.TORSO_MIN_Y + Magnebot.COLUMN_Y
+                    # The number at the end is a magic number. The other numbers are the limits of the joint.
+                    torso_prismatic = float((p / (1.5 - 0.65)) - 0.03)
+                    angles.append(torso_prismatic)
+            else:
+                angles.append(float(np.rad2deg(i)))
 
         if self._debug:
             print(angles)
@@ -1629,18 +1621,15 @@ class Magnebot(FloorplanController):
         if fixed_torso_prismatic is not None:
             torso_prismatic = fixed_torso_prismatic
         # Slide the torso to the desired height.
-        torso_id = self.magnebot_static.arm_joints[ArmJoint.torso]
-        torso_command = {"$type": "set_prismatic_target",
-                         "joint_id": torso_id,
-                         "target": torso_prismatic}
         if do_prismatic_first:
-            self.communicate(torso_command)
+            torso_id = self.magnebot_static.arm_joints[ArmJoint.torso]
+            self.communicate({"$type": "set_prismatic_target",
+                              "joint_id": torso_id,
+                              "target": torso_prismatic})
             self._do_arm_motion(joint_ids=[torso_id])
 
         # Convert the IK solution into TDW commands, using the expected joint and axis order.
         self._append_ik_commands(angles=angles, arm=arm)
-        if not do_prismatic_first:
-            self._next_frame_commands.append(torso_command)
         return ActionStatus.success
 
     def _get_initial_angles(self, arm: Arm, has_object: bool = False) -> np.array:
@@ -1656,7 +1645,12 @@ class Magnebot(FloorplanController):
         initial_angles = [0]
         for j in Magnebot._JOINT_ORDER[arm]:
             j_id = self.magnebot_static.arm_joints[j]
-            initial_angles.extend(self.state.joint_angles[j_id])
+            # Add the prismatic position.
+            if Magnebot._JOINT_AXES[j] == JointType.prismatic:
+                initial_angles.extend(self.state.joint_angles[j_id])
+            # Add the revolute or spherical position in radians.
+            else:
+                initial_angles.extend(np.radians(self.state.joint_angles[j_id]))
         # Add the magnet.
         initial_angles.append(0)
         # Add the object.
@@ -1692,6 +1686,11 @@ class Magnebot(FloorplanController):
                                  "joint_id": joint_id,
                                  "target": {"x": angles[i], "y": angles[i + 1], "z": angles[i + 2]}})
                 i += 3
+            elif joint_type == JointType.prismatic:
+                commands.append({"$type": "set_prismatic_target",
+                                 "joint_id": joint_id,
+                                 "target": angles[i]})
+                i += 1
             else:
                 raise Exception(f"Joint type not defined: {joint_type} for {joint_name}.")
             # Increment to the next joint in the order.
@@ -1785,10 +1784,9 @@ class Magnebot(FloorplanController):
 
         return target in state.held[arm]
 
-    def __get_ik_chain(self, arm: Arm, torso_y: float, object_id: int = None, allow_column: bool = True) -> Chain:
+    def __get_ik_chain(self, arm: Arm, object_id: int = None, allow_column: bool = True) -> Chain:
         """
         :param arm: The arm of the chain (determines the x position).
-        :param torso_y: The y coordinate of the torso.
         :param object_id: If not None, append this object to the IK chain.
         :param allow_column: If True, allow column rotation.
 
@@ -1798,55 +1796,61 @@ class Magnebot(FloorplanController):
         links: List[Link] = [OriginLink()]
         if allow_column:
             links.append(URDFLink(name="column",
-                                  translation_vector=[0, torso_y, 0],
-                                  orientation=[0, 0, 0],
-                                  rotation=[0, 1, 0],
+                                  translation_vector=np.array([0, Magnebot.COLUMN_Y, 0]),
+                                  orientation=np.array([0, 0, 0]),
+                                  rotation=np.array([0, 1, 0]),
                                   bounds=(np.deg2rad(-179), np.deg2rad(179))))
         else:
             links.append(URDFLink(name="column",
-                                  translation_vector=[0, torso_y, 0],
-                                  orientation=[0, 0, 0],
+                                  translation_vector=np.array([0, Magnebot.COLUMN_Y, 0]),
+                                  orientation=np.array([0, 0, 0]),
                                   rotation=None))
-        links.extend([URDFLink(name="shoulder_pitch",
-                               translation_vector=[0.215 * (-1 if arm == Arm.left else 1), 0.059, 0.019],
-                               orientation=[0, 0, 0],
-                               rotation=[1, 0, 0],
+        links.extend([URDFLink(name="torso",
+                               translation_vector=np.array([0, 0, 0]),
+                               orientation=np.array([0, 1, 0]),
+                               rotation=None,
+                               is_revolute=False,
+                               bounds=(Magnebot.TORSO_MIN_Y, Magnebot.TORSO_MAX_Y)),
+                      URDFLink(name="shoulder_pitch",
+                               translation_vector=np.array([0.215 * (-1 if arm == Arm.left else 1), 0.059, 0.019]),
+                               orientation=np.array([0, 0, 0]),
+                               rotation=np.array([1, 0, 0]),
                                bounds=(np.deg2rad(-150), np.deg2rad(70))),
                       URDFLink(name="shoulder_roll",
-                               translation_vector=[0, 0, 0],
-                               orientation=[0, 0, 0],
-                               rotation=[0, 1, 0],
+                               translation_vector=np.array([0, 0, 0]),
+                               orientation=np.array([0, 0, 0]),
+                               rotation=np.array([0, 1, 0]),
                                bounds=(np.deg2rad(-70 if arm == Arm.left else -45),
                                        np.deg2rad(45 if arm == Arm.left else 70))),
                       URDFLink(name="shoulder_yaw",
-                               translation_vector=[0, 0, 0],
-                               orientation=[0, 0, 0],
-                               rotation=[0, 0, 1],
+                               translation_vector=np.array([0, 0, 0]),
+                               orientation=np.array([0, 0, 0]),
+                               rotation=np.array([0, 0, 1]),
                                bounds=(np.deg2rad(-110 if arm == Arm.left else -20),
                                        np.deg2rad(20 if arm == Arm.left else 110))),
                       URDFLink(name="elbow_pitch",
-                               translation_vector=[0.033 * (-1 if arm == Arm.left else 1), -0.33, 0],
-                               orientation=[0, 0, 0],
-                               rotation=[-1, 0, 0],
+                               translation_vector=np.array([0.033 * (-1 if arm == Arm.left else 1), -0.33, 0]),
+                               orientation=np.array([0, 0, 0]),
+                               rotation=np.array([-1, 0, 0]),
                                bounds=(np.deg2rad(-90), np.deg2rad(145))),
                       URDFLink(name="wrist_pitch",
-                               translation_vector=[0, -0.373, 0],
-                               orientation=[0, 0, 0],
-                               rotation=[-1, 0, 0],
+                               translation_vector=np.array([0, -0.373, 0]),
+                               orientation=np.array([0, 0, 0]),
+                               rotation=np.array([-1, 0, 0]),
                                bounds=(np.deg2rad(-90), np.deg2rad(90))),
                       URDFLink(name="wrist_roll",
-                               translation_vector=[0, 0, 0],
-                               orientation=[0, 0, 0],
-                               rotation=[0, -1, 0],
+                               translation_vector=np.array([0, 0, 0]),
+                               orientation=np.array([0, 0, 0]),
+                               rotation=np.array([0, -1, 0]),
                                bounds=(np.deg2rad(-90), np.deg2rad(90))),
                       URDFLink(name="wrist_yaw",
-                               translation_vector=[0, 0, 0],
-                               orientation=[0, 0, 0],
-                               rotation=[0, 0, 1],
+                               translation_vector=np.array([0, 0, 0]),
+                               orientation=np.array([0, 0, 0]),
+                               rotation=np.array([0, 0, 1]),
                                bounds=(np.deg2rad(-15), np.deg2rad(15))),
                       URDFLink(name="magnet",
-                               translation_vector=[0, -0.095, 0],
-                               orientation=[0, 0, 0],
+                               translation_vector=np.array([0, -0.095, 0]),
+                               orientation=np.array([0, 0, 0]),
                                rotation=None)])
         # Add the object.
         if object_id is not None:
@@ -1861,7 +1865,7 @@ class Magnebot(FloorplanController):
             # Add the object as an IK link.
             links.append(URDFLink(name="obj",
                                   translation_vector=translation_vector,
-                                  orientation=[0, 0, 0],
+                                  orientation=np.array([0, 0, 0]),
                                   rotation=None))
 
         return Chain(name=arm.name, links=links)
