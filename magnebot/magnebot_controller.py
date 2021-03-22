@@ -1645,12 +1645,7 @@ class Magnebot(FloorplanController):
         initial_angles = [0]
         for j in Magnebot._JOINT_ORDER[arm]:
             j_id = self.magnebot_static.arm_joints[j]
-            # Add the prismatic position.
-            if Magnebot._JOINT_AXES[j] == JointType.prismatic:
-                initial_angles.extend(self.state.joint_angles[j_id])
-            # Add the revolute or spherical position in radians.
-            else:
-                initial_angles.extend(np.radians(self.state.joint_angles[j_id]))
+            initial_angles.extend(self.state.joint_angles[j_id])
         # Add the magnet.
         initial_angles.append(0)
         # Add the object.
