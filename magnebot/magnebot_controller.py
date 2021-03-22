@@ -1602,10 +1602,10 @@ class Magnebot(FloorplanController):
                     torso_prismatic = fixed_torso_prismatic
                     angles.append(fixed_torso_prismatic)
                 else:
-                    # Convert the y position to a joint position.
                     p = (i * (Magnebot.TORSO_MAX_Y - Magnebot.TORSO_MIN_Y)) + Magnebot.TORSO_MIN_Y + Magnebot.COLUMN_Y
                     # The number at the end is a magic number. The other numbers are the limits of the joint.
                     torso_prismatic = float((p / (1.5 - 0.65)) - 0.03)
+                    print(i, torso_prismatic)
                     angles.append(torso_prismatic)
             else:
                 angles.append(float(np.rad2deg(i)))
@@ -1629,7 +1629,7 @@ class Magnebot(FloorplanController):
             self._do_arm_motion(joint_ids=[torso_id])
 
         # Convert the IK solution into TDW commands, using the expected joint and axis order.
-        self._append_ik_commands(angles=angles, arm=arm)
+        self._append_ik_commands(angles=angles, arm=arm, torso=fixed_torso_prismatic is None)
         return ActionStatus.success
 
     def _get_initial_angles(self, arm: Arm, has_object: bool = False) -> np.array:
@@ -1658,12 +1658,13 @@ class Magnebot(FloorplanController):
             initial_angles.append(0)
         return np.radians(initial_angles)
 
-    def _append_ik_commands(self, angles: np.array, arm: Arm) -> None:
+    def _append_ik_commands(self, angles: np.array, arm: Arm, torso: bool) -> None:
         """
         Convert target angles to TDW commands and append them to `_next_frame_commands`.
 
         :param angles: The target angles in degrees.
         :param arm: The arm.
+        :param torso: If True, add torso commands.
         """
 
         # Convert the IK solution into TDW commands, using the expected joint and axis order.
@@ -1687,9 +1688,11 @@ class Magnebot(FloorplanController):
                                  "target": {"x": angles[i], "y": angles[i + 1], "z": angles[i + 2]}})
                 i += 3
             elif joint_type == JointType.prismatic:
-                commands.append({"$type": "set_prismatic_target",
-                                 "joint_id": joint_id,
-                                 "target": angles[i]})
+                # Sometimes, we want the torso at its current position.
+                if torso:
+                    commands.append({"$type": "set_prismatic_target",
+                                     "joint_id": joint_id,
+                                     "target": angles[i]})
                 i += 1
             else:
                 raise Exception(f"Joint type not defined: {joint_type} for {joint_name}.")
@@ -1807,8 +1810,8 @@ class Magnebot(FloorplanController):
                                   rotation=None))
         links.extend([URDFLink(name="torso",
                                translation_vector=np.array([0, 0, 0]),
-                               orientation=np.array([0, 1, 0]),
-                               rotation=None,
+                               orientation=np.array([0, 0, 0]),
+                               rotation=np.array([0, 1, 0]),
                                is_revolute=False,
                                bounds=(Magnebot.TORSO_MIN_Y, Magnebot.TORSO_MAX_Y)),
                       URDFLink(name="shoulder_pitch",
