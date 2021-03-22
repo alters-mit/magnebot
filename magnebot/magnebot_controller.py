@@ -1604,8 +1604,7 @@ class Magnebot(FloorplanController):
                 else:
                     p = (i * (Magnebot.TORSO_MAX_Y - Magnebot.TORSO_MIN_Y)) + Magnebot.TORSO_MIN_Y + Magnebot.COLUMN_Y
                     # The number at the end is a magic number. The other numbers are the limits of the joint.
-                    torso_prismatic = float((p / (1.5 - 0.65)) - 0.03)
-                    print(i, torso_prismatic)
+                    torso_prismatic = float((p / (1.5 - 0.65)) + Magnebot.TORSO_MIN_Y + Magnebot.COLUMN_Y - 0.03)
                     angles.append(torso_prismatic)
             else:
                 angles.append(float(np.rad2deg(i)))
@@ -1726,6 +1725,9 @@ class Magnebot(FloorplanController):
                 commands.append({"$type": "set_spherical_target",
                                  "joint_id": joint_id,
                                  "target": {"x": 0, "y": 0, "z": 0}})
+            # See above for how the torso is reset.
+            elif joint_type == JointType.prismatic:
+                pass
             else:
                 raise Exception(f"Joint type not defined: {joint_type} for {joint_name}.")
         return commands
