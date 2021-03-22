@@ -1602,9 +1602,10 @@ class Magnebot(FloorplanController):
                     torso_prismatic = fixed_torso_prismatic
                     angles.append(fixed_torso_prismatic)
                 else:
-                    p = (i * (Magnebot.TORSO_MAX_Y - Magnebot.TORSO_MIN_Y)) + Magnebot.TORSO_MIN_Y + Magnebot.COLUMN_Y
+                    p = (i * (Magnebot.TORSO_MAX_Y - Magnebot.TORSO_MIN_Y)) + Magnebot.TORSO_MIN_Y
                     # The number at the end is a magic number. The other numbers are the limits of the joint.
-                    torso_prismatic = float((p / (1.5 - 0.65)) + Magnebot.TORSO_MIN_Y + Magnebot.COLUMN_Y - 0.03)
+                    torso_prismatic = float((p / (1.5 - 0.65)) + 0.65 - 0.03)
+                    print(i, p, torso_prismatic)
                     angles.append(torso_prismatic)
             else:
                 angles.append(float(np.rad2deg(i)))
