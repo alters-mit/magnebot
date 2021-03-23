@@ -55,6 +55,9 @@ class ReachFor(TestController):
 
         pbar = tqdm(total=len(self.positions) * 2)
         successes: int = 0
+        failures_far_away: int = 0
+        successes_far_away: int = 0
+        failures: int = 0
         for arm in [Arm.left, Arm.right]:
             for i in range(len(self.positions)):
                 # Reload the scene.
@@ -66,10 +69,19 @@ class ReachFor(TestController):
                                         orientation_mode=OrientationMode.none,
                                         arrived_at=self.arrived_at)
                 # We guessed the IK solution correctly if the action was successful.
+                distance = np.linalg.norm(self.positions[i] - np.array([0, 0, 0]))
                 if status == ActionStatus.success or status == ActionStatus.cannot_reach:
+                    if distance > 0.95:
+                        successes_far_away += 1
                     successes += 1
+                else:
+                    failures += 1
+                    if distance > 0.95:
+                        failures_far_away += 1
                 pbar.update(1)
         pbar.close()
+        print(failures_far_away / failures)
+        print(successes_far_away / successes)
         return successes / (len(self.positions) * 2)
 
     def get_ik_orientation_speed(self) -> float:

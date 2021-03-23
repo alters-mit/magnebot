@@ -39,8 +39,8 @@ We benchmark the IK orientation solver using `controllers/tests/benchmark/ik_ori
 
 | `target_orientation`, `orientation_mode`                     | Accuracy | Total time elapsed   |
 | ------------------------------------------------------------ | -------- | -------------------- |
-| `none`, `none`                                               | 47.5%    | 3 minutes 48 seconds |
-| `auto`, `auto` (1 consecutive attempt)                       | 79%      | 4 minutes 5 seconds  |
+| `none`, `none`                                               | 41%      | 3 minutes 01 seconds |
+| `auto`, `auto` (1 consecutive attempt)                       | 69.5%    | 4 minutes 5 seconds  |
 | `auto`, `auto` (up to 5 consecutive attempts; see below)     | 81.5%    | 5 minutes 50 seconds |
 | Multiple consecutive attempts with a mix of parameters (see below) | 81%      | 4 minutes 30 seconds |
 
