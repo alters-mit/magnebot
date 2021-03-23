@@ -1610,7 +1610,7 @@ class Magnebot(FloorplanController):
                 else:
                     # Convert the torso value to a percentage and then to a joint position.
                     p = (angle * (Magnebot.TORSO_MAX_Y - Magnebot.TORSO_MIN_Y)) + Magnebot.TORSO_MIN_Y
-                    torso_prismatic = float((p / (1.5 - 0.65)) + 0.65)
+                    torso_prismatic = float(p * 1.5)
                     angles.append(torso_prismatic)
             # Append all other angles normally.
             else:
@@ -1812,11 +1812,12 @@ class Magnebot(FloorplanController):
                                   orientation=np.array([0, 0, 0]),
                                   rotation=None))
         links.extend([URDFLink(name="torso",
-                               translation_vector=np.array([0, Magnebot.TORSO_MIN_Y, 0]),
+                               translation_vector=np.array([0, 0, 0]),
                                orientation=np.array([0, 0, 0]),
                                rotation=np.array([0, 1, 0]),
                                is_revolute=False,
-                               bounds=(0, Magnebot.TORSO_MAX_Y - Magnebot.TORSO_MIN_Y)),
+                               use_symbolic_matrix=False,
+                               bounds=(Magnebot.TORSO_MIN_Y, Magnebot.TORSO_MAX_Y)),
                       URDFLink(name="shoulder_pitch",
                                translation_vector=np.array([0.215 * (-1 if arm == Arm.left else 1), 0.059, 0.019]),
                                orientation=np.array([0, 0, 0]),
