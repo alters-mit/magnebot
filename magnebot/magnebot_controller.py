@@ -353,6 +353,8 @@ class Magnebot(FloorplanController):
         # The orientations in the cloud of IK targets. Each orientation corresponds to a position in self._ik_positions.
         self._ik_orientations: Dict[Arm, np.array] = dict()
         for arm, ik_path in zip([Arm.left, Arm.right], [IK_ORIENTATIONS_LEFT_PATH, IK_ORIENTATIONS_RIGHT_PATH]):
+            if not ik_path.exists():
+                continue
             self._ik_orientations[arm] = np.load(str(ik_path.resolve()))
 
         # Trigger events at the end of the most recent action.

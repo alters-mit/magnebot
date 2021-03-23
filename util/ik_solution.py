@@ -69,8 +69,6 @@ class IKSolution(TestController):
             else:
                 orientations: np.array = np.load(str(path.resolve()))
             start_index: int = 0
-            # Always try the previous orientation that worked first.
-            previous_orientation: int = 0
             # Start at the next element in orientation that is -2.
             # This way, we can pause/resume data generation.
             # To generate new data, delete the orientation numpy files.
@@ -82,34 +80,19 @@ class IKSolution(TestController):
             # Reach for every position.
             for i in range(start_index, len(positions)):
                 p = positions[i]
+                # Ignore positions that are too far away.
+                if np.linalg.norm(p - np.array([0, p[1], 0])) > 0.99:
+                    orientations[i] = -1
+                    np.save(str(path.resolve())[:-4], orientations)
+                    pbar.update(1)
+                    continue
                 pbar.set_description(f"{p} {str(ORIENTATIONS[0])}")
                 target = TDWUtils.array_to_vector3(p)
                 # Always try (none, none) because it's the most-consistently "natural" motion and it's very fast.
                 self.init_scene()
-                status = self.reach_for(target=target,
-                                        arm=arm,
-                                        orientation_mode=ORIENTATIONS[0].orientation_mode,
-                                        target_orientation=ORIENTATIONS[0].target_orientation)
-                if status == ActionStatus.success:
-                    orientations[i] = 0
-                    pbar.update(1)
-                    continue
-                if previous_orientation > 0:
-                    # Try the previous orientation. If it works, record it and continue to the next position.
-                    self.init_scene()
-                    status = self.reach_for(target=target,
-                                            arm=arm,
-                                            orientation_mode=ORIENTATIONS[previous_orientation].orientation_mode,
-                                            target_orientation=ORIENTATIONS[previous_orientation].target_orientation)
-                    if status == ActionStatus.success:
-                        orientations[i] = previous_orientation
-                        pbar.update(1)
-                        continue
                 # Iterate through each possible orientation.
                 got_solution = False
-                for j in range(1, len(ORIENTATIONS)):
-                    if j == previous_orientation:
-                        continue
+                for j in range(len(ORIENTATIONS)):
                     pbar.set_description(f"{p} {str(ORIENTATIONS[j])}")
                     self.init_scene()
                     status = self.reach_for(target=target,
@@ -119,7 +102,6 @@ class IKSolution(TestController):
                     # Found a valid solution. Record it. Record this as the previous orientation.
                     if status == ActionStatus.success:
                         got_solution = True
-                        previous_orientation = j
                         orientations[i] = j
                         break
                 # If we didn't find a solution, record this as -1.
