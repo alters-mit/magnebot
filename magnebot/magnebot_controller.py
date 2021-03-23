@@ -1539,6 +1539,11 @@ class Magnebot(FloorplanController):
         # Convert to relative coordinates.
         if absolute:
             target = self._absolute_to_relative(position=target, state=state)
+        target: np.array
+        # If the target is too far away, fail immediately.
+        distance = np.linalg.norm(target - np.array([0, target[1], 0]))
+        if distance > 0.99:
+            return ActionStatus.cannot_reach
 
         # Try to get an orientation mode.
         if target_orientation == TargetOrientation.auto and orientation_mode == OrientationMode.auto:

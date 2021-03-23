@@ -45,33 +45,6 @@ class ReachFor(TestController):
             np.save("ik_positions", positions)
         return positions
 
-    def result_due_to_distance(self) -> Tuple[int, int]:
-        pbar = tqdm(total=len(self.positions) * 2)
-        failures_far_away: int = 0
-        successes_far_away: int = 0
-        distance_threshold = 1
-        for arm in [Arm.left, Arm.right]:
-            for i in range(len(self.positions)):
-                # Reload the scene.
-                self.init_scene()
-                # Reach for the target, using (none, none).
-                status = self.reach_for(target=TDWUtils.array_to_vector3(self.positions[i]),
-                                        arm=arm,
-                                        target_orientation=TargetOrientation.none,
-                                        orientation_mode=OrientationMode.none,
-                                        arrived_at=self.arrived_at)
-                # We guessed the IK solution correctly if the action was successful.
-                distance = np.linalg.norm(self.positions[i] - np.array([0, 0, 0]))
-                if distance > distance_threshold:
-                    if status == ActionStatus.success:
-                        successes_far_away += 1
-                    else:
-                        failures_far_away += 1
-                pbar.update(1)
-                pbar.set_description(f"{successes_far_away}, {failures_far_away}")
-        pbar.close()
-        return successes_far_away, failures_far_away
-
     def run_none(self) -> float:
         """
         Reach for every random position using (none, none) as `target_orientation` and `orientation_mode` parameters.
@@ -212,8 +185,6 @@ class ReachFor(TestController):
 
 if __name__ == "__main__":
     m = ReachFor()
-    successes_due_to_distance, failures_due_to_distance = m.result_due_to_distance()
-    print("Success despite distance:", successes_due_to_distance, "Failures due to distance:", failures_due_to_distance)
     successes_none = m.run_none()
     print("Success if orientation is (none, none):", successes_none)
     time_elapsed_auto = m.get_ik_orientation_speed()
