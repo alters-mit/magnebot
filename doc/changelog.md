@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+
+- Fixed: `scene_environment.py` imports from the `sticky_mitten_avatar` project instead of `magnebot`
+
 ## 1.1.0
 
 - Requires: TDW 1.8.4
