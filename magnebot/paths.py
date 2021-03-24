@@ -11,8 +11,6 @@ DATA_DIRECTORY = Path(resource_filename(__name__, "data"))
 OBJECT_DATA_DIRECTORY = DATA_DIRECTORY.joinpath("objects")
 # The path to object categories dictionary.
 OBJECT_CATEGORIES_PATH = OBJECT_DATA_DIRECTORY.joinpath("categories.json")
-# Data for the Magnebot torso's y values.
-TORSO_Y = OBJECT_DATA_DIRECTORY.joinpath("torso_y.csv")
 # The path to the scene data.
 SCENE_DATA_DIRECTORY = DATA_DIRECTORY.joinpath("scenes")
 # The path to the dictionary of where the robot can spawn.

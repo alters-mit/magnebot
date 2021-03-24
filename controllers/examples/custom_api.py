@@ -85,11 +85,7 @@ class CustomAPI(Magnebot):
         v = v / np.linalg.norm(v)
         target_position = center - (v * 0.1)
         # Slide the torso up and above the target object.
-        torso_position = 0
-        for k in Magnebot._TORSO_Y:
-            torso_position = k
-            if Magnebot._TORSO_Y[k] - 0.2 > target_position[1]:
-                break
+        torso_position = target_position[1] + 0.2
         # Start the IK motion. Some notes regarding these parameters:
         # - We need to explicitly set `state` because of the extra simulation step invoked by `communicate()`.
         # - `fixed_torso_prismatic` means that we'll use the position defined above rather than set it automatically.

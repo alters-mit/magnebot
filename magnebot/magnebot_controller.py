@@ -22,8 +22,8 @@ from magnebot.object_static import ObjectStatic
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.scene_state import SceneState
 from magnebot.action_status import ActionStatus
-from magnebot.paths import SPAWN_POSITIONS_PATH, TORSO_Y, OCCUPANCY_MAPS_DIRECTORY, SCENE_BOUNDS_PATH, \
-    TURN_CONSTANTS_PATH, IK_ORIENTATIONS_LEFT_PATH, IK_ORIENTATIONS_RIGHT_PATH, IK_POSITIONS_PATH
+from magnebot.paths import SPAWN_POSITIONS_PATH, OCCUPANCY_MAPS_DIRECTORY, SCENE_BOUNDS_PATH, TURN_CONSTANTS_PATH,\
+    IK_ORIENTATIONS_LEFT_PATH, IK_ORIENTATIONS_RIGHT_PATH, IK_POSITIONS_PATH
 from magnebot.arm import Arm
 from magnebot.joint_type import JointType
 from magnebot.arm_joint import ArmJoint
@@ -123,18 +123,14 @@ class Magnebot(FloorplanController):
     The camera roll, pitch, yaw constraints in degrees.
     """
     CAMERA_RPY_CONSTRAINTS: List[float] = [55, 70, 85]
-    """:class_var
-    The y value of the column's position assuming a level floor and angle.
-    """
-    COLUMN_Y: float = 0.159
-    """:class_var
-    The minimum y value of the torso, offset from the column (see `COLUMN_Y`).
-    """
-    TORSO_MIN_Y: float = 0.2244872
-    """:class_var
-    The maximum y value of the torso, offset from the column (see `COLUMN_Y`).
-    """
-    TORSO_MAX_Y: float = 1.07721
+    # The y value of the column's position assuming a level floor and angle.
+    _COLUMN_Y: float = 0.159
+    # The minimum y value of the torso, offset from the column (see `COLUMN_Y`).
+    _TORSO_MIN_Y: float = 0.2244872
+    # The maximum y value of the torso, offset from the column (see `COLUMN_Y`).
+    _TORSO_MAX_Y: float = 1.07721
+    # The default torso position.
+    _DEFAULT_TORSO_Y: float = 0.737074
 
     # The order in which joint angles will be set.
     _JOINT_ORDER: Dict[Arm, List[ArmJoint]] = {Arm.left: [ArmJoint.column,
@@ -156,17 +152,6 @@ class Magnebot(FloorplanController):
                                               ArmJoint.shoulder_right: JointType.spherical,
                                               ArmJoint.elbow_right: JointType.revolute,
                                               ArmJoint.wrist_right: JointType.spherical}
-
-    # The ratio of prisimatic joint y values for the torso vs. worldspace y values.
-    # These aren't always an exact ratio (ok, Unity...), so they're cached here.
-    _TORSO_Y: Dict[float, float] = dict()
-    with TORSO_Y.open(encoding='utf-8-sig') as f:
-        r = DictReader(f)
-        for row in r:
-            _TORSO_Y[float(row["prismatic"])] = float(row["actual"])
-    # The default height of the torso.
-    _DEFAULT_TORSO_Y: float = 1
-
     # Turn constants by angle.
     _TURN_CONSTANTS: Dict[int, TurnConstants] = dict()
     with TURN_CONSTANTS_PATH.open(encoding='utf-8-sig') as f:
@@ -894,7 +879,7 @@ class Magnebot(FloorplanController):
 
         # Start the IK action.
         status = self._start_ik(target=target, arm=arm, absolute=absolute, arrived_at=arrived_at,
-                                do_prismatic_first=target["y"] > Magnebot._TORSO_Y[Magnebot._DEFAULT_TORSO_Y],
+                                do_prismatic_first=target["y"] > Magnebot._DEFAULT_TORSO_Y,
                                 target_orientation=target_orientation, orientation_mode=orientation_mode)
         if status != ActionStatus.success:
             self._end_action()
@@ -960,7 +945,7 @@ class Magnebot(FloorplanController):
                                               "position": target_position})
         # Start the IK action.
         status = self._start_ik(target=target_position, arm=arm, absolute=True,
-                                do_prismatic_first=target_position["y"] > Magnebot._TORSO_Y[Magnebot._DEFAULT_TORSO_Y],
+                                do_prismatic_first=target_position["y"] > Magnebot._DEFAULT_TORSO_Y,
                                 orientation_mode=orientation_mode, target_orientation=target_orientation,
                                 arrived_at=0.05)
         if status != ActionStatus.success:
@@ -1616,7 +1601,7 @@ class Magnebot(FloorplanController):
                     angles.append(fixed_torso_prismatic)
                 else:
                     # Convert the torso value to a percentage and then to a joint position.
-                    p = (angle * (Magnebot.TORSO_MAX_Y - Magnebot.TORSO_MIN_Y)) + Magnebot.TORSO_MIN_Y
+                    p = (angle * (Magnebot._TORSO_MAX_Y - Magnebot._TORSO_MIN_Y)) + Magnebot._TORSO_MIN_Y
                     torso_prismatic = float(p * 1.5)
                     angles.append(torso_prismatic)
             # Append all other angles normally.
@@ -1809,13 +1794,13 @@ class Magnebot(FloorplanController):
         links: List[Link] = [OriginLink()]
         if allow_column:
             links.append(URDFLink(name="column",
-                                  translation_vector=np.array([0, Magnebot.COLUMN_Y, 0]),
+                                  translation_vector=np.array([0, Magnebot._COLUMN_Y, 0]),
                                   orientation=np.array([0, 0, 0]),
                                   rotation=np.array([0, 1, 0]),
                                   bounds=(np.deg2rad(-179), np.deg2rad(179))))
         else:
             links.append(URDFLink(name="column",
-                                  translation_vector=np.array([0, Magnebot.COLUMN_Y, 0]),
+                                  translation_vector=np.array([0, Magnebot._COLUMN_Y, 0]),
                                   orientation=np.array([0, 0, 0]),
                                   rotation=None))
         links.extend([URDFLink(name="torso",
@@ -1824,7 +1809,7 @@ class Magnebot(FloorplanController):
                                rotation=np.array([0, 1, 0]),
                                is_revolute=False,
                                use_symbolic_matrix=False,
-                               bounds=(Magnebot.TORSO_MIN_Y, Magnebot.TORSO_MAX_Y)),
+                               bounds=(Magnebot._TORSO_MIN_Y, Magnebot._TORSO_MAX_Y)),
                       URDFLink(name="shoulder_pitch",
                                translation_vector=np.array([0.215 * (-1 if arm == Arm.left else 1), 0.059, 0.019]),
                                orientation=np.array([0, 0, 0]),

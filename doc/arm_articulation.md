@@ -93,12 +93,6 @@ Some guidelines regarding the orientation parameters:
 
 The `arrived_at` parameter in the `reach_for()` action determines minimum distance from the magnet to the target. The action immediately stops if the magnet is within this distance. Increasing `arrived_at` therefore "improves" accuracy and performance. 
 
-## Torso movement
-
-The Magnebot's torso slides up and down on a prismatic joint. Prismatic joints aren't defined in the underlying `ikpy` module (though [apparently it *is* possible to implement one](https://github.com/Phylliade/ikpy/issues/96)).
-
-In the Magnebot API, prismatic movement is handled *iteratively*. The function `self._start_ik()` will take a best-guess of the torso position and get an IK solution. If the IK solution fails (if the magnet won't be close enough to the target), a different torso position is tried.
-
 ## Defining your own arm articulation action
 
 You can define your own action that uses inverse kinematics by calling the hidden function `self._start_ik()`. For example implementation, see `controllers/examples/custom_api.py` which adds a `push()` action.
