@@ -2,11 +2,11 @@
 
 ## Inverse Kinematics
 
-Two of the Magnebot's arm articulation actions, `reach_for()` and `move_by()`, use an inverse kinematics (IK) solver. [This is the IK solver.](https://github.com/Phylliade/ikpy)
+Two of the Magnebot's arm articulation actions, `reach_for()` and `move_by()`, use an inverse kinematics (IK) solver. [This is the IK solver.](https://github.com/alters-mit/ikpy) It's a fork of [this repo](https://github.com/Phylliade/ikpy) with better support for prismatic joints.
 
 The `reach_for()` and `move_by()` actions have optional `target_orientation` and `orientation_mode` parameters. `target_orientation` is the directional vector the Magnebot's magnet should align with, and `orientation_mode` is the referential vector. [For more information, read this.](https://notebook.community/Phylliade/ikpy/tutorials/Orientation) 
 
-If `orientation_mode` and `target_orientation` are set to `none`, the solver will use the "full" referential frame; also, this is the fastest option to solve. However, the orientation parameters can affect the motion of the arm and whether the action succeeds or fails:
+If `orientation_mode` and `target_orientation` are set to `none`, the solver will use the "full" referential frame, which is typically the most "normal" looking motion (the arm will extend towards the target). However, these are not typically the *best* orientation parameters; an IK action might fail with one set of orientation parameters and succeed with another: 
 
 ```python
 from magnebot import TestController, Arm
@@ -16,18 +16,31 @@ from magnebot.ik.orientation_mode import OrientationMode
 m = TestController()
 m.init_scene()
 m.add_camera(position={"x": 0.6, "y": 1.6, "z": 1.6})
-# Use default orientation parameters.
-m.reach_for(target={"x": 0.2, "y": 0.5, "z": 0.5}, arm=Arm.left, absolute=False)
+target = {"x": 0.2, "y": 0.5, "z": 0.5}
+# Use default orientation parameters (auto, auto).
+m.reach_for(target=target, arm=Arm.left)
 m.reset_arm(arm=Arm.left)
 # Explicitly set orientation parameters. The motion will be very different!
-status = m.reach_for(target={"x": 0.2, "y": 0.5, "z": 0.5}, arm=Arm.left, absolute=False,
-                     target_orientation=TargetOrientation.right, orientation_mode=OrientationMode.y)
+m.reach_for(target=target, arm=Arm.left,
+            target_orientation=TargetOrientation.right, orientation_mode=OrientationMode.y)
 m.end()
 ```
 
 ### Automatic IK orientation solver
 
-By default, `target_orientation=TargetOrientation.auto` and `orientation_mode=OrientationMode.auto`. This means that the Magnebot will automatically choose an orientation solution, given the target position. It does this by comparing the target position to an array of pre-calculated positions and orientations. The positions and orientations are pre-calculated using `ik_solution.py` which can be found in the `util/` directory of this repo. You can run this yourself with different parameters but be aware that it is a *long* process (at least 36 hours).
+By default, `target_orientation=TargetOrientation.auto` and `orientation_mode=OrientationMode.auto`: 
+
+```python
+from magnebot import TestController, Arm
+
+m = TestController()
+m.init_scene()
+# Use default orientation parameters (auto, auto).
+target = {"x": 0.2, "y": 0.5, "z": 0.5}
+m.reach_for(target=target, arm=Arm.left)
+```
+
+This means that the Magnebot will automatically choose an orientation solution, given the target position. It does this by comparing the target position to an array of pre-calculated positions and orientations. The positions and orientations were pre-calculated using `ik_solution.py` which can be found in the `util/` directory of this repo. 
 
 The script `ik_images.py` (also located in `util/`) will generate images of vertical slices of the orientation solutions, which can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/ik).
 
@@ -46,9 +59,8 @@ We benchmark the IK orientation solver using `controllers/tests/benchmark/ik_ori
 
 ### Limitations to the IK orientation solver
 
-- The automatic IK orientation solver can be inaccurate due to the granularity of the pre-calculated array; if the cloud of positions was denser, it could choose a more tightly-fitting solution. Due to the time required to generate these solutions, we haven't yet calculated how position cloud density actually affects accuracy and performance but we believe that the current data is a reasonable balance between the two.
 - The Magnebot IK orientation solver assumes that the Magnebot's arms are in their neutral position. If they're at any other position, the IK solution found using `auto`, `auto` parameters will be inaccurate. You can reset the arms to their neutral positions with the `reset_arm()` function.
-- The IK solver doesn't (and can't) automatically handle situations where there are obstructions such as walls or other objects.
+- The IK solver doesn't (and can't) automatically handle situations where there are obstructions such as walls, other objects, objects held by a magnet, or the Magnebot's body.
 
 ### Making multiple attempts
 
@@ -91,11 +103,11 @@ Some guidelines regarding the orientation parameters:
 
 ### Setting the `arrived_at` parameter
 
-The `arrived_at` parameter in the `reach_for()` action determines minimum distance from the magnet to the target. The action immediately stops if the magnet is within this distance. Increasing `arrived_at` therefore "improves" accuracy and performance. 
+The `arrived_at` parameter in the `reach_for()` action determines minimum distance from the magnet to the target. The action immediately stops if the magnet is within this distance. Increasing `arrived_at` therefore "improves" the success rate of an IK action.
 
 ## Defining your own arm articulation action
 
-You can define your own action that uses inverse kinematics by calling the hidden function `self._start_ik()`. For example implementation, see `controllers/examples/custom_api.py` which adds a `push()` action.
+You can define your own action that uses inverse kinematics by calling the hidden function `self._start_ik()`. For example implementation, see `controllers/examples/custom_api.py` which adds a `push()` action. For documentation, read the docstring for `_start_ik()` in `magnebot_controller.py`.
 
 Other useful functions:
 
