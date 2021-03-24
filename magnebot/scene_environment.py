@@ -1,6 +1,6 @@
 from typing import List
 from tdw.output_data import Environments as Envs
-from sticky_mitten_avatar.util import get_data
+from magnebot.util import get_data
 
 
 class Room:
