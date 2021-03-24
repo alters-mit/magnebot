@@ -72,11 +72,16 @@ class IKSolution(TestController):
             # Start at the next element in orientation that is -2.
             # This way, we can pause/resume data generation.
             # To generate new data, delete the orientation numpy files.
+            got_start = False
             for i in range(len(orientations)):
                 if orientations[i] == -2:
+                    got_start = True
                     start_index = i
                     break
                 pbar.update(1)
+            # We already completed this file.
+            if not got_start:
+                continue
             # Reach for every position.
             for i in range(start_index, len(positions)):
                 p = positions[i]
