@@ -1605,7 +1605,8 @@ class Magnebot(FloorplanController):
                     angles.append(fixed_torso_prismatic)
                 else:
                     # Convert the torso value to a percentage and then to a joint position.
-                    angles.append(Magnebot._y_position_to_torso_position(y_position=angle))
+                    torso_prismatic = Magnebot._y_position_to_torso_position(y_position=angle)
+                    angles.append(torso_prismatic)
             # Append all other angles normally.
             else:
                 angles.append(float(np.rad2deg(angle)))
