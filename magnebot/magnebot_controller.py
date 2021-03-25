@@ -1536,7 +1536,7 @@ class Magnebot(FloorplanController):
         if target_orientation == TargetOrientation.auto and orientation_mode == OrientationMode.auto:
             orientation_solution, got_orientation = self._get_ik_orientation(arm=arm, target=target)
             # If we didn't get a solution, the action is VERY likely to fail.
-            # See: `controllers/tests/benchmark/ik_orientation.py`
+            # See: `controllers/tests/benchmark/ik.py`
             if not got_orientation:
                 return ActionStatus.cannot_reach
             target_orientation = orientation_solution.target_orientation

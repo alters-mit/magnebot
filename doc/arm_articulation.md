@@ -48,23 +48,18 @@ The script `ik_images.py` (also located in `util/`) will generate images of vert
 
 ### Accuracy and performance
 
-We benchmark the IK orientation solver using `controllers/tests/benchmark/ik_orientation.py`. In this test controller, the Magnebot will `reach_for()` an array of target positions and record whether the outcome of the action was guessed correctly:
+We've benchmarked the IK orientation solver using `controllers/tests/benchmark/ik.py`. In this test controller, the Magnebot will `reach_for()` an array of target positions and record whether the outcome of the action was guessed correctly. A correct guess is an action that returns `success` or `cannot_reach`. If the action returns `cannot_reach`, this means that the solver knew ahead of time that the action was going to fail and the Magnebot never tried to bend its arm, rather than reaching for an impossible target. If the action returns `failed_to_bend`, this counts as a failure; the Magnebot tried to reach for a position that the solver guessed was reachable, but failed to arrive at the target.
 
-| `target_orientation`, `orientation_mode`                     | Accuracy | Total time elapsed   |
+| Action                                                       | Accuracy | Total time elapsed   |
 | ------------------------------------------------------------ | -------- | -------------------- |
-| `none`, `none`                                               | 58.5%    | 2 minutes 42 seconds |
-| `auto`, `auto` (1 consecutive attempt)                       | 73.5%    | 2 minutes 35 seconds |
-| `auto`, `auto` (up to 5 consecutive attempts; see below)     | 81.5%    | 5 minutes 50 seconds |
-| Multiple consecutive attempts with a mix of parameters (see below) | 81%      | 4 minutes 30 seconds |
-
-### Limitations to the IK orientation solver
-
-- The Magnebot IK orientation solver assumes that the Magnebot's arms are in their neutral position. If they're at any other position, the IK solution found using `auto`, `auto` parameters will be inaccurate. You can reset the arms to their neutral positions with the `reset_arm()` function.
-- The IK solver doesn't (and can't) automatically handle situations where there are obstructions such as walls, other objects, objects held by a magnet, or the Magnebot's body.
+| `reach_for(target, arm)`                                     | 85.5%    | 2 minutes 19 seconds |
+| `reach_for(target, arm, TargetOrientation.none, OrientationMode.none)` | 58.5%    | 2 minutes 42 seconds |
+| `reach_for(target, arm)` (up to 5 consecutive attempts; see below) | 88.5%    | 3 minutes 39 seconds |
+| Multiple consecutive attempts with a mix of parameters (see below) | 87.5%    | 2 minutes 34 seconds |
 
 ### Making multiple attempts
 
-You can somewhat improve the accuracy of a motion by making multiple attempts with different orientation parameters:
+You can slightly improve the accuracy of an IK action by making multiple attempts with different orientation parameters. This will be somewhat slower than using just one action:
 
 ```python
 from typing import Dict
@@ -86,6 +81,11 @@ class MultipleAttempts(Magnebot):
                                   orientation_mode=OrientationMode.none)
 ```
 
+### Limitations to the IK orientation solver
+
+- The Magnebot IK orientation solver assumes that the Magnebot's arms are in their neutral position. If they're at any other position, the IK solution found using `auto`, `auto` parameters will be inaccurate. You can reset the arms to their neutral positions with the `reset_arm()` function.
+- The IK solver doesn't (and can't) automatically handle situations where there are obstructions such as walls, other objects, objects held by a magnet, or the Magnebot's body.
+
 ### Explicitly setting IK orientation parameters
 
 You can explicitly set the `target_orientation` and `orientation_mode` parameters in the `reach_for()` and `grasp()` action. You might want to do this if:
@@ -104,6 +104,11 @@ Some guidelines regarding the orientation parameters:
 ### Setting the `arrived_at` parameter
 
 The `arrived_at` parameter in the `reach_for()` action determines minimum distance from the magnet to the target. The action immediately stops if the magnet is within this distance. Increasing `arrived_at` therefore "improves" the success rate of an IK action.
+
+### Other miscellaneous notes:
+
+- If the orientation parameters are (`auto`, `auto`), the the target orientation mode is selected via the function `self._get_ik_orientation()`. This function has been highly optimized: on average, it requires 0.002 seconds to run.
+- The IK orientation solver will guess ahead of time whether there is any solution. We've compared this guess to whether the Magnebot can in fact reach the target and found it guesses correctly 97.5% of the time.
 
 ## Defining your own arm articulation action
 
