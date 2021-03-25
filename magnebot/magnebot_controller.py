@@ -1362,11 +1362,13 @@ class Magnebot(FloorplanController):
         self._object_init_commands[object_id] = object_commands
         return object_id
 
-    def _end_action(self, previous_action_was_move: bool = False) -> None:
+    def _end_action(self, previous_action_was_move: bool = False) -> List[bytes]:
         """
         Set the scene state at the end of an action.
 
         :param previous_action_was_move: If True, remember that the most recent action was a move or turn.
+
+        :return: The response from the build.
         """
 
         self._previous_action_was_move = previous_action_was_move
@@ -1387,7 +1389,8 @@ class Magnebot(FloorplanController):
                                            "arm": Arm.right.name,
                                            "targets": []}])
         # Send the commands (see `communicate()` for how `_next_frame_commands` are handled).
-        self.state = SceneState(resp=self.communicate([]))
+        resp = self.communicate([])
+        self.state = SceneState(resp=resp)
         # Remove any held objects from the list of colliding objects.
         temp: List[int] = list()
         for object_id in self.colliding_objects:
@@ -1402,6 +1405,7 @@ class Magnebot(FloorplanController):
         # Save images.
         if self.auto_save_images:
             self.state.save_images(output_directory=self.images_directory)
+        return resp
 
     def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
         """
