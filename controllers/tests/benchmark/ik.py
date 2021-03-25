@@ -44,7 +44,8 @@ class IK(TestController):
             np.save("ik_positions", positions)
         return positions
 
-    def run(self, target_orientation: TargetOrientation, orientation_mode: OrientationMode, num_tries: int = 1) -> float:
+    def run(self, target_orientation: TargetOrientation, orientation_mode: OrientationMode, num_tries: int = 1,
+            re_init_scene: bool = True) -> float:
         """
         Reach for each target with each arm and record whether the action was successful.
         A successful guess is either `ActionStatus.success` or `ActionStatus.cannot_reach`.
@@ -53,16 +54,21 @@ class IK(TestController):
         :param target_orientation: The target orientation used per `reach_for()` action.
         :param orientation_mode: The orientation mode used per `reach_for()` action.
         :param num_tries: The number of sequential tries to reach for the same target.
+        :param re_init_scene: If True, call `init_scene()` per trial to reset the arms.
 
-        :return: The rate of a successful guesses vs. total number of trials.
+        :return:  The percentage of `reach_for()` actions that were successful.
         """
+
+        if not re_init_scene:
+            self.init_scene()
 
         pbar = tqdm(total=len(self.positions) * 2)
         successes: int = 0
         for arm in [Arm.left, Arm.right]:
             for i in range(len(self.positions)):
                 # Reload the scene.
-                self.init_scene()
+                if re_init_scene:
+                    self.init_scene()
                 # Try multiple times to reach for the position.
                 for j in range(num_tries):
                     # Reach for the target.
@@ -131,7 +137,7 @@ class IK(TestController):
         """
         Benchmark whether the a very basic multi-attempt algorithm improves accuracy.
 
-        :return: The percentage of sequences of `reach_for()` actions (`num_tries` actions) that were successful.
+        :return: The percentage of `reach_for()` actions that were successful.
         """
 
         pbar = tqdm(total=len(self.positions) * 2)
@@ -180,5 +186,8 @@ if __name__ == "__main__":
 
     mixed = m.mixed()
     print("Success with mixed consecutive parameters:", mixed)
+
+    sequential = m.run(target_orientation=TargetOrientation.auto, orientation_mode=OrientationMode.auto, re_init_scene=False)
+    print("Success if state isn't reset:", sequential)
 
     m.end()

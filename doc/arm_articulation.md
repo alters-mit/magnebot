@@ -83,7 +83,9 @@ class MultipleAttempts(Magnebot):
 
 ### Limitations to the IK orientation solver
 
-- The Magnebot IK orientation solver assumes that the Magnebot's arms are in their neutral position. If they're at any other position, the IK solution found using `auto`, `auto` parameters will be inaccurate. You can reset the arms to their neutral positions with the `reset_arm()` function.
+- The Magnebot IK orientation solver assumes that the Magnebot's arms are in their neutral position. If they're at any other position, the IK solution found using `auto`, `auto` parameters will be inaccurate (63.5% accuracy). You should either:
+  - Reset the arms to their neutral positions with the `reset_arm()` function between IK actions.
+  - Explicitly set IK orientation parameters (see below).
 - The IK solver doesn't (and can't) automatically handle situations where there are obstructions such as walls, other objects, objects held by a magnet, or the Magnebot's body.
 
 ### Explicitly setting IK orientation parameters
@@ -91,6 +93,7 @@ class MultipleAttempts(Magnebot):
 You can explicitly set the `target_orientation` and `orientation_mode` parameters in the `reach_for()` and `grasp()` action. You might want to do this if:
 
 - You want to try different orientations to move the arm around an obstruction.
+- You want to use sequential IK actions without having to call `reset_arm()`.
 - You want to train the Magnebot using different orientations (which might be more accurate than the default `auto` approach).
 - You need to the Magnebot to pick up an object at a particular angle.
 
