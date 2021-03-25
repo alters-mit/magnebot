@@ -47,9 +47,10 @@ class IK(TestController):
     def run(self, target_orientation: TargetOrientation, orientation_mode: OrientationMode, num_tries: int = 1,
             re_init_scene: bool = True) -> float:
         """
-        Reach for each target with each arm and record whether the action was successful.
-        A successful guess is either `ActionStatus.success` or `ActionStatus.cannot_reach`.
-        An unsuccessful guess is `ActionStatus.failed_to_bend`.
+        `reach_for()` an array of positions. Record if we correctly guessed the result.
+        A correct guess is either a `ActionStatus.success` or `ActionStatus.cannot_reach`).
+        If the `reach_for()` action returns `ActionStatus.failed_to_bend`, we guessed incorrectly because
+        we thought the action would succeed and it didn't.
 
         :param target_orientation: The target orientation used per `reach_for()` action.
         :param orientation_mode: The orientation mode used per `reach_for()` action.
