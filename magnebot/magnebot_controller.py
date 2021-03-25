@@ -2210,4 +2210,5 @@ class Magnebot(FloorplanController):
         """
 
         # Convert the torso value to a percentage and then to a joint position.
-        return float((y_position * (Magnebot._TORSO_MAX_Y - Magnebot._TORSO_MIN_Y)) + Magnebot._TORSO_MIN_Y) * 1.5
+        p = (y_position * (Magnebot._TORSO_MAX_Y - Magnebot._TORSO_MIN_Y)) + Magnebot._TORSO_MIN_Y
+        return float(p * 1.5)
