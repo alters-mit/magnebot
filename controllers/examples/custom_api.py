@@ -2,9 +2,11 @@ from typing import Dict, List
 import numpy as np
 from tdw.tdw_utils import TDWUtils
 from tdw.output_data import Bounds
-from magnebot import Magnebot, ActionStatus, Arm
+from magnebot import Magnebot, ActionStatus, Arm, ArmJoint
 from magnebot.scene_state import SceneState
 from magnebot.util import get_data
+from magnebot.ik.orientation_mode import OrientationMode
+from magnebot.ik.target_orientation import TargetOrientation
 
 
 class CustomAPI(Magnebot):
@@ -69,6 +71,18 @@ class CustomAPI(Magnebot):
 
         self._start_action()
 
+        # Slide the torso up and above the target object. We need to do this before calling `self._start_ik()` because
+        # this action aims for the object using the position of the magnet relative to the object's position.
+        torso_position = self.state.object_transforms[target].position[1] + 0.1
+        # Convert the torso position from meters to prismatic joint position.
+        torso_position = Magnebot._y_position_to_torso_position(torso_position)
+        # Send a low-level TDW command to move the joint to the target.
+        self._next_frame_commands.append({"$type": "set_prismatic_target",
+                                          "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
+                                          "target": torso_position})
+        # Wait for the torso to finish moving.
+        self._do_arm_motion(joint_ids=[self.magnebot_static.arm_joints[ArmJoint.torso]])
+
         # Get center of the object.
         resp = self.communicate([{"$type": "send_bounds",
                                   "ids": [target],
@@ -80,18 +94,27 @@ class CustomAPI(Magnebot):
         # Get the position of the magnet.
         magnet_position = state.joint_positions[self.magnebot_static.magnets[arm]]
 
+        # Slide the torso upwards to the target height.
+
         # Get a position opposite the center of the object from the magnet.
         v = magnet_position - center
         v = v / np.linalg.norm(v)
         target_position = center - (v * 0.1)
-        # Slide the torso up and above the target object.
-        torso_position = target_position[1] + 0.2
+
         # Start the IK motion. Some notes regarding these parameters:
+        #
         # - We need to explicitly set `state` because of the extra simulation step invoked by `communicate()`.
         # - `fixed_torso_prismatic` means that we'll use the position defined above rather than set it automatically.
         # - `do_prismatic_first` means that the torso will move before the rest of the arm movement.
-        status = self._start_ik(target=TDWUtils.array_to_vector3(target_position), arm=arm, state=state,
-                                fixed_torso_prismatic=torso_position, do_prismatic_first=True)
+        # - For more information re: `orientation_mode` and `target_orientation`, see `doc/arm_articulation.md`
+        status = self._start_ik(target=TDWUtils.array_to_vector3(target_position),
+                                arm=arm,
+                                state=state,
+                                fixed_torso_prismatic=torso_position,
+                                do_prismatic_first=True,
+                                orientation_mode=OrientationMode.x,
+                                target_orientation=TargetOrientation.up)
+
         # If the arm motion isn't possible, end the action here.
         if status != ActionStatus.success:
             self._end_action()
@@ -132,7 +155,7 @@ class CustomAPI(Magnebot):
         status = self.move_to(target=self.surface_id)
         # If we collided with the box, move back just a bit.
         if status == ActionStatus.collision:
-            self.move_by(-0.1, arrived_at=0.05)
+            self.move_by(-0.2, arrived_at=0.05, stop_on_collision=False)
         print("Moved to the box.")
         # Push the other object.
         status = self.push(target=self.object_id, arm=Arm.right)

@@ -1482,7 +1482,7 @@ class Magnebot(FloorplanController):
                                            "immovable": True},
                                           {"$type": "set_prismatic_target",
                                            "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
-                                           "target": Magnebot._DEFAULT_TORSO_Y},
+                                           "target": 1},
                                           {"$type": "set_revolute_target",
                                            "joint_id": self.magnebot_static.arm_joints[ArmJoint.column],
                                            "target": 0}])
@@ -1601,9 +1601,7 @@ class Magnebot(FloorplanController):
                     angles.append(fixed_torso_prismatic)
                 else:
                     # Convert the torso value to a percentage and then to a joint position.
-                    p = (angle * (Magnebot._TORSO_MAX_Y - Magnebot._TORSO_MIN_Y)) + Magnebot._TORSO_MIN_Y
-                    torso_prismatic = float(p * 1.5)
-                    angles.append(torso_prismatic)
+                    angles.append(Magnebot._y_position_to_torso_position(y_position=angle))
             # Append all other angles normally.
             else:
                 angles.append(float(np.rad2deg(angle)))
@@ -1706,7 +1704,7 @@ class Magnebot(FloorplanController):
         if reset_torso:
             commands.extend([{"$type": "set_prismatic_target",
                               "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
-                              "target": Magnebot._DEFAULT_TORSO_Y},
+                              "target": 1},
                              {"$type": "set_revolute_target",
                               "joint_id": self.magnebot_static.arm_joints[ArmJoint.column],
                               "target": 0}])
@@ -2198,3 +2196,14 @@ class Magnebot(FloorplanController):
         """
 
         return self.objects_static[object_id].mass > 8
+
+    @staticmethod
+    def _y_position_to_torso_position(y_position: float) -> float:
+        """
+        :param y_position: A y positional value in meters.
+
+        :return: A corresponding joint position value for the torso prismatic joint.
+        """
+
+        # Convert the torso value to a percentage and then to a joint position.
+        return float((y_position * (Magnebot._TORSO_MAX_Y - Magnebot._TORSO_MIN_Y)) + Magnebot._TORSO_MIN_Y) * 1.5

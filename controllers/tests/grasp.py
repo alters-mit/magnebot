@@ -1,6 +1,8 @@
 from typing import Dict, List
 from magnebot import Arm, ActionStatus
 from magnebot.test_controller import TestController
+from magnebot.ik.orientation_mode import OrientationMode
+from magnebot.ik.target_orientation import TargetOrientation
 
 
 class Grasp(TestController):
@@ -24,6 +26,7 @@ if __name__ == "__main__":
     m = Grasp()
     m.init_scene()
     m.turn_by(-177)
-    status = m.grasp(m.target_id, arm=Arm.right)
+    status = m.grasp(m.target_id, arm=Arm.right,
+                     target_orientation=TargetOrientation.up, orientation_mode=OrientationMode.y)
     assert status == ActionStatus.success, status
     m.end()
