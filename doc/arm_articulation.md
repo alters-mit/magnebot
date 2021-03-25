@@ -50,12 +50,12 @@ The script `ik_images.py` (also located in `util/`) will generate images of vert
 
 We've benchmarked the IK orientation solver using `controllers/tests/benchmark/ik.py`. In this test controller, the Magnebot will `reach_for()` an array of target positions and record whether the outcome of the action was guessed correctly. A correct guess is an action that returns `success` or `cannot_reach`. If the action returns `cannot_reach`, this means that the solver knew ahead of time that the action was going to fail and the Magnebot never tried to bend its arm, rather than reaching for an impossible target. If the action returns `failed_to_bend`, this counts as a failure; the Magnebot tried to reach for a position that the solver guessed was reachable, but failed to arrive at the target.
 
-| Action                                                       | Accuracy | Total time elapsed   |
-| ------------------------------------------------------------ | -------- | -------------------- |
-| `reach_for(target, arm)`                                     | 85.5%    | 2 minutes 19 seconds |
-| `reach_for(target, arm, TargetOrientation.none, OrientationMode.none)` | 58.5%    | 2 minutes 42 seconds |
-| `reach_for(target, arm)` (up to 5 consecutive attempts; see below) | 88.5%    | 3 minutes 39 seconds |
-| Multiple consecutive attempts with a mix of parameters (see below) | 87.5%    | 2 minutes 34 seconds |
+| Action                                                       | Accuracy | Total time elapsed |
+| ------------------------------------------------------------ | -------- | ------------------ |
+| `reach_for(target, arm)`                                     | 85.5%    | 02:19              |
+| `reach_for(target, arm, TargetOrientation.none, OrientationMode.none)` | 58.5%    | 02:42              |
+| `reach_for(target, arm)` (up to 5 consecutive attempts; see below) | 88.5%    | 03:39              |
+| Multiple consecutive attempts with a mix of parameters (see below) | 87.5%    | 02:34              |
 
 ### Making multiple attempts
 
@@ -83,7 +83,7 @@ class MultipleAttempts(Magnebot):
 
 ### Limitations to the IK orientation solver
 
-- The Magnebot IK orientation solver assumes that the Magnebot's arms are in their neutral position. If they're at any other position, the IK solution found using `auto`, `auto` parameters will be inaccurate (63.5% accuracy). You should either:
+- The Magnebot IK orientation solver assumes that the Magnebot's arms are in their neutral position. If they're at any other position, the IK solution found using `auto`, `auto` parameters will be inaccurate (57% accuracy). You should either:
   - Reset the arms to their neutral positions with the `reset_arm()` function between IK actions.
   - Explicitly set IK orientation parameters (see below).
 - The IK solver doesn't (and can't) automatically handle situations where there are obstructions such as walls, other objects, objects held by a magnet, or the Magnebot's body.
