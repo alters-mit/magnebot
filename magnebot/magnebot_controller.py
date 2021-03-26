@@ -902,6 +902,27 @@ class Magnebot(FloorplanController):
         else:
             if self._debug:
                 print(f"Tried and failed to reach for target: {d}")
+            # Try alternative orientation parameters.
+            if target_orientation == TargetOrientation.auto and orientation_mode == OrientationMode.auto:
+                for orientation in self._get_ik_orientations(target=destination, arm=arm)[1:]:
+                    status = self._start_ik(target=target, arm=arm, absolute=absolute, arrived_at=arrived_at,
+                                            do_prismatic_first=target["y"] > Magnebot._DEFAULT_TORSO_Y,
+                                            target_orientation=orientation.target_orientation,
+                                            orientation_mode=orientation.orientation_mode)
+                    if status != ActionStatus.success:
+                        continue
+                    # Wait for the arm motion to end.
+                    self._do_arm_motion(conditional=lambda state: self._magnet_is_at_target(target=destination,
+                                                                                            arm=arm,
+                                                                                            state=state,
+                                                                                            arrived_at=arrived_at))
+                    self._end_action()
+                    magnet_position = Magnebot._absolute_to_relative(
+                        position=self.state.joint_positions[self.magnebot_static.magnets[arm]],
+                        state=self.state)
+                    d = np.linalg.norm(destination - magnet_position)
+                    if d < arrived_at:
+                        return ActionStatus.success
             return ActionStatus.failed_to_reach
 
     def grasp(self, target: int, arm: Arm, target_orientation: TargetOrientation = TargetOrientation.auto,
@@ -1539,13 +1560,13 @@ class Magnebot(FloorplanController):
 
         # Try to get an orientation mode.
         if target_orientation == TargetOrientation.auto and orientation_mode == OrientationMode.auto:
-            orientation_solution, got_orientation = self._get_ik_orientation(arm=arm, target=target)
+            orientations = self._get_ik_orientations(arm=arm, target=target)
             # If we didn't get a solution, the action is VERY likely to fail.
             # See: `controllers/tests/benchmark/ik.py`
-            if not got_orientation:
+            if len(orientations) == 0:
                 return ActionStatus.cannot_reach
-            target_orientation = orientation_solution.target_orientation
-            orientation_mode = orientation_solution.orientation_mode
+            target_orientation = orientations[0].target_orientation
+            orientation_mode = orientations[0].orientation_mode
 
         # Get the initial angles of each joint.
         # The first angle is always 0 (the origin link).
@@ -2156,31 +2177,36 @@ class Magnebot(FloorplanController):
                                                   "joint_id": joint_id,
                                                   "target": TDWUtils.array_to_vector3(joint_angles)})
 
-    def _get_ik_orientation(self, arm: Arm, target: np.array) -> Tuple[Orientation, bool]:
+    def _get_ik_orientations(self, arm: Arm, target: np.array) -> List[Orientation]:
         """
         Try to automatically choose an orientation for an IK solution.
         Our best-guess approach is to load a numpy array of known IK orientation solutions per position,
         find the position in the array closest to `target`, and use that IK orientation solution.
 
         For more information: https://notebook.community/Phylliade/ikpy/tutorials/Orientation
+        And: https://github.com/alters-mit/magnebot/blob/main/doc/arm_articulation.md
 
         :param arm: The arm doing the motion.
         :param target: The target position.
 
-        :return: Tuple: An `Orientation`; a boolean indicating whether a solution was found.
+        :return: A list of best guesses for IK orientation. The first element in the list is almost always the best option. The other elements are neighboring options.
         """
 
         # Get the index of the nearest position using scipy, and use that index to get the corresponding orientation.
         # Source: https://stackoverflow.com/questions/52364222/find-closest-similar-valuevector-inside-a-matrix
         # noinspection PyArgumentList
-        orientation = self._ik_orientations[arm][cKDTree(self._ik_positions).query(target, k=1)[1]]
-        # If we couldn't find a solution, just opt for (none, none) and hope for the best.
-        # This can happen if the target position is further away than any of the pre-calculated positions.
-        if orientation == -1:
-            return ORIENTATIONS[0], False
-        # Use our best-case IK orientation solution.
-        else:
-            return ORIENTATIONS[orientation], True
+        orientations = [self._ik_orientations[arm][cKDTree(self._ik_positions).query(target, k=1)[1]]]
+
+        # If we couldn't find a solution, assume that there isn't one and return an empty list.
+        if orientations[0] < 0:
+            return []
+
+        # Append other orientation options that are nearby.
+        # noinspection PyArgumentList
+        orientations.extend(list(set([self._ik_orientations[arm][i] for i in
+                                      cKDTree(self._ik_positions).query(target, k=9)[1] if
+                                      self._ik_orientations[arm][i] not in orientations])))
+        return [ORIENTATIONS[o] for o in orientations if o > 0]
 
     def _collided(self) -> bool:
         """
