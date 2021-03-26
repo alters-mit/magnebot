@@ -884,7 +884,7 @@ class Magnebot(FloorplanController):
             :return: True if the magnet is near the target position.
             """
 
-            return __interrupt(SceneState(resp=self.communicate([])))
+            return __interrupt(self.state)
 
         if absolute:
             target = Magnebot._absolute_to_relative(position=TDWUtils.vector3_to_array(target), state=self.state)
@@ -929,7 +929,7 @@ class Magnebot(FloorplanController):
             :return: True if the magnet is grasping the object.
             """
 
-            return __interrupt(SceneState(resp=self.communicate([])))
+            return __interrupt(self.state)
 
         def __end():
             """
@@ -1817,15 +1817,16 @@ class Magnebot(FloorplanController):
 
         # Wait for the arm motion to end.
         self._do_arm_motion(conditional=is_interrupt_success)
+        self._end_action()
         if is_success():
             if end is not None:
                 end()
-            self._end_action()
             return ActionStatus.success
         else:
             # Try alternative orientation parameters.
             if target_orientation == TargetOrientation.auto and orientation_mode == OrientationMode.auto:
                 for orientation in self._get_ik_orientations(target=TDWUtils.vector3_to_array(target), arm=arm)[1:]:
+                    self._start_action()
                     status = self._start_ik(target=target, arm=arm, absolute=False, arrived_at=arrived_at,
                                             do_prismatic_first=target["y"] > Magnebot._DEFAULT_TORSO_Y,
                                             target_orientation=orientation.target_orientation,
@@ -1835,14 +1836,11 @@ class Magnebot(FloorplanController):
                         continue
                     # Wait for the arm motion to end.
                     self._do_arm_motion(conditional=is_interrupt_success)
+                    self._end_action()
                     if is_success():
                         if end is not None:
                             end()
-                        self._end_action()
                         return ActionStatus.success
-            if end is not None:
-                end()
-            self._end_action()
             return ActionStatus.failed_to_reach
 
     @staticmethod
