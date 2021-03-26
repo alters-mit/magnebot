@@ -877,7 +877,10 @@ class Magnebot(FloorplanController):
             :return: True if the magnet is at the target position.
             """
 
-            return self._magnet_is_at_target(target=target_arr, arm=arm, state=state, arrived_at=arrived_at)
+            magnet_position = Magnebot._absolute_to_relative(
+                position=state.joint_positions[self.magnebot_static.magnets[arm]],
+                state=state)
+            return np.linalg.norm(magnet_position - target_arr) < arrived_at
 
         if absolute:
             target = Magnebot._absolute_to_relative(position=TDWUtils.vector3_to_array(target), state=self.state)
@@ -2020,21 +2023,6 @@ class Magnebot(FloorplanController):
         return QuaternionUtils.world_to_local_vector(position=position,
                                                      origin=state.magnebot_transform.position,
                                                      rotation=state.magnebot_transform.rotation)
-
-    def _magnet_is_at_target(self, target: np.array, arm: Arm, state: SceneState, arrived_at: float) -> bool:
-        """
-        :param target: The target position.
-        :param arm: The arm.
-        :param state: The state.
-        :param arrived_at: The distance at which the magnet is considered to have arrived at the target.
-
-        :return: True if the magnet is at the target position.
-        """
-
-        magnet_position = Magnebot._absolute_to_relative(
-            position=state.joint_positions[self.magnebot_static.magnets[arm]],
-            state=state)
-        return np.linalg.norm(magnet_position - target) < arrived_at
 
     def _stop_wheels(self, state: SceneState) -> None:
         """
