@@ -870,7 +870,7 @@ class Magnebot(FloorplanController):
         :return: An `ActionStatus` indicating if the magnet at the end of the `arm` is at the `target` and if not, why.
         """
 
-        def __interrupt(state):
+        def __success(state):
             """
             :param state: The current scene state during arm motion.
 
@@ -879,20 +879,13 @@ class Magnebot(FloorplanController):
 
             return self._magnet_is_at_target(target=target_arr, arm=arm, state=state, arrived_at=arrived_at)
 
-        def __success():
-            """
-            :return: True if the magnet is near the target position.
-            """
-
-            return __interrupt(self.state)
-
         if absolute:
             target = Magnebot._absolute_to_relative(position=TDWUtils.vector3_to_array(target), state=self.state)
             target = TDWUtils.array_to_vector3(target)
         target_arr = TDWUtils.vector3_to_array(target)
         return self._do_ik(target=target, arm=arm, arrived_at=arrived_at,
                            target_orientation=target_orientation, orientation_mode=orientation_mode,
-                           is_interrupt_success=__interrupt, is_success=__success, end=None)
+                           is_success=__success, end=None)
 
     def grasp(self, target: int, arm: Arm, target_orientation: TargetOrientation = TargetOrientation.auto,
               orientation_mode: OrientationMode = OrientationMode.auto) -> ActionStatus:
@@ -915,7 +908,7 @@ class Magnebot(FloorplanController):
         :return: An `ActionStatus` indicating if the magnet at the end of the `arm` is holding the `target` and if not, why.
         """
 
-        def __interrupt(state):
+        def __success(state):
             """
             :param state: The current scene state during arm motion.
 
@@ -923,13 +916,6 @@ class Magnebot(FloorplanController):
             """
 
             return Magnebot._is_grasping(target, arm, state)
-
-        def __success():
-            """
-            :return: True if the magnet is grasping the object.
-            """
-
-            return __interrupt(self.state)
 
         def __end():
             """
@@ -960,7 +946,7 @@ class Magnebot(FloorplanController):
             state=self.state))
         status = self._do_ik(target=target_position, arm=arm, arrived_at=0.05,
                              target_orientation=target_orientation, orientation_mode=orientation_mode,
-                             is_interrupt_success=__interrupt, is_success=__success, end=__end)
+                             is_success=__success, end=__end)
         if status == ActionStatus.cannot_reach:
             return status
         elif target in self.state.held[arm]:
@@ -1545,7 +1531,6 @@ class Magnebot(FloorplanController):
             # If we didn't get a solution, the action is VERY likely to fail.
             # See: `controllers/tests/benchmark/ik.py`
             if len(orientations) == 0:
-                print(target)
                 return ActionStatus.cannot_reach
             target_orientation = orientations[0].target_orientation
             orientation_mode = orientations[0].orientation_mode
@@ -1777,25 +1762,18 @@ class Magnebot(FloorplanController):
         else:
             return ActionStatus.success
 
-    def _do_ik(self, target: Dict[str, float], arm: Arm, arrived_at: float,
-               is_success, is_interrupt_success, end,
+    def _do_ik(self, target: Dict[str, float], arm: Arm, arrived_at: float, is_success, end,
                target_orientation: TargetOrientation = TargetOrientation.auto,
                orientation_mode: OrientationMode = OrientationMode.auto) -> ActionStatus:
         """
-        Reach for a target position.
+        Shared code for `reach_for()` and `grasp()`.
+        Solve for an IK target and move the arm joints until they're done moving or the action is successful.
+        If the orientation parameters are (auto, auto), try several other orientation parameters before giving up.
 
-        The action ends when the arm stops moving. The arm might stop moving if it succeeded at finishing the motion, in which case the action is successful. Or, the arms might stop moving because the motion is impossible, there's an obstacle in the way, if the arm is holding something heavy, and so on.
-
-        Possible [return values](action_status.md):
-
-        - `success`
-        - `cannot_reach`
-
-        :param target: The target position for the magnet at the arm to reach, relative to the Magnebot's position and rotation.
+        :param target: The target position for the magnet at the arm to reach, RELATIVE to the Magnebot.
         :param arm: The arm that will reach for the target.
-        :param is_success: A conditional for whether the action was successful.
-        :param is_interrupt_success: A conditional to interrupt arm motion and return success. Must contain a SceneState parameter.
-        :param end: Do something at the end of the action.
+        :param is_success: A function that returns a boolean a SceneState parameter. Used to determine if the action was successful during or after arm motion.
+        :param end: A function that is called at the end of this function. Can be None.
         :param arrived_at: If the magnet is this distance or less from `target`, then the action is successful.
         :param target_orientation: [The target orientation of the IK solution.](../arm_articulation.md)
         :param orientation_mode: [The orientation mode of the IK solution.](../arm_articulation.md)
@@ -1816,9 +1794,9 @@ class Magnebot(FloorplanController):
             return status
 
         # Wait for the arm motion to end.
-        self._do_arm_motion(conditional=is_interrupt_success)
+        self._do_arm_motion(conditional=lambda s: is_success(s))
         self._end_action()
-        if is_success():
+        if is_success(self.state):
             if end is not None:
                 end()
             return ActionStatus.success
@@ -1835,9 +1813,9 @@ class Magnebot(FloorplanController):
                     if status != ActionStatus.success:
                         continue
                     # Wait for the arm motion to end.
-                    self._do_arm_motion(conditional=is_interrupt_success)
+                    self._do_arm_motion(conditional=lambda s: is_success(s))
                     self._end_action()
-                    if is_success():
+                    if is_success(self.state):
                         if end is not None:
                             end()
                         return ActionStatus.success

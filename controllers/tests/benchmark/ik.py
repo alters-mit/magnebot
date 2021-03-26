@@ -44,44 +44,33 @@ class IK(TestController):
             np.save("ik_positions", positions)
         return positions
 
-    def run(self, target_orientation: TargetOrientation, orientation_mode: OrientationMode, num_tries: int = 1,
-            re_init_scene: bool = True) -> float:
+    def run(self, target_orientation: TargetOrientation, orientation_mode: OrientationMode) -> float:
         """
         `reach_for()` an array of positions. Record if we correctly guessed the result.
-        A correct guess is either a `ActionStatus.success` or `ActionStatus.cannot_reach`).
-        If the `reach_for()` action returns `ActionStatus.failed_to_bend`, we guessed incorrectly because
+        A correct guess is either a `success` or `cannot_reach`.
+        If the `reach_for()` action returns `failed_to_bend` or `failed_to_reach`, we guessed incorrectly because
         we thought the action would succeed and it didn't.
 
         :param target_orientation: The target orientation used per `reach_for()` action.
         :param orientation_mode: The orientation mode used per `reach_for()` action.
-        :param num_tries: The number of sequential tries to reach for the same target.
-        :param re_init_scene: If True, call `init_scene()` per trial to reset the arms.
 
         :return:  The percentage of `reach_for()` actions that were successful.
         """
-
-        if not re_init_scene:
-            self.init_scene()
 
         pbar = tqdm(total=len(self.positions) * 2)
         successes: int = 0
         for arm in [Arm.left, Arm.right]:
             for i in range(len(self.positions)):
-                # Reload the scene.
-                if re_init_scene:
-                    self.init_scene()
-                # Try multiple times to reach for the position.
-                for j in range(num_tries):
-                    # Reach for the target.
-                    status = self.reach_for(target=TDWUtils.array_to_vector3(self.positions[i]),
-                                            arm=arm,
-                                            target_orientation=target_orientation,
-                                            orientation_mode=orientation_mode,
-                                            arrived_at=self.arrived_at)
-                    # Record a successful action or an action that was unsuccessful that we guessed would be.
-                    if status == ActionStatus.success or status == ActionStatus.cannot_reach:
-                        successes += 1
-                        break
+                self.init_scene()
+                # Reach for the target.
+                status = self.reach_for(target=TDWUtils.array_to_vector3(self.positions[i]),
+                                        arm=arm,
+                                        target_orientation=target_orientation,
+                                        orientation_mode=orientation_mode,
+                                        arrived_at=self.arrived_at)
+                # Record a successful action or an action that was unsuccessful that we guessed would be.
+                if status == ActionStatus.success or status == ActionStatus.cannot_reach:
+                    successes += 1
                 pbar.update(1)
         pbar.close()
         return successes / (len(self.positions) * 2)
@@ -96,8 +85,7 @@ class IK(TestController):
             for i in range(len(self.positions)):
                 # Get the orientation.
                 t0 = time()
-                self._get_ik_orientation(arm=arm,
-                                         target=self.positions[i])
+                self._get_ik_orientations(arm=arm, target=self.positions[i])
                 orientation_times.append(time() - t0)
         return sum(orientation_times) / len(orientation_times)
 
@@ -115,15 +103,22 @@ class IK(TestController):
             for i in range(len(self.positions)):
                 # Reload the scene.
                 self.init_scene()
-                orientation, got_orientation = self._get_ik_orientation(arm=arm, target=self.positions[i])
+                orientations = self._get_ik_orientations(arm=arm, target=self.positions[i])
+                if len(orientations) == 0:
+                    target_orientation = TargetOrientation.none
+                    orientation_mode = OrientationMode.none
+                else:
+                    target_orientation = orientations[0].target_orientation
+                    orientation_mode = orientations[0].orientation_mode
+
                 # Reach for the target.
                 status = self.reach_for(target=TDWUtils.array_to_vector3(self.positions[i]),
                                         arm=arm,
                                         arrived_at=self.arrived_at,
-                                        target_orientation=orientation.target_orientation,
-                                        orientation_mode=orientation.orientation_mode)
+                                        target_orientation=target_orientation,
+                                        orientation_mode=orientation_mode)
                 # Record how often we correctly guess that there's no solution (the action should fail).
-                if not got_orientation:
+                if len(orientations) == 0:
                     total_no_orientation += 1
                     if status != ActionStatus.success:
                         correct_no_orientation += 1
@@ -133,38 +128,6 @@ class IK(TestController):
             return correct_no_orientation / total_no_orientation
         else:
             return -1
-
-    def mixed(self) -> float:
-        """
-        Benchmark whether the a very basic multi-attempt algorithm improves accuracy.
-
-        :return: The percentage of `reach_for()` actions that were successful.
-        """
-
-        pbar = tqdm(total=len(self.positions) * 2)
-        successes: int = 0
-        for arm in [Arm.left, Arm.right]:
-            for i in range(len(self.positions)):
-                # Reload the scene.
-                self.init_scene()
-                # Reach for the target.
-                status = self.reach_for(target=TDWUtils.array_to_vector3(self.positions[i]),
-                                        arm=arm,
-                                        arrived_at=self.arrived_at)
-                if status == ActionStatus.success or status == ActionStatus.cannot_reach:
-                    successes += 1
-                # If the motion failed, try to reach with (none, none).
-                else:
-                    status = self.reach_for(target=TDWUtils.array_to_vector3(self.positions[i]),
-                                            arm=arm,
-                                            arrived_at=self.arrived_at,
-                                            orientation_mode=OrientationMode.none,
-                                            target_orientation=TargetOrientation.none)
-                    if status == ActionStatus.success or status == ActionStatus.cannot_reach:
-                        successes += 1
-                pbar.update(1)
-        pbar.close()
-        return successes / (len(self.positions) * 2)
 
 
 if __name__ == "__main__":
@@ -181,14 +144,5 @@ if __name__ == "__main__":
 
     no_orientation = m.no_orientation()
     print("Accuracy of no solution prediction:", no_orientation)
-
-    multi = m.run(target_orientation=TargetOrientation.auto, orientation_mode=OrientationMode.auto, num_tries=5)
-    print("Success if orientation is (auto, auto):", multi)
-
-    mixed = m.mixed()
-    print("Success with mixed consecutive parameters:", mixed)
-
-    sequential = m.run(target_orientation=TargetOrientation.auto, orientation_mode=OrientationMode.auto, re_init_scene=False)
-    print("Success if state isn't reset:", sequential)
 
     m.end()
