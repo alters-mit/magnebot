@@ -52,7 +52,7 @@ We've benchmarked the IK orientation solver using `controllers/tests/benchmark/i
 
 | Action                                                       | Accuracy | Total time elapsed |
 | ------------------------------------------------------------ | -------- | ------------------ |
-| `reach_for(target, arm)`                                     | 85.5%    | 02:19              |
+| `reach_for(target, arm)`                                     | 86.5%    | 02:11              |
 | `reach_for(target, arm, TargetOrientation.none, OrientationMode.none)` | 58.5%    | 02:42              |
 | `reach_for(target, arm)` (up to 5 consecutive attempts; see below) | 88.5%    | 03:39              |
 | Multiple consecutive attempts with a mix of parameters (see below) | 87.5%    | 02:34              |

@@ -888,7 +888,8 @@ class Magnebot(FloorplanController):
         # Wait for the arm motion to end.
         self._do_arm_motion(conditional=lambda state: self._magnet_is_at_target(target=destination,
                                                                                 arm=arm,
-                                                                                state=state))
+                                                                                state=state,
+                                                                                arrived_at=arrived_at))
         self._end_action()
 
         # Check how close the magnet is to the expected relative position.
@@ -1973,11 +1974,12 @@ class Magnebot(FloorplanController):
                                                      origin=state.magnebot_transform.position,
                                                      rotation=state.magnebot_transform.rotation)
 
-    def _magnet_is_at_target(self, target: np.array, arm: Arm, state: SceneState) -> bool:
+    def _magnet_is_at_target(self, target: np.array, arm: Arm, state: SceneState, arrived_at: float) -> bool:
         """
         :param target: The target position.
         :param arm: The arm.
         :param state: The state.
+        :param arrived_at: The distance at which the magnet is considered to have arrived at the target.
 
         :return: True if the magnet is at the target position.
         """
@@ -1985,7 +1987,7 @@ class Magnebot(FloorplanController):
         magnet_position = Magnebot._absolute_to_relative(
             position=state.joint_positions[self.magnebot_static.magnets[arm]],
             state=state)
-        return np.linalg.norm(magnet_position - target) < 0.001
+        return np.linalg.norm(magnet_position - target) < arrived_at
 
     def _stop_wheels(self, state: SceneState) -> None:
         """
