@@ -1545,6 +1545,7 @@ class Magnebot(FloorplanController):
             # If we didn't get a solution, the action is VERY likely to fail.
             # See: `controllers/tests/benchmark/ik.py`
             if len(orientations) == 0:
+                print(target)
                 return ActionStatus.cannot_reach
             target_orientation = orientations[0].target_orientation
             orientation_mode = orientations[0].orientation_mode
@@ -2255,7 +2256,7 @@ class Magnebot(FloorplanController):
         orientations.extend(list(set([self._ik_orientations[arm][i] for i in
                                       cKDTree(self._ik_positions).query(target, k=9)[1] if
                                       self._ik_orientations[arm][i] not in orientations])))
-        return [ORIENTATIONS[o] for o in orientations if o > 0]
+        return [ORIENTATIONS[o] for o in orientations if o >= 0]
 
     def _collided(self) -> bool:
         """
