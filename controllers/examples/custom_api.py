@@ -159,11 +159,7 @@ class CustomAPI(Magnebot):
         print("Moved to the box.")
         # Push the other object.
         status = self.push(target=self.object_id, arm=Arm.right)
-        print(f"Pushed the other object: {status}")
-        if status != ActionStatus.success:
-            print(f"Failed to push the other object: {status}")
-            return
-        print("Pushed the other object.")
+        print(f"Pushed the object: {status}")
         # Reset the arms.
         self.move_by(-0.5, stop_on_collision=False)
         self.reset_arm(arm=Arm.left)
