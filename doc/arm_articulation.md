@@ -93,10 +93,27 @@ The `arrived_at` parameter in the `reach_for()` action determines minimum distan
 
 You can define your own action that uses inverse kinematics by calling the hidden function `self._start_ik()`. For example implementation, see `controllers/examples/custom_api.py` which adds a `push()` action. For documentation, read the docstring for `_start_ik()` in `magnebot_controller.py`.
 
-Other useful functions:
+There are many useful backend functions for creating a custom API. [Read this](custom_api.md) for a list. The following are functions useful specifically for IK actions:
 
-- `self._do_arm_motion()` will loop until the joints stop moving. If your action only involves a few specific joints, the action will generally run faster if you supply a `joint_ids` parameter.
-- `self._append_ik_commands()` converts a list of angles to TDW commands. Unlike `_start_ik()`, it doesn't actually plot an IK solution.
+| Function                               | Description                                                  |
+| -------------------------------------- | ------------------------------------------------------------ |
+| `self._start_ik()`                     | Given a target position and other parameters, find an IK solution. Returns the angles of each joint. |
+| `self._append_ik_commands()`           | Convert a list of angles to TDW commands. Unlike `_start_ik()`, it doesn't actually calculate an IK solution. |
+| `self._do_ik()`                        | Higher-level function for code shared by `reach_for()` and `grasp()`. |
+| `self._do_arm_motion()`                | Loop until the joints stop moving. If your action only involves a few specific joints, the action will generally run faster if you supply a `joint_ids` parameter. |
+| `self._get_initial_angles()`           | Returns the angles of the arm joints prior to arm motion.    |
+| `self._stop_joints()`                  | Stop all joint movement.                                     |
+| `self._get_ik_orientations()`          | Returns a list of possible IK orientation parameters, given the target position and arm. |
+| `self._y_position_to_torso_position()` | Converts a y worldspace coordinate to a torso prismatic joint position. |
+
+Functions relevant specifically to `grasp()` or grasp-like actions:
+
+| Function                   | Description                                                  |
+| -------------------------- | ------------------------------------------------------------ |
+| `self._get_bounds_sides()` | Returns the bounds sides of an object that can be used for `grasp()` targets. |
+| `self._get_nearest_side()` | Returns the bounds side of an object closest to a magnet.    |
+| `self._get_grasp_target()` | Returns a target position for a `grasp()` action.            |
+| `self._is_grasping()`      | Returns True if the magnet is grasping the object.           |
 
 ## Getting a target position for `grasp()`
 

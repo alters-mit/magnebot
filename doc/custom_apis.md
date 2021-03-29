@@ -81,24 +81,20 @@ If you want to send the same command every time `communicate()` is called (for e
 
 ## Other useful functions
 
-These functions aren't in the API documentation because they are intended for only backend coding. For further documentation, including a description of their parameters, please see the docstrings for each of these functions in the [`magnebot_controller.py`](https://github.com/alters-mit/magnebot/blob/main/magnebot/magnebot_controller.py) code.
+These functions aren't in the API documentation because they are intended for only backend coding. For further documentation, including a description of their parameters, please see the docstrings for each of these functions in the [`magnebot_controller.py`](https://github.com/alters-mit/magnebot/blob/main/magnebot/magnebot_controller.py) code. For IK-related functions, [read this](arm_articulation.md).
 
 | Function                     | Description                                                  |
 | ---------------------------- | ------------------------------------------------------------ |
 | `_start_move_or_turn()`      | Start a move or turn action.                                 |
-| `_start_ik()`                | Start an IK (arm articulation) action.                       |
-| `_get_initial_angles()`      | Get the angles of the arm in the current state.              |
-| `_append_ik_commands()`      | Convert target angles to TDW commands and append them to `_next_frame_commands`. |
 | `_get_reset_arm_commands()`  | Get a list of commands to reset an arm.                      |
 | `_do_arm_motion()`           | Wait until the arms have stopped moving.                     |
-| `_is_grasping()`             | Returns True if the arm is holding the object.               |
 | `_cache_static_data()`       | Cache static data after initializing the scene. You probably shouldn't override this, but you'll need to call it if you override `init_scene()`. |
 | `_append_drop_commands()`    | Append commands to drop an object to `_next_frame_commands`  |
 | `_wait_until_objects_stop()` | Wait until all objects in the list stop moving.              |
 | `_absolute_to_relative()`    | Get the converted position relative to the Magnebot's position and rotation. |
-| `_magnet_is_at_target()`     | Returns True if the magnet is at the target position.        |
 | `_stop_wheels()`             | Stop wheel movement.                                         |
 | `_stop_tipping()`            | Handle situations where the Magnebot is tipping by dropping all heavy objects. |
-| `_get_bounds_sides()`        | Returns the bounds sides that can be used for `grasp()` targets. You might want to adjust this for certain objects. For example, in the Transport Challenge API, the Magnebot never tries to grasp a container from the top because containers don't have lids on the top. |
 | `_wheels_are_turning()`      | Returns True if the wheels are currently turning.            |
 | `_stop_joints()`             | Stop all joint movement.                                     |
+| `_collided()`                | Returns True if the Magnebot collided with a wall or with an object that should cause it to stop moving. |
+| `_is_stoppable_collision()`  | Returns True if this collision should make the Magnebot stop. |
