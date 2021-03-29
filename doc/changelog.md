@@ -3,8 +3,9 @@
 ## 1.1.2
 
 - Fixed: When checking for the most recent version of `magnebot`, the controller recommends to the currently-installed version rather than the latest version on PyPi
-- (Backend): Added `self._y_position_to_torso_position()` Converts a y worldspace coordinate to a torso joint position.
-  - Added class variables `_TORSO_Y_MIN`, `_TORSO_Y_MAX`, and `_COLUMN_Y`.
+- (Backend): Added `self._y_position_to_torso_position()` Converts a y worldspace coordinate to a torso joint position
+- (Backend): Added class variables `_TORSO_Y_MIN`, `_TORSO_Y_MAX`, and `_COLUMN_Y`
+- (Backend): `self._end_action()` returns the build output data list of byte arrays
 
 ## 1.1.1
 
