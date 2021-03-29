@@ -888,7 +888,7 @@ class Magnebot(FloorplanController):
         target_arr = TDWUtils.vector3_to_array(target)
         return self._do_ik(target=target, arm=arm, arrived_at=arrived_at,
                            target_orientation=target_orientation, orientation_mode=orientation_mode,
-                           is_success=__success, end=None)
+                           is_success=__success, start=None, end=None)
 
     def grasp(self, target: int, arm: Arm, target_orientation: TargetOrientation = TargetOrientation.auto,
               orientation_mode: OrientationMode = OrientationMode.auto) -> ActionStatus:
@@ -920,6 +920,15 @@ class Magnebot(FloorplanController):
 
             return Magnebot._is_grasping(target, arm, state)
 
+        def __start():
+            """
+            Enable the magnet.
+            """
+
+            self._next_frame_commands.append({"$type": "set_magnet_targets",
+                                              "arm": arm.name,
+                                              "targets": [target]})
+
         def __end():
             """
             Stop trying to grasp the target.
@@ -934,10 +943,6 @@ class Magnebot(FloorplanController):
                 print(f"Already holding {target}")
             return ActionStatus.success
 
-        # Enable grasping.
-        self._next_frame_commands.append({"$type": "set_magnet_targets",
-                                          "arm": arm.name,
-                                          "targets": [target]})
         # Choose a position on the object to aim for.
         # This is either a point derived via a raycast from the magnet to the object (if the raycast hits the object),
         # or the nearest side on the object bounds.
@@ -949,7 +954,7 @@ class Magnebot(FloorplanController):
             state=self.state))
         status = self._do_ik(target=target_position, arm=arm, arrived_at=0.05,
                              target_orientation=target_orientation, orientation_mode=orientation_mode,
-                             is_success=__success, end=__end)
+                             is_success=__success, start=__start, end=__end)
         if status == ActionStatus.cannot_reach:
             return status
         elif target in self.state.held[arm]:
@@ -1765,7 +1770,7 @@ class Magnebot(FloorplanController):
         else:
             return ActionStatus.success
 
-    def _do_ik(self, target: Dict[str, float], arm: Arm, arrived_at: float, is_success, end,
+    def _do_ik(self, target: Dict[str, float], arm: Arm, arrived_at: float, is_success, start, end,
                target_orientation: TargetOrientation = TargetOrientation.auto,
                orientation_mode: OrientationMode = OrientationMode.auto) -> ActionStatus:
         """
@@ -1776,7 +1781,8 @@ class Magnebot(FloorplanController):
         :param target: The target position for the magnet at the arm to reach, RELATIVE to the Magnebot.
         :param arm: The arm that will reach for the target.
         :param is_success: A function that returns a boolean a SceneState parameter. Used to determine if the action was successful during or after arm motion.
-        :param end: A function that is called at the end of this function. Can be None.
+        :param start: A function that is called at the start of this function and retry. Can be None.
+        :param end: A function that is called at the end of this function and retry. Can be None.
         :param arrived_at: If the magnet is this distance or less from `target`, then the action is successful.
         :param target_orientation: [The target orientation of the IK solution.](../arm_articulation.md)
         :param orientation_mode: [The orientation mode of the IK solution.](../arm_articulation.md)
@@ -1785,6 +1791,8 @@ class Magnebot(FloorplanController):
         """
 
         self._start_action()
+        if start is not None:
+            start()
 
         # Start the IK action.
         status = self._start_ik(target=target, arm=arm, absolute=False, arrived_at=arrived_at,
@@ -1808,6 +1816,8 @@ class Magnebot(FloorplanController):
             if target_orientation == TargetOrientation.auto and orientation_mode == OrientationMode.auto:
                 for orientation in self._get_ik_orientations(target=TDWUtils.vector3_to_array(target), arm=arm)[1:]:
                     self._start_action()
+                    if start is not None:
+                        start()
                     status = self._start_ik(target=target, arm=arm, absolute=False, arrived_at=arrived_at,
                                             do_prismatic_first=target["y"] > Magnebot._DEFAULT_TORSO_Y,
                                             target_orientation=orientation.target_orientation,
