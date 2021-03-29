@@ -2,14 +2,19 @@
 
 ## 1.2.0
 
-**This release introduces significant changes improvements to the arm articulation system. Please read this changelog carefully.** The overall effect is that `grasp()` and `reach_for()` are far faster and more accurate but they behave somewhat differently.
+**This release introduces significant changes improvements to the arm articulation system. Please read this changelog carefully.** The overall effect is that `grasp()` and `reach_for()` are far faster and more accurate but they behave somewhat differently. **For more information regarding the improvements to arm articulation, [read this.](arm_articulation.md)**
 
-**To upgrade to Magnebot 1.2.0, you must first uninstall and then reinstall the pip module**: 
+**To upgrade to Magnebot 1.2.0, you must do the following:** 
 
-- If you installed from PyPi: `pip3 uninstall magnebot` then `pip3 install magnebot`
-- If you're using the source code in a clone of this repo: `pip3 uninstall magnebot` then `pip3 install -e .`
-
-**For more information regarding the improvements to arm articulation, [read this.](arm_articulation.md)**
+- If you installed from PyPi: 
+  1. `pip3 uninstall ikpy`
+  2. `pip3 uninstall magnebot`
+  3. `pip3 install magnebot`
+- If you installed from the source code of this repo:
+  1. `pip3 uninstall ikpy`
+  2. `pip3 uninstall magnebot`
+  3. `cd path/to/magnebot`
+  4. `pip3 install -e .`
 
 ***
 
@@ -20,21 +25,26 @@
   - (Backend): Adjusted `self.__get_ik_chain()` to include the torso.
   - (Backend): Added pre-calculated data in `data/magnebot/ik/`
 - **Fixed: Torso movement is slow and inaccurate.** Previously in the IK actions, the torso prismatic joint was handled iteratively in increments of 0.1 meters. Per iteration, an arm articulation action checked for a solution. Now, using a fork of the underlying `ikpy` module, prismatic joints are correctly supported, resulting in faster and more accurate IK actions.
-  - (Backend): Added:  `self._y_position_to_torso_position()`. Converts from a y worldspace value to a torso joint position value.
-  - (Backend): Added constants for various torso joint limits and values.
 - Fixed: IK actions will sometimes try to reach for impossible positions. Now, they will immediately fail if there isn't a known solution at those coordinates or the position is beyond the reach of the arm.
 - Fixed: `grasp()` often targets bad positions on the object's surface. Before bending the arm, TDW will raycast from the magnet to the object. If the ray hits the object, the Magnebot will aim for the raycast point. Additionally, `grasp()` won't target the bottom of an object if the object is above the magnet (i.e. on a countertop).
+  
   - (Backend): Added: `self._get_grasp_target()` and `self._get_nearest_side()`
-- Fixed: When checking the version, the Magnebot suggests upgrading to the currently-installed version.
+
 - Added optional parameters `target_orientation` and `orientation_mode` to `reach_for()` and `grasp()`.
   - Added new enum classes: `TargetOrientation` and `OrientationMode`
   - (Backend): Added new class: `Orientation` (a wrapper class of pairings of `TargetOrientation` and `OrientationMode`)
 - Adjusted all example, promo, and test controllers to use the improved IK system.
 - Added: `doc/arm_articulation.md`
   - Added images of the IK orientation solutions: `doc/images/ik/`
-- (Backend): Added: `util/ik_solution
-- (Backend): `self._end_action()` returns the most recent response from the build (`resp`).
+- (Backend): Added: `util/ik_solution.py`
 - (Backend): Added: `controllers/tests/benchmark/ik.py` IK action tests and benchmarks.
+
+## 1.1.2
+
+- Fixed: When checking for the most recent version of `magnebot`, the controller recommends to the currently-installed version rather than the latest version on PyPi
+- (Backend): Added `self._y_position_to_torso_position()` Converts a y worldspace coordinate to a torso joint position
+- (Backend): Added class variables `_TORSO_Y_MIN`, `_TORSO_Y_MAX`, and `_COLUMN_Y`
+- (Backend): `self._end_action()` returns the build output data list of byte arrays
 
 ## 1.1.1
 
