@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2
+
+- Fixed: When checking for the most recent version of `magnebot`, the controller recommends to the currently-installed version rather than the latest version on PyPi
+- (Backend): Added `self._y_position_to_torso_position()` Converts a y worldspace coordinate to a torso joint position.
+  - Added class variables `_TORSO_Y_MIN`, `_TORSO_Y_MAX`, and `_COLUMN_Y`.
+
 ## 1.1.1
 
 - Fixed: `scene_environment.py` imports from the `sticky_mitten_avatar` project instead of `magnebot`
