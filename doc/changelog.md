@@ -26,10 +26,8 @@
   - (Backend): Added pre-calculated data in `data/magnebot/ik/`
 - **Fixed: Torso movement is slow and inaccurate.** Previously in the IK actions, the torso prismatic joint was handled iteratively in increments of 0.1 meters. Per iteration, an arm articulation action checked for a solution. Now, using a fork of the underlying `ikpy` module, prismatic joints are correctly supported, resulting in faster and more accurate IK actions.
 - Fixed: IK actions will sometimes try to reach for impossible positions. Now, they will immediately fail if there isn't a known solution at those coordinates or the position is beyond the reach of the arm.
-- Fixed: `grasp()` often targets bad positions on the object's surface. Before bending the arm, TDW will raycast from the magnet to the object. If the ray hits the object, the Magnebot will aim for the raycast point. Additionally, `grasp()` won't target the bottom of an object if the object is above the magnet (i.e. on a countertop).
-  
+- Fixed: `grasp()` often targets bad positions on the object's surface. Before bending the arm, TDW will raycast from the magnet to the object. If the ray hits the object, the Magnebot will aim for the raycast point. Additionally, `grasp()` won't target the bottom of an object if the object is above the magnet (i.e. on a countertop). 
   - (Backend): Added: `self._get_grasp_target()` and `self._get_nearest_side()`
-
 - Added optional parameters `target_orientation` and `orientation_mode` to `reach_for()` and `grasp()`.
   - Added new enum classes: `TargetOrientation` and `OrientationMode`
   - (Backend): Added new class: `Orientation` (a wrapper class of pairings of `TargetOrientation` and `OrientationMode`)
