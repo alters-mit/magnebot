@@ -63,6 +63,7 @@ We've benchmarked the IK orientation solver using `controllers/tests/benchmark/i
   - Reset the arms to their neutral positions with the `reset_arm()` function between IK actions.
   - Explicitly set IK orientation parameters (see below).
 - The IK solver doesn't (and can't) automatically handle situations where there are obstructions such as walls, other objects, objects held by a magnet, or the Magnebot's body.
+- **There is no general solution for orientation parameters.** We can't provide general guidelines for which orientation parameters to use for an arbitrary pose and target. It's far too complex a problem! The (`auto`, `auto`) parameters are meant to establish an accurate baseline under reasonable constraints. If you want to select orientation parameters accurately and automatically for more complex cases, you'll need to train your model to try different orientation parameters.
 
 ### Explicitly setting IK orientation parameters
 
