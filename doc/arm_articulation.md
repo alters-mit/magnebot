@@ -79,7 +79,7 @@ Some guidelines regarding the orientation parameters:
 - For a complete list of enum values for `TargetOrientation` and `OrientationMode`, read [this](api/target_orientation.md) and [this](api/orientation_mode.md).
 - Both parameters must be `auto` or neither.
 - Both parameters must be `none` or neither.
-- Setting both parameters to `none` is *usually* the best solution and will  make the arm bend in the most "direct" path 
+- Setting both parameters to `none` is *usually* the best solution and will  make the arm bend in the most "direct" path. Approximately 50% of the pre-calculated solutions use (`none`, `none`) (not including positions where no solution is possible).
 
 ### Setting the `arrived_at` parameter
 
