@@ -2083,6 +2083,8 @@ class Magnebot(FloorplanController):
         resp = self.communicate({"$type": "send_raycast",
                                  "position": TDWUtils.array_to_vector3(magnet_position),
                                  "destination": nearest_side})
+        # Update the state.
+        self.state = SceneState(resp=resp)
         raycast = get_data(resp=resp, d_type=Raycast)
         # If the raycast hit the target, use the point of contact as the target.
         if raycast.get_hit() and raycast.get_hit_object() and raycast.get_object_id() == target:
@@ -2101,13 +2103,12 @@ class Magnebot(FloorplanController):
         :return: Tuple: The bounds side closest to the magnet; the position of the magnet.
         """
 
-        sides, resp = self._get_bounds_sides(target=target)
-        state = SceneState(resp=resp)
+        sides = self._get_bounds_sides(target=target)
         # Get the position of the magnet.
-        magnet_position = state.joint_positions[self.magnebot_static.magnets[arm]]
+        magnet_position = self.state.joint_positions[self.magnebot_static.magnets[arm]]
 
         # If the object is higher up than the magnet, remove the lowest side.
-        if state.object_transforms[target].position[1] > magnet_position[1]:
+        if self.state.object_transforms[target].position[1] > magnet_position[1] and len(sides) > 1:
             lowest: int = -1
             y = np.inf
             for i in range(len(sides)):
@@ -2125,22 +2126,39 @@ class Magnebot(FloorplanController):
                 d = dd
         return closest, magnet_position
 
-    def _get_bounds_sides(self, target: int) -> Tuple[List[np.array], List[bytes]]:
+    def _get_bounds_sides(self, target: int) -> List[np.array]:
         """
         :param target: The ID of the target object.
 
-        :return: Tuple: Sides on the bounds of the object that can be used for an action; the response from the build.
+        :return: The sides on the bounds of the object that can be used for an action.
         """
 
-        # Reach for the center of the object.
+        # Get the bounds of the object.
         resp = self.communicate([{"$type": "send_bounds",
                                   "ids": [target],
                                   "frequency": "once"}])
-        # Get the side on the bounds closet to the magnet.
+        # Update the state.
+        self.state = SceneState(resp=resp)
+        # Convert the bounds of the object to a dictionary.
         bounds = get_data(resp=resp, d_type=Bounds)
-        sides = [bounds.get_left(0), bounds.get_right(0), bounds.get_front(0), bounds.get_back(0),
-                 bounds.get_top(0), bounds.get_bottom(0)]
-        return [np.array(s) for s in sides], resp
+        sides_dict = {"left": np.array(bounds.get_left(0)),
+                      "right": np.array(bounds.get_right(0)),
+                      "front": np.array(bounds.get_front(0)),
+                      "back": np.array(bounds.get_back(0)),
+                      "top": np.array(bounds.get_top(0)),
+                      "bottom": np.array(bounds.get_bottom(0))}
+        # If we haven't cached the bounds for this object, just return all of the sides.
+        if self.objects_static[target].name not in ObjectStatic.CONVEX_SIDES:
+            return list(sides_dict.values())
+        # Get only the convex sides of the object using cached data.
+        sides: List[np.array] = list()
+        for i, side in enumerate(ObjectStatic.BOUNDS_SIDES):
+            if i in ObjectStatic.CONVEX_SIDES[self.objects_static[target].name]:
+                sides.append(sides_dict[side])
+        # Append the center if needed.
+        if len(sides) == 0:
+            sides.append(np.array(bounds.get_center(0)))
+        return sides
 
     def _wheels_are_turning(self, state_0: SceneState, state_1: SceneState) -> bool:
         """
