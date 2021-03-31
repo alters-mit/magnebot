@@ -20,26 +20,8 @@ class Encoder(JSONEncoder):
         self.current_indent_str = ""
 
     def encode(self, o):
-        # Special Processing for lists
         if isinstance(o, (list, tuple)):
-            primitives_only = True
-            for item in o:
-                if isinstance(item, (list, tuple, dict)):
-                    primitives_only = False
-                    break
-            output = []
-            if primitives_only:
-                for item in o:
-                    output.append(dumps(item))
-                return "[" + ", ".join(output) + "]"
-            else:
-                self.current_indent += self.indent
-                self.current_indent_str = "".join([" " for x in range(self.current_indent)])
-                for item in o:
-                    output.append(self.current_indent_str + self.encode(item))
-                self.current_indent -= self.indent
-                self.current_indent_str = "".join([" " for x in range(self.current_indent)])
-                return "[\n" + ",\n".join(output) + "\n" + self.current_indent_str + "]"
+            return "[" + ", ".join([dumps(item) for item in o]) + "]"
         elif isinstance(o, dict):
             output = []
             self.current_indent += self.indent
@@ -54,6 +36,11 @@ class Encoder(JSONEncoder):
 
 
 class Convex(Controller):
+    """
+    For every object in the full model library, determine which sides of the bounds are concave.
+    This data will be used by `Magnebot.grasp()` when choosing which sides to target.
+    """
+
     def __init__(self, port: int = 1071, launch_build: bool = True):
         if not CONVEX_SIDES_PATH.exists():
             CONVEX_SIDES_PATH.write_text("{}")
@@ -65,8 +52,14 @@ class Convex(Controller):
         self.pbar = tqdm(total=len(self.model_librarian.records))
 
     def run(self) -> None:
+        """
+        For every model in the model library, get the bounds. Raycast from one side of the object to the other.
+        If the raycast hit, and the hit point is closer to the farther side than the nearer side, the side is concave.
+        Write all convex sides per object to disk.
+        """
+
         self.start()
-        self.communicate(TDWUtils.create_empty_room(12, 12))
+        self.communicate({"$type": "create_empty_environment"})
 
         for record in self.model_librarian.records:
             # Ignore bad models or models that we already checked.
@@ -103,7 +96,7 @@ class Convex(Controller):
                            "front": {"x": 0, "y": sides["front"][1], "z": sides["front"][2] + 4},
                            "back": {"x": 0, "y": sides["back"][1], "z": sides["back"][2] - 4},
                            "top": {"x": 0, "y": sides["top"][1] + 4, "z": 0},
-                           "bottom": {"x": 0, "y": 0, "z": 0}}
+                           "bottom": {"x": 0, "y": sides["bottom"][1] - 4, "z": 0}}
             # The destination of each ray (the opposite side of the bounds).
             ray_destinations = {"left": "right",
                                 "right": "left",

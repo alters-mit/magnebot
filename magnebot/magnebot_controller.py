@@ -2155,9 +2155,8 @@ class Magnebot(FloorplanController):
         for i, side in enumerate(ObjectStatic.BOUNDS_SIDES):
             if i in ObjectStatic.CONVEX_SIDES[self.objects_static[target].name]:
                 sides.append(sides_dict[side])
-        # Append the center if needed.
-        if len(sides) == 0:
-            sides.append(np.array(bounds.get_center(0)))
+        # Append the center.
+        sides.append(np.array(bounds.get_center(0)))
         return sides
 
     def _wheels_are_turning(self, state_0: SceneState, state_1: SceneState) -> bool:
