@@ -56,7 +56,7 @@ class ObjectStatic:
             """
             self.category = ObjectStatic.__CATEGORIES[self.name]
         else:
-            self.category = TransformInitData.LIBRARIES["models_core.json"].get_record(self.name).wcategory
+            self.category = TransformInitData.LIBRARIES["models_full.json"].get_record(self.name).wcategory
         """:field
         If True, this object is kinematic, and won't respond to physics. 
         Examples: a painting hung on a wall or built-in furniture like a countertop.
