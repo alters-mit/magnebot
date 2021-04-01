@@ -27,17 +27,16 @@ class TurnConstants(TestController):
     def run(self, angle: float):
         self._debug = False
         # Destroy the old data.
-        p = Path(f"data/turn_constants_{angle}.csv")
+        p = Path(f"turn_constants/turn_constants_{angle}.csv")
         if p.exists():
             p.unlink()
         # Write the header of the spreadsheet to disk.
         header = "time,magic_number,outer_track,front,drift\n"
         p.write_text(header)
-        path = str(p.resolve())
         print(f"Angle: {angle}")
         origin = np.array([0, 0, 0])
         results: List[Result] = list()
-        drift_max_default = 0.025
+        best_index: int = -1
         # Iterate through many combinations of the turn constants.
         for magic_number in np.arange(start=2.1, stop=3.4, step=0.1):
             for outer_track in np.arange(start=1, stop=2.1, step=0.1):
@@ -64,37 +63,27 @@ class TurnConstants(TestController):
                                    magic_number=round(magic_number, 3),
                                    outer_track=round(outer_track, 3),
                                    front=round(front, 3),
-                                   drift=round(drift, 3))
-                        if r.drift <= drift_max_default:
-                            print(r.get_line())
+                                   drift=drift)
+                        if best_index < 0:
+                            best_index = 0
+                        # Update the best known result.
+                        else:
+                            best = results[best_index]
+                            if r.drift <= best.drift and r.t <= best.t:
+                                best_index = len(results)
+                                print(r.get_line())
                         results.append(r)
-        best_result: Result = results[0]
-        got_best_result = False
-        # First, try to get a best value with a very low drift. Increase the threshold if we don't find anything.
-        drift_max = drift_max_default
-        while not got_best_result:
-            best_result: Result = results[0]
-            for result in results:
-                if result.drift > drift_max:
-                    continue
-                if result.t < best_result.t:
-                    best_result = result
-                    got_best_result = True
-            # Increase the drift threshold and try again.
-            drift_max += 0.01
+        best_result: Result = results[best_index]
         print("Best result: ")
         print(best_result.get_line())
-
-        # Write the results to disk.
-        for result in results:
-            with open(path, "at") as f:
-                f.write(result.get_line() + "\n")
+        with open(str(p.resolve()), "at") as f:
+            f.write(best_result.get_line() + "\n")
 
 
 if __name__ == "__main__":
     m = TurnConstants()
 
-    for a in [15, 45]:
+    for a in np.arange(10, 180, step=10):
         m.run(angle=a)
     m.end()
 

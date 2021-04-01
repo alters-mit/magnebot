@@ -35,7 +35,7 @@ class Benchmark(TestController):
         times: List[float] = list()
         for i in range(20):
             t0 = time()
-            self.turn_by(45)
+            self.turn_by(177)
             times.append(time() - t0)
         return sum(times) / len(times)
 

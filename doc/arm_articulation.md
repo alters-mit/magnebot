@@ -107,22 +107,16 @@ There are many useful backend functions for creating a custom API. [Read this](c
 | `self._get_ik_orientations()`          | Returns a list of possible IK orientation parameters, given the target position and arm. |
 | `self._y_position_to_torso_position()` | Converts a y worldspace coordinate to a torso prismatic joint position. |
 
-Functions relevant specifically to `grasp()` or grasp-like actions:
-
-| Function                   | Description                                                  |
-| -------------------------- | ------------------------------------------------------------ |
-| `self._get_bounds_sides()` | Returns the bounds sides of an object that can be used for `grasp()` targets. |
-| `self._get_nearest_side()` | Returns the bounds side of an object closest to a magnet.    |
-| `self._get_grasp_target()` | Returns a target position for a `grasp()` action.            |
-| `self._is_grasping()`      | Returns True if the magnet is grasping the object.           |
-
 ## Getting a target position for `grasp()`
 
-In the `grasp()` action, the Magnebot needs to pick a target position on the surface of the object. The target is determined in `self._get_grasp_target()`.
+In the `grasp()` action, the Magnebot needs to pick a target position on the surface of the object.
 
-- The Magnebot gets the side on the object closest to the Magnet using [`Bounds` data](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/output_data.md#Bounds) in the function `self._get_nearest_side()`
+- The Magnebot [spherecasts](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md#send_spherecast) from the magnet to the center of the object. If any of the rays hit the object, the Magnebot aims for the nearest hit point. There might not be any hits (for example, the object is on a counter, which obstructs the spherecast), in which case:
+- The Magnebot gets the side on the object closest to the Magnet using [`Bounds` data](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md#send_bounds).
   - If the object is above the magnet, the Magnebot will ignore the lowest side (i.e. the base of the object), since that's usually impossible to reach.
-- The Magnebot [raycasts](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/output_data.md#Raycast) from the Magnet to that position on the bounds. If the raycast hits the target, the Magnebot opts for the raycast position instead (which is usually tighter-fitting to the actual geometry of the object). The raycast might fail if there is an object in the way.
+  - There is a cached list of valid sides per object; the Magnebot selects the nearest side from this list. For example, if the object isn't an open box, the top of the box isn't a valid side because that's just empty space.
+  - If there isn't a valid nearest side, the Magnebot will aim for the center of the object and hope for the best.
+  - The controller [raycasts](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md#send_raycast) from the nearest side of the object to the center of the object to get the nearest point on the mesh surface.
 
 ## Debug mode
 
