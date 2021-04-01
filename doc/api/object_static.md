@@ -18,6 +18,15 @@ for object_id in m.objects_static:
 
 ***
 
+## Class Variables
+
+| Variable | Type | Description |
+| --- | --- | --- |
+| `CONVEX_SIDES` | Dict[str, List[int]] | A list of indices of convex sides per object. See: `BOUNDS_SIDES`. |
+| `BOUNDS_SIDES` | List[str] | The order of bounds sides. The values in `CONVEX_SIDES` correspond to indices in this list. |
+
+***
+
 ## Fields
 
 - `object_id` The unique ID of the object.
