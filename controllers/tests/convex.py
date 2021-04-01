@@ -46,7 +46,7 @@ class Convex(TestController):
         self._end_action()
         return status
 
-    def run(self, random_seed: int = None) -> Tuple[int, List[str]]:
+    def run(self, random_seed: int = None) -> Tuple[int, int, List[str]]:
         if random_seed is None:
             random_seed = self.get_unique_id()
         print("Random seed:", random_seed)
@@ -54,26 +54,31 @@ class Convex(TestController):
         self._debug = False
         self.init_scene()
         successes = 0
+        cannots = 0
         failures = list()
         for o_id in self.objects_static:
             status = self.move_to(target=o_id)
             if status == ActionStatus.collision:
-                self.move_by(-0.1, stop_on_collision=False, arrived_at=0.05)
+                self.move_by(-0.2, stop_on_collision=False, arrived_at=0.05)
             status = self.grasp(target=o_id, arm=Arm.right)
             if status == ActionStatus.success:
                 self.drop(target=o_id, arm=Arm.right)
                 successes += 1
             else:
+                if status == ActionStatus.cannot_reach:
+                    cannots += 1
                 failures.append(self.objects_static[o_id].name)
             self.reset_arm(arm=Arm.right)
+            self.reset_arm(arm=Arm.left)
             self.move_by(-0.5, stop_on_collision=False)
             self.move_to(target={"x": 0, "y": 0, "z": 0}, stop_on_collision=False)
         m.end()
-        return successes, failures
+        return successes, cannots, failures
 
 
 if __name__ == "__main__":
     m = Convex()
-    s, f = m.run()
-    print("Successes (out of 10):", s)
+    s, c, f = m.run()
+    print("Success:", s)
+    print("Cannot grasp:", c)
     print("Failed to grasp:", f)
