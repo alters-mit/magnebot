@@ -46,7 +46,11 @@ class Convex(TestController):
         self._end_action()
         return status
 
-    def run(self) -> Tuple[int, List[str]]:
+    def run(self, random_seed: int = None) -> Tuple[int, List[str]]:
+        if random_seed is None:
+            random_seed = self.get_unique_id()
+        print("Random seed:", random_seed)
+        self._rng = np.random.RandomState(random_seed)
         self._debug = False
         self.init_scene()
         successes = 0

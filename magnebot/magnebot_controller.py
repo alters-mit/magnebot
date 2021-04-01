@@ -943,15 +943,99 @@ class Magnebot(FloorplanController):
                 print(f"Already holding {target}")
             return ActionStatus.success
 
-        # Choose a position on the object to aim for.
-        # This is either a point derived via a raycast from the magnet to the object (if the raycast hits the object),
-        # or the nearest side on the object bounds.
-        # This has been divided into many functions so that the logic can be overridden on a more granular level
-        # (which is required in the Transport Challenge API).
-        target_position = self._get_grasp_target(target=target, arm=arm)
-        target_position = TDWUtils.array_to_vector3(self._absolute_to_relative(
-            position=TDWUtils.vector3_to_array(target_position),
-            state=self.state))
+        self._start_action()
+        __start()
+        # Get the bounds positions of the object.
+        resp = self.communicate({"$type": "send_bounds",
+                                 "ids": [target],
+                                 "frequency": "once"})
+        bounds = get_data(resp=resp, d_type=Bounds)
+        self.state = SceneState(resp=resp)
+        # Spherecast to the center of the bounds.
+        magnet_position = self.state.joint_positions[self.magnebot_static.magnets[arm]]
+        resp = self.communicate({"$type": "send_spherecast",
+                                 "radius": 0.2,
+                                 "origin": TDWUtils.array_to_vector3(magnet_position),
+                                 "destination": TDWUtils.array_to_vector3(bounds.get_center(0))})
+        self.state = SceneState(resp=resp)
+        magnet_position = self.state.joint_positions[self.magnebot_static.magnets[arm]]
+
+        # Get the nearest spherecasted point.
+        nearest_distance = np.inf
+        nearest_position = np.array([0, 0, 0])
+        got_raycast_point = False
+        for i in range(len(resp) - 1):
+            r_id = OutputData.get_data_type_id(resp[i])
+            if r_id == "rayc":
+                raycast = Raycast(resp[i])
+                # Ignore raycasts that didn't hit the target.
+                if not raycast.get_hit() or not raycast.get_hit_object() or raycast.get_object_id() != target:
+                    continue
+                got_raycast_point = True
+                point = np.array(raycast.get_point())
+                raycast_distance = np.linalg.norm(point - magnet_position)
+                if raycast_distance < nearest_distance:
+                    nearest_distance = raycast_distance
+                    nearest_position = point
+        # We found a good target!
+        if got_raycast_point:
+            target_position = nearest_position
+        # Try to get a target from cached bounds data.
+        else:
+            sides_dict = {"left": np.array(bounds.get_left(0)),
+                          "right": np.array(bounds.get_right(0)),
+                          "front": np.array(bounds.get_front(0)),
+                          "back": np.array(bounds.get_back(0)),
+                          "top": np.array(bounds.get_top(0)),
+                          "bottom": np.array(bounds.get_bottom(0))}
+            # If we haven't cached the bounds for this object, just return all of the sides.
+            if self.objects_static[target].name not in ObjectStatic.CONVEX_SIDES:
+                sides = list(sides_dict.values())
+            else:
+                # Get only the convex sides of the object using cached data.
+                sides: List[np.array] = list()
+                for i, side in enumerate(ObjectStatic.BOUNDS_SIDES):
+                    if i in ObjectStatic.CONVEX_SIDES[self.objects_static[target].name]:
+                        sides.append(sides_dict[side])
+            center = np.array(bounds.get_center(0))
+            # If there are no valid bounds sides, aim for the center and hope for the best.
+            if len(sides) == 0:
+                target_position = center
+            else:
+                # If the object is higher up than the magnet, remove the lowest side.
+                if self.state.object_transforms[target].position[1] > magnet_position[1] and len(sides) > 1:
+                    lowest: int = -1
+                    y = np.inf
+                    for i in range(len(sides)):
+                        if sides[i][1] < y:
+                            lowest = i
+                            y = sides[i][1]
+                    del sides[lowest]
+                # Get the closest side to the magnet.
+                nearest_side: np.array = sides[0]
+                d = np.inf
+                for side in sides:
+                    dd = np.linalg.norm(side - magnet_position)
+                    if dd < d:
+                        nearest_side = side
+                        d = dd
+                # Raycast from the nearest side to the center.
+                resp = self.communicate({"$type": "send_raycast",
+                                         "origin": TDWUtils.array_to_vector3(nearest_side),
+                                         "destination": TDWUtils.array_to_vector3(center)})
+                self.state = SceneState(resp=resp)
+                raycast = get_data(resp=resp, d_type=Raycast)
+                # If the raycast hit the object, aim for that point.
+                if raycast.get_hit() and raycast.get_hit_object() and raycast.get_object_id() == target:
+                    target_position = np.array(raycast.get_point())
+                else:
+                    target_position = center
+        if self._debug:
+            self._next_frame_commands.append({"$type": "add_position_marker",
+                                              "position": TDWUtils.array_to_vector3(target_position)})
+        # Do the IK action.
+        target_position = TDWUtils.array_to_vector3(self._absolute_to_relative(position=target_position,
+                                                                               state=self.state))
         status = self._do_ik(target=target_position, arm=arm, arrived_at=0.05,
                              target_orientation=target_orientation, orientation_mode=orientation_mode,
                              is_success=__success, start=__start, end=__end)
@@ -2067,97 +2151,6 @@ class Magnebot(FloorplanController):
         self._stop_wheels(state=state)
         # Wait for the objects to stop moving.
         self._wait_until_objects_stop(object_ids=held_objects)
-
-    def _get_grasp_target(self, target: int, arm: Arm) -> Dict[str, float]:
-        """
-        :param target: The ID of the target object.
-        :param arm: The arm that will grasp the object.
-
-        :return: A target position for a `grasp()` action.
-        """
-
-        nearest_side, magnet_position = self._get_nearest_side(target=target, arm=arm)
-        nearest_side = TDWUtils.array_to_vector3(nearest_side)
-
-        # Send a ray to the target position.
-        resp = self.communicate({"$type": "send_raycast",
-                                 "position": TDWUtils.array_to_vector3(magnet_position),
-                                 "destination": nearest_side})
-        # Update the state.
-        self.state = SceneState(resp=resp)
-        raycast = get_data(resp=resp, d_type=Raycast)
-        # If the raycast hit the target, use the point of contact as the target.
-        if raycast.get_hit() and raycast.get_hit_object() and raycast.get_object_id() == target:
-            if self._debug:
-                print("Raycast hit: ", raycast.get_point())
-            return TDWUtils.array_to_vector3(raycast.get_point())
-        # Otherwise, use the nearest bounds side.
-        else:
-            return nearest_side
-
-    def _get_nearest_side(self, target: int, arm: Arm) -> Tuple[np.array, np.array]:
-        """
-        :param target: The ID of the target object.
-        :param arm: The arm that will grasp the object.
-
-        :return: Tuple: The bounds side closest to the magnet; the position of the magnet.
-        """
-
-        sides = self._get_bounds_sides(target=target)
-        # Get the position of the magnet.
-        magnet_position = self.state.joint_positions[self.magnebot_static.magnets[arm]]
-
-        # If the object is higher up than the magnet, remove the lowest side.
-        if self.state.object_transforms[target].position[1] > magnet_position[1] and len(sides) > 1:
-            lowest: int = -1
-            y = np.inf
-            for i in range(len(sides)):
-                if sides[i][1] < y:
-                    lowest = i
-                    y = sides[i][1]
-            del sides[lowest]
-        # Get the closest side to the magnet.
-        closest: np.array = sides[0]
-        d = np.inf
-        for side in sides:
-            dd = np.linalg.norm(side - magnet_position)
-            if dd < d:
-                closest = side
-                d = dd
-        return closest, magnet_position
-
-    def _get_bounds_sides(self, target: int) -> List[np.array]:
-        """
-        :param target: The ID of the target object.
-
-        :return: The sides on the bounds of the object that can be used for an action.
-        """
-
-        # Get the bounds of the object.
-        resp = self.communicate([{"$type": "send_bounds",
-                                  "ids": [target],
-                                  "frequency": "once"}])
-        # Update the state.
-        self.state = SceneState(resp=resp)
-        # Convert the bounds of the object to a dictionary.
-        bounds = get_data(resp=resp, d_type=Bounds)
-        sides_dict = {"left": np.array(bounds.get_left(0)),
-                      "right": np.array(bounds.get_right(0)),
-                      "front": np.array(bounds.get_front(0)),
-                      "back": np.array(bounds.get_back(0)),
-                      "top": np.array(bounds.get_top(0)),
-                      "bottom": np.array(bounds.get_bottom(0))}
-        # If we haven't cached the bounds for this object, just return all of the sides.
-        if self.objects_static[target].name not in ObjectStatic.CONVEX_SIDES:
-            return list(sides_dict.values())
-        # Get only the convex sides of the object using cached data.
-        sides: List[np.array] = list()
-        for i, side in enumerate(ObjectStatic.BOUNDS_SIDES):
-            if i in ObjectStatic.CONVEX_SIDES[self.objects_static[target].name]:
-                sides.append(sides_dict[side])
-        # Append the center.
-        sides.append(np.array(bounds.get_center(0)))
-        return sides
 
     def _wheels_are_turning(self, state_0: SceneState, state_1: SceneState) -> bool:
         """
