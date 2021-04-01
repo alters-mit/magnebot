@@ -5,6 +5,9 @@ from magnebot import TestController, ActionStatus, Arm
 
 
 class Convex(TestController):
+    """
+    Test how often the Magnebot can grasp a strangely-shaped object.
+    """
 
     # A list of medium-sized objects that have at least one concave surface.
     MODELS = ['basket_18inx18inx12iin_bamboo', 'basket_18inx18inx12iin_plastic_lattice',

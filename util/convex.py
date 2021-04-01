@@ -37,7 +37,7 @@ class Encoder(JSONEncoder):
 
 class Convex(Controller):
     """
-    For every object in the full model library, determine which sides of the bounds are concave.
+    For every object in the full model library, determine which sides of the bounds are convex.
     This data will be used by `Magnebot.grasp()` when choosing which sides to target.
     """
 

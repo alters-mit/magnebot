@@ -25,17 +25,24 @@
   - (Backend): Adjusted `self.__get_ik_chain()` to include the torso.
   - (Backend): Added pre-calculated data in `data/magnebot/ik/`
 - **Fixed: Torso movement is slow and inaccurate.** Previously in the IK actions, the torso prismatic joint was handled iteratively in increments of 0.1 meters. Per iteration, an arm articulation action checked for a solution. Now, using a fork of the underlying `ikpy` module, prismatic joints are correctly supported, resulting in faster and more accurate IK actions.
+- **Fixed: `grasp()` often targets bad or non-existent positions on the object's surface**
+  - (Backend): Moved all of the code to get a grasp target to the `grasp()` function
+  - (Backend): The `grasp()` action will spherecast to the surface of the object. If there are any hits, it will target the nearest hit. Otherwise, it will get a list of sides of the object's bounds, and remove any sides that are known to be concave (see below). Then the controller will raycast from the side nearest to the magnet to the center of the object. Use the hit if there  was one otherwise use the object's center and hope for the best.
+  - (Backend): Added cached data of all convex faces of each model in the TDW full model library: `data/objects/convex.json`
 - Fixed: IK actions will sometimes try to reach for impossible positions. Now, they will immediately fail if there isn't a known solution at those coordinates or the position is beyond the reach of the arm.
-- Fixed: `grasp()` often targets bad positions on the object's surface. Before bending the arm, TDW will raycast from the magnet to the object. If the ray hits the object, the Magnebot will aim for the raycast point. Additionally, `grasp()` won't target the bottom of an object if the object is above the magnet (i.e. on a countertop). 
-  - (Backend): Added: `self._get_grasp_target()` and `self._get_nearest_side()`
+- Fixed: Magnebot sometimes spins in circles during a turn action
 - Added optional parameters `target_orientation` and `orientation_mode` to `reach_for()` and `grasp()`.
   - Added new enum classes: `TargetOrientation` and `OrientationMode`
   - (Backend): Added new class: `Orientation` (a wrapper class of pairings of `TargetOrientation` and `OrientationMode`)
 - Adjusted all example, promo, and test controllers to use the improved IK system.
+- Added: `ObjectStatic.CONVEX_SIDES` A dictionary of model names and which sides of the bounds are known to be convex.
+- Added: `ObjectStatic.BOUNDS_SIDES` The order of bounds sides. The values in `CONVEX_SIDES` correspond to indices in this list.
 - Added: `doc/arm_articulation.md`
   - Added images of the IK orientation solutions: `doc/images/ik/`
 - (Backend): Added: `util/ik_solution.py`
 - (Backend): Added: `controllers/tests/benchmark/ik.py` IK action tests and benchmarks.
+- (Backend): Added: `controllers/tests/convex.py` Test the `grasp()` action with strangely-shaped objects.
+- (Backend): Added: `util/convex.py` For every object in the full model library, determine which sides of the bounds are convex.
 
 ## 1.1.2
 
