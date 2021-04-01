@@ -51,7 +51,6 @@ class Convex(TestController):
             random_seed = self.get_unique_id()
         print("Random seed:", random_seed)
         self._rng = np.random.RandomState(random_seed)
-        self._debug = False
         self.init_scene()
         successes = 0
         cannots = 0
