@@ -7,6 +7,7 @@ if __name__ == "__main__":
              "arm.py",
              "arm_joint.py",
              "collision_action.py",
+             "collision_detection.py",
              "joint_static.py",
              "magnebot_controller.py",
              "magnebot_static.py",

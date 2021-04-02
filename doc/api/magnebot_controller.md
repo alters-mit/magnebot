@@ -114,8 +114,8 @@ print(Arm.left)
 | Variable | Type | Description |
 | --- | --- | --- |
 | `CAMERA_RPY_CONSTRAINTS` | List[float] | The camera roll, pitch, yaw constraints in degrees. |
-| `COLLISION_DEFAULT_ON` | CollisionDetection | Default [collision detection settings](collision_detection.md) if `stop_on_collision == True`. See section description of **Movement** for more information. |
-| `COLLISION_DEFAULT_OFF` | CollisionDetection | Default [collision detection settings](collision_detection.md) if `stop_on_collision == False`. See section description of **Movement** for more information. |
+| `COLLISION_ON` | CollisionDetection | [Collision detection settings](collision_detection.md) if `stop_on_collision == True`. See section description of **Movement** for more information. |
+| `COLLISION_OFF` | CollisionDetection | [Collision detection settings](collision_detection.md) if `stop_on_collision == False`. See section description of **Movement** for more information. |
 
 ***
 
@@ -287,7 +287,15 @@ These functions move or turn the Magnebot.
 
 ##### Collisions
 
-By default, the Magnebot will stop moving or turning if it collides with a wall, an object with mass greater than 8, or if the previous action was in the same direction and it ended in a collision (for example, if the previous action was `move_by(1)` and it ended in a collision, `move_by(2)` will immediately fail but `move_by(-0.5)` might succeed). Each move and turn action has an optional `stop_on_collision` parameter that you can set to enable or disable collision detection. For the default collision detection rules, see `Magnebot.COLLISION_DEFAULT_ON` and `Magnebot.COLLISION_DEFAULT_OFF`. You can fine-tune collision detection rule (for example, adjust the mass threshold, or ignore only certain objects) via the functions `set_collision_detection_on()` and `set_collision_detection_off()`.
+By default, the Magnebot will stop moving or turning if it collides with a wall, an object with mass greater than 8, or if the previous action was in the same direction and it ended in a collision (for example, if the previous action was `move_by(1)` and it ended in a collision, `move_by(2)` will immediately fail but `move_by(-0.5)` might succeed). Each move and turn action has an optional `stop_on_collision` parameter that you can set to enable or disable collision detection. For the default collision detection rules, see `Magnebot.COLLISION_ON` and `Magnebot.COLLISION_OFF`. You can fine-tune these settings by [instantiating a new `CollisionDetection` object](collision_detection.md) like this:
+
+```python
+from magnebot import Magnebot
+from magnebot.collision_detection import CollisionDetection
+
+Magnebot.COLLISION_ON = CollisionDetection(walls=True, objects=True, mass=30)
+m = Magnebot()
+```
 
 ##### Tipping
 
@@ -343,7 +351,7 @@ Possible [return values](action_status.md):
 | --- | --- | --- | --- |
 | target |  Union[int, Dict[str, float] |  | Either the ID of an object or a Vector3 position. |
 | aligned_at |  float  | 3 | If the different between the current angle and the target angle is less than this value, then the action is successful. |
-| stop_on_collision |  bool  | True | If True, if the Magnebot will stop when it detects certain collisions (see: `Magnebot.COLLISION_DEFAULT_ON`). If False, the Magnebot will ignore collisions (see: `COLLISION_DEFAULT_OFF`). |
+| stop_on_collision |  bool  | True | If True, if the Magnebot will stop when it detects certain collisions. See the **Movement** section description above for more information. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
 
@@ -367,7 +375,7 @@ Possible [return values](action_status.md):
 | --- | --- | --- | --- |
 | distance |  float |  | The target distance. If less than zero, the Magnebot will move backwards. |
 | arrived_at |  float  | 0.3 | If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
-| stop_on_collision |  bool  | True | If True, if the Magnebot will stop when it detects certain collisions (see: `Magnebot.COLLISION_DEFAULT_ON`). If False, the Magnebot will ignore collisions (see: `COLLISION_DEFAULT_OFF`). |
+| stop_on_collision |  bool  | True | If True, if the Magnebot will stop when it detects certain collisions. See the **Movement** section description above for more information. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot moved by `distance` and if not, why.
 
@@ -395,7 +403,7 @@ Possible [return values](action_status.md):
 | target |  Union[int, Dict[str, float] |  | Either the ID of an object or a Vector3 position. |
 | arrived_at |  float  | 0.3 | While moving, if at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
 | aligned_at |  float  | 3 | While turning, if the different between the current angle and the target angle is less than this value, then the action is successful. |
-| stop_on_collision |  bool  | True | If True, if the Magnebot collides with the environment or a heavy object it will stop moving or turning. Usually this should be True; set it to False if you need the Magnebot to move away from a bad position (for example, to reverse direction if it's starting to tip over). |
+| stop_on_collision |  bool  | True | If True, if the Magnebot will stop when it detects certain collisions. See the **Movement** section description above for more information. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot moved to the target and if not, why.
 
@@ -403,8 +411,7 @@ _Returns:_  An `ActionStatus` indicating if the Magnebot moved to the target and
 
 **`self.reset_position()`**
 
-Reset the Magnebot so that it isn't tipping over.
-Set the Magnebot's position from `(x, y, z)` to `(x, 0, z)`, set its rotation to the default rotation (see `tdw.tdw_utils.QuaternionUtils.IDENTITY`), and drop all held objects. The action ends when all previously-held objects stop moving.
+Reset the Magnebot so that it isn't tipping over. Set the Magnebot's position from `(x, y, z)` to `(x, 0, z)`, set its rotation to the default rotation (see `tdw.tdw_utils.QuaternionUtils.IDENTITY`), and drop all held objects. The action ends when all previously-held objects stop moving.
 
 This will be interpreted by the physics engine as a _very_ sudden and fast movement. This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
 
