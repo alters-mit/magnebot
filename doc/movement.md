@@ -96,3 +96,22 @@ m.end()
 
 - Defining a `CollisionDetection` object involves a lot of parameters.  It might be easier to train a model using very simple collision detection rules.
 - Usually, the boolean collision detection rules are sufficient for basic tasks.
+
+## Defining your own custom movement action
+
+Unlike [arm articulation](arm_articulation.md), where you will often need to define a custom action to achieve a certain pose or motion, the move and turn actions that already exist in the Magnebot API should be sufficient for most use cases. Additionally, move and turn actions are somewhat harder to code than arm articulation actions due to the complexities of collision detection.
+
+As with all [custom actions](custom_apis.md), a move action should begin with `self._start_action()` and end with `self._end_action()`. You should also start the action with `self._start_move_or_turn()` which will make the Magnebot moveable and set its torso and column to their neutral positions.
+
+To move or turn, you will need to set the angles of the Magnebot's wheels. The wheel IDs are stored in [`self.magnebot_static.wheels`](api/magnebot_static.md) and the current wheel angles are stored in [`self.state.joint_angles`](api/scene_state.md). Set the target angle with [`set_revolute_target`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md#set_revolute_target). [This code in `move_by()`](https://github.com/alters-mit/magnebot/blob/3f537fcd95685efeadf7200208a310a4c6a2f10c/magnebot/magnebot_controller.py#L699-L707) is a good example of how to set the target angles for each wheel.
+
+Below are useful backend functions for moving and turning:
+
+| Function                | Description                                                  |
+| ----------------------- | ------------------------------------------------------------ |
+| `_start_move_or_turn()` | Start a move or turn action.                                 |
+| `_stop_wheels()`        | Stop wheel movement.                                         |
+| `_stop_tipping()`       | Handle situations where the Magnebot is tipping by dropping all heavy objects. |
+| `_wheels_are_turning()` | Returns True if the wheels are currently turning.            |
+| `_collided()`           | Returns True if the Magnebot collided with a wall or with an object that should cause it to stop moving. |
+
