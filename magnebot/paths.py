@@ -11,6 +11,8 @@ DATA_DIRECTORY = Path(resource_filename(__name__, "data"))
 OBJECT_DATA_DIRECTORY = DATA_DIRECTORY.joinpath("objects")
 # The path to object categories dictionary.
 OBJECT_CATEGORIES_PATH = OBJECT_DATA_DIRECTORY.joinpath("categories.json")
+# The path to the dictionary of which sides per object are convex.
+CONVEX_SIDES_PATH = OBJECT_DATA_DIRECTORY.joinpath("convex.json")
 # The path to the scene data.
 SCENE_DATA_DIRECTORY = DATA_DIRECTORY.joinpath("scenes")
 # The path to the dictionary of where the robot can spawn.

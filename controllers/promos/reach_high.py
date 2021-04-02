@@ -15,7 +15,7 @@ class ReachHigh(TestController):
     def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
         self._add_object(model_name="cabinet_36_wood_beach_honey", position={"x": 0.04, "y": 0, "z": 1.081}, mass=300)
         self.target_id = self._add_object(model_name="jug05",
-                                          position={"x": -0.231, "y": 0.9215012, "z": 0.8119997})
+                                          position={"x": -0.231, "y": 0.9215012, "z": 0.865})
         commands = super()._get_scene_init_commands(magnebot_position=magnebot_position)
         commands.extend([self.get_add_material("parquet_long_horizontal_clean", library="materials_high.json"),
                          {"$type": "set_proc_gen_floor_material",

@@ -1,7 +1,8 @@
+from typing import List, Dict
 import numpy as np
 from json import loads
 from tdw.object_init_data import TransformInitData
-from magnebot.paths import OBJECT_CATEGORIES_PATH
+from magnebot.paths import OBJECT_CATEGORIES_PATH, CONVEX_SIDES_PATH
 
 
 class ObjectStatic:
@@ -33,6 +34,15 @@ class ObjectStatic:
     # A dictionary of object categories. Key = object name. Value = category.
     __CATEGORIES = loads(OBJECT_CATEGORIES_PATH.read_text(encoding="utf-8"))
 
+    """:class_var
+    A list of indices of convex sides per object. See: `BOUNDS_SIDES`.
+    """
+    CONVEX_SIDES: Dict[str, List[int]] = loads(CONVEX_SIDES_PATH.read_text(encoding="utf-8"))
+    """:class_var
+    The order of bounds sides. The values in `CONVEX_SIDES` correspond to indices in this list.
+    """
+    BOUNDS_SIDES: List[str] = ["left", "right", "front", "back", "top", "bottom"]
+
     def __init__(self, name: str, object_id: int, mass: float, segmentation_color: np.array, size: np.array):
         """
         :param name: The name of the object.
@@ -56,7 +66,7 @@ class ObjectStatic:
             """
             self.category = ObjectStatic.__CATEGORIES[self.name]
         else:
-            self.category = TransformInitData.LIBRARIES["models_core.json"].get_record(self.name).wcategory
+            self.category = TransformInitData.LIBRARIES["models_full.json"].get_record(self.name).wcategory
         """:field
         If True, this object is kinematic, and won't respond to physics. 
         Examples: a painting hung on a wall or built-in furniture like a countertop.
