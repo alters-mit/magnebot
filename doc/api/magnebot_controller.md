@@ -26,6 +26,8 @@ print(status) # ActionStatus.success
 print(m.state.magnebot_transform.position)
 ```
 
+## Overview of API
+
 - [Frames](#frames)
 - [Parameter types](#parameter-types)
 - [Class Variables](#class-variables)
@@ -34,24 +36,24 @@ print(m.state.magnebot_transform.position)
 
 | Function | Description |
 | --- | --- |
-| [\_\_init\_\_()](#\_\_init\_\_) | |
-| [init_scene()](#init_scene) | Initialize a scene, populate it with objects, and add the Magnebot. |
-| [turn_by()](#turn_by) | Turn the Magnebot by an angle. |
-| [turn_to()](#turn_to) | Turn the Magnebot to face a target object or position. |
-| [move_by()](#move_by) | Move the Magnebot forward or backward by a given distance. |
-| [move_to()](#move_to) | Move the Magnebot to a target object or position. |
-| [reset_position()](#reset_position) | Reset the Magnebot so that it isn't tipping over. |
-| [reach_for()](#reach_for) | Reach for a target position. |
-| [grasp()](#grasp) | Try to grasp the target object with the arm. |
-| [drop()](#drop) | Drop an object held by a magnet. |
-| [reset_arm()](#reset_arm) | Reset an arm to its neutral position. |
-| [rotate_camera()](#rotate_camera) | Rotate the Magnebot's camera by the (roll, pitch, yaw) axes. |
-| [reset_camera()](#reset_camera) | Reset the rotation of the Magnebot's camera to its default angles. |
-| [add_camera()](#add_camera) | Add a third person camera (i.e. a camera not attached to the any object) to the scene. |
-| [get_occupancy_position()](#get_occupancy_position) | Converts the position `(i, j)` in the occupancy map to `(x, z)` worldspace coordinates. |
-| [get_visible_objects()](#get_visible_objects) | Get all objects visible to the Magnebot in `self.state` using the id (segmentation color) image. |
-| [end()](#end) | End the simulation. |
-| [communicate()](#communicate) | Use this function to send low-level TDW API commands and receive low-level output data. |
+| [\_\_init\_\_](#\_\_init\_\_) | |
+| [init_scene](#init_scene) | Initialize a scene, populate it with objects, and add the Magnebot. |
+| [turn_by](#turn_by) | Turn the Magnebot by an angle. |
+| [turn_to](#turn_to) | Turn the Magnebot to face a target object or position. |
+| [move_by](#move_by) | Move the Magnebot forward or backward by a given distance. |
+| [move_to](#move_to) | Move the Magnebot to a target object or position. |
+| [reset_position](#reset_position) | Reset the Magnebot so that it isn't tipping over. |
+| [reach_for](#reach_for) | Reach for a target position. |
+| [grasp](#grasp) | Try to grasp the target object with the arm. |
+| [drop](#drop) | Drop an object held by a magnet. |
+| [reset_arm](#reset_arm) | Reset an arm to its neutral position. |
+| [rotate_camera](#rotate_camera) | Rotate the Magnebot's camera by the (roll, pitch, yaw) axes. |
+| [reset_camera](#reset_camera) | Reset the rotation of the Magnebot's camera to its default angles. |
+| [add_camera](#add_camera) | Add a third person camera (i.e. a camera not attached to the any object) to the scene. |
+| [get_occupancy_position](#get_occupancy_position) | Converts the position `(i, j)` in the occupancy map to `(x, z)` worldspace coordinates. |
+| [get_visible_objects](#get_visible_objects) | Get all objects visible to the Magnebot in `self.state` using the id (segmentation color) image. |
+| [end](#end) | End the simulation. |
+| [communicate](#communicate) | Use this function to send low-level TDW API commands and receive low-level output data. |
 
 ***
 
@@ -114,8 +116,6 @@ print(Arm.left)
 | Variable | Type | Description |
 | --- | --- | --- |
 | `CAMERA_RPY_CONSTRAINTS` | List[float] | The camera roll, pitch, yaw constraints in degrees. |
-| `COLLISION_ON` | CollisionDetection | [Collision detection settings](collision_detection.md) if `stop_on_collision == True`. See section description of **Movement** for more information. |
-| `COLLISION_OFF` | CollisionDetection | [Collision detection settings](collision_detection.md) if `stop_on_collision == False`. See section description of **Movement** for more information. |
 
 ***
 
@@ -283,25 +283,7 @@ _Returns:_  An `ActionStatus` (always success).
 
 ### Movement
 
-These functions move or turn the Magnebot.
-
-##### Collisions
-
-By default, the Magnebot will stop moving or turning if it collides with a wall, an object with mass greater than 8, or if the previous action was in the same direction and it ended in a collision (for example, if the previous action was `move_by(1)` and it ended in a collision, `move_by(2)` will immediately fail but `move_by(-0.5)` might succeed). Each move and turn action has an optional `stop_on_collision` parameter that you can set to enable or disable collision detection. For the default collision detection rules, see `Magnebot.COLLISION_ON` and `Magnebot.COLLISION_OFF`. You can fine-tune these settings by [instantiating a new `CollisionDetection` object](collision_detection.md) like this:
-
-```python
-from magnebot import Magnebot
-from magnebot.collision_detection import CollisionDetection
-
-Magnebot.COLLISION_ON = CollisionDetection(walls=True, objects=True, mass=30)
-m = Magnebot()
-```
-
-##### Tipping
-
-While moving, the Magnebot might start to tip over (usually because it's holding something heavy). If this happens, the Magnebot will stop moving and drop any objects with mass > 30. You can then prevent the Magnebot from tipping over.
-
-***
+These functions move or turn the Magnebot. [Read this for more information about movement and collision detection.](../movement.md)
 
 #### turn_by
 
@@ -325,7 +307,7 @@ Possible [return values](action_status.md):
 | --- | --- | --- | --- |
 | angle |  float |  | The target angle in degrees. Positive value = clockwise turn. |
 | aligned_at |  float  | 3 | If the difference between the current angle and the target angle is less than this value, then the action is successful. |
-| stop_on_collision |  bool  | True | If True, if the Magnebot will stop when it detects certain collisions. See the **Movement** section description above for more information. |
+| stop_on_collision |  Union[bool, CollisionDetection] | True | If True, if the Magnebot will stop when it detects certain collisions. If False, ignore collisions. This can also be a [`CollisionDetection`](collision_detection.md) object. [Read this](../movement.md) for more information. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
 
@@ -351,7 +333,7 @@ Possible [return values](action_status.md):
 | --- | --- | --- | --- |
 | target |  Union[int, Dict[str, float] |  | Either the ID of an object or a Vector3 position. |
 | aligned_at |  float  | 3 | If the different between the current angle and the target angle is less than this value, then the action is successful. |
-| stop_on_collision |  bool  | True | If True, if the Magnebot will stop when it detects certain collisions. See the **Movement** section description above for more information. |
+| stop_on_collision |  Union[bool, CollisionDetection] | True | If True, if the Magnebot will stop when it detects certain collisions. If False, ignore collisions. This can also be a [`CollisionDetection`](collision_detection.md) object. [Read this](../movement.md) for more information. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
 
@@ -375,7 +357,7 @@ Possible [return values](action_status.md):
 | --- | --- | --- | --- |
 | distance |  float |  | The target distance. If less than zero, the Magnebot will move backwards. |
 | arrived_at |  float  | 0.3 | If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
-| stop_on_collision |  bool  | True | If True, if the Magnebot will stop when it detects certain collisions. See the **Movement** section description above for more information. |
+| stop_on_collision |  Union[bool, CollisionDetection] | True | If True, if the Magnebot will stop when it detects certain collisions. If False, ignore collisions. This can also be a [`CollisionDetection`](collision_detection.md) object. [Read this](../movement.md) for more information. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot moved by `distance` and if not, why.
 
@@ -403,7 +385,7 @@ Possible [return values](action_status.md):
 | target |  Union[int, Dict[str, float] |  | Either the ID of an object or a Vector3 position. |
 | arrived_at |  float  | 0.3 | While moving, if at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
 | aligned_at |  float  | 3 | While turning, if the different between the current angle and the target angle is less than this value, then the action is successful. |
-| stop_on_collision |  bool  | True | If True, if the Magnebot will stop when it detects certain collisions. See the **Movement** section description above for more information. |
+| stop_on_collision |  Union[bool, CollisionDetection] | True | If True, if the Magnebot will stop when it detects certain collisions. If False, ignore collisions. This can also be a [`CollisionDetection`](collision_detection.md) object. [Read this](../movement.md) for more information. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot moved to the target and if not, why.
 

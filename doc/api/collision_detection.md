@@ -20,8 +20,6 @@ Parameters for how a Magnebot handles collision detection.
 
 - `exclude_objects` If `objects == True`, the Magnebot will ignore a collision with any object in this list, regardless of mass. Can be None.
 
-- `exclude_joints` The Magnebot will ignore any collisions that occur between and object or wall and joints in this list. Can be None.
-
 - `previous_was_same` If True, the Magnebot will stop if the previous action resulted in a collision and was the [same sort of action as the current one](collision_action.md).
 
 ***
@@ -32,7 +30,7 @@ Parameters for how a Magnebot handles collision detection.
 
 **`CollisionDetection()`**
 
-**`CollisionDetection(walls=True, floor=False, objects=True, mass=8, include_objects=None, exclude_objects=None, exclude_joints=None, previous_was_same=True)`**
+**`CollisionDetection(walls=True, floor=False, objects=True, mass=8, include_objects=None, exclude_objects=None, previous_was_same=True)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -42,6 +40,5 @@ Parameters for how a Magnebot handles collision detection.
 | mass |  float  | 8 | If `objects == True`, the Magnebot will only stop if it collides with an object with mass greater than or equal to this value. |
 | include_objects |  List[int] | None | If `objects == True`, the Magnebot will stop if it collides with any object in this list, regardless of mass. Can be None. |
 | exclude_objects |  List[int] | None | If `objects == True`, the Magnebot will ignore a collision with any object in this list, regardless of mass. Can be None. |
-| exclude_joints |  List[int] | None | The Magnebot will ignore any collisions that occur between and object or wall and joints in this list. Can be None. |
 | previous_was_same |  bool  | True | If True, the Magnebot will stop if the previous action resulted in a collision and was the [same sort of action as the current one](collision_action.md). |
 
