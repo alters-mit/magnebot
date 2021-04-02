@@ -33,7 +33,6 @@ from magnebot.ik.target_orientation import TargetOrientation
 from magnebot.ik.orientation_mode import OrientationMode
 from magnebot.ik.orientation import Orientation, ORIENTATIONS
 from magnebot.collision_action import CollisionAction
-from magnebot.collision_detection import CollisionDetection
 
 
 class Magnebot(FloorplanController):
@@ -169,15 +168,6 @@ class Magnebot(FloorplanController):
     _WHEEL_RADIUS: float = 0.1
     # The circumference of the Magnebot wheel.
     _WHEEL_CIRCUMFERENCE: float = 2 * np.pi * _WHEEL_RADIUS
-    """:class_var
-    The default [collision detection settings](collision_detection.md).
-    """
-    DEFAULT_COLLISION_PARAMETERS: CollisionDetection = CollisionDetection()
-    """:class_var
-    If the `stop_on_collision` parameter of a move or turn action is set to False, the action will use these [collision detection settings](collision_detection.md).
-    """
-    IGNORE_COLLISION_PARAMETERS: CollisionDetection = CollisionDetection(walls=False, objects=False,
-                                                                         previous_was_same=False)
 
     def __init__(self, port: int = 1071, launch_build: bool = False, screen_width: int = 256, screen_height: int = 256,
                  debug: bool = False, auto_save_images: bool = False, images_directory: str = "images",
@@ -352,9 +342,6 @@ class Magnebot(FloorplanController):
                 continue
             self._ik_orientations[arm] = np.load(str(ik_path.resolve()))
 
-        # Collision detection parameters.
-        self._collision_detection: CollisionDetection = Magnebot.DEFAULT_COLLISION_PARAMETERS
-
         # Trigger events at the end of the most recent action.
         # Key = The trigger collider object.
         # Value = A list of trigger events that started and have continued (enter with an exit).
@@ -468,7 +455,7 @@ class Magnebot(FloorplanController):
 
         :param angle: The target angle in degrees. Positive value = clockwise turn.
         :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
-        :param stop_on_collision: If True, if the Magnebot collides with the environment or a heavy object it will stop turning. See: `Magnebot.DEFAULT_COLLISION_DETECTION`, `Magnebot.IGNORE_COLLISION_PARAMETERS`, and `Magnebot.set_collision_detection()`.
+        :param stop_on_collision: If True, if the Magnebot collides with the environment or a heavy object it will stop turning. It will also stop turn if the previous action ended in a collision and was a `turn_by()` in the same direction as this action. Usually this should be True; set it to False if you need the Magnebot to move away from a bad position (for example, to reverse direction if it's starting to tip over).
 
         :return: An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
         """
@@ -2198,7 +2185,6 @@ class Magnebot(FloorplanController):
         self._about_to_tip = False
         self._previous_collision = CollisionAction.none
         self._previous_action_was_move = False
-        self._collision_detection = Magnebot.DEFAULT_COLLISION_PARAMETERS
 
     def _stop_joints(self, state: SceneState, joint_ids: List[int] = None) -> None:
         """
