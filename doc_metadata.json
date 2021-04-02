@@ -23,7 +23,7 @@
     },
     "Misc.": {
       "description": "These are utility functions that won't advance the simulation by any frames.",
-      "functions": ["get_occupancy_position", "get_visible_objects", "end"]
+      "functions": ["get_occupancy_position", "get_visible_objects", "reset_collision_detection", "end"]
     },
     "Low-level": {
       "description": "These are low-level functions that you are unlikely to ever need to use.",

@@ -1316,6 +1316,15 @@ class Magnebot(FloorplanController):
         # This should never happen, but it's better to prevent the build rom crashing.
         return []
 
+    @staticmethod
+    def reset_collision_detection() -> None:
+        """
+        Reset `Magnebot.COLLISION_ON` and `Magnebot.COLLISION_OFF` to the default values.
+        """
+
+        Magnebot.COLLISION_ON = CollisionDetection()
+        Magnebot.COLLISION_OFF = CollisionDetection(walls=False, objects=False, previous_was_same=False)
+
     def end(self) -> None:
         """
         End the simulation. Terminate the build process.
@@ -2270,13 +2279,19 @@ class Magnebot(FloorplanController):
         :return: True if the Magnebot collided with a wall or with an object that should cause it to stop moving.
         """
 
+        # Stop on a collision with the wall.
         if self._collision_detection.walls and self.colliding_with_wall:
             return True
+        # If we don't care about objects, end here.
         if not self._collision_detection.objects:
             return False
         for object_id in self.colliding_objects:
-            # Stop on certain collisions between the Magnebot and other objects.
-            if self.objects_static[object_id].mass > self._collision_detection.mass:
+            # Ignore objects in the include list.
+            if object_id in self._collision_detection.include_objects:
+                continue
+            # Stop on a collision if the object has sufficiently high mass or is in the exclude list.
+            if self.objects_static[object_id].mass > self._collision_detection.mass or \
+                    object_id in self._collision_detection.exclude_objects:
                 return True
         return False
 
