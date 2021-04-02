@@ -68,6 +68,7 @@ m.end()
   - [The Command API documentation](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md)
   - [Robotics in TDW](https://github.com/threedworld-mit/tdw/blob/master/Documentation/misc_frontend/robots.md)
   - [Docker and TDW](https://github.com/threedworld-mit/tdw/blob/master/Documentation/Docker/docker.md)
+- [How arm articulation and inverse kinematics (IK) works](https://github.com/alters-mit/magnebot/blob/main/doc/arm_articulation.md)
 - [How to write custom APIs](https://github.com/alters-mit/magnebot/blob/main/doc/custom_apis.md)
 - [Benchmark](https://github.com/alters-mit/magnebot/blob/main/doc/benchmark.md)
 
