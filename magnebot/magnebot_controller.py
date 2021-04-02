@@ -499,9 +499,8 @@ class Magnebot(FloorplanController):
         if self._debug:
             print(f"turn_by: {angle}")
         wheel_state = self.state
-        target_angle = angle
-        delta_angle = target_angle
-        previous_theta = angle
+        delta_angle = angle
+        previous_delta_angle = angle
         while attempts < num_attempts:
             # Get the nearest turn constants.
             da = int(np.abs(delta_angle))
@@ -591,13 +590,13 @@ class Magnebot(FloorplanController):
             # Course-correct the angle.
             delta_angle = angle - theta
             # Handle cases where we flip over the axis.
-            if np.abs(theta) > np.abs(previous_theta):
+            if np.abs(previous_delta_angle) < np.abs(delta_angle):
                 if self._debug:
-                    print(f"Overshot! Flipping delta_theta. theta: {theta}, previous_theta: {previous_theta}")
+                    print(f"Overshot! Flipping delta_theta.")
                 delta_angle *= -1
-            previous_theta = theta
+            previous_delta_angle = delta_angle
             if self._debug:
-                print(f"angle: {angle}", f"delta_angle: {delta_angle}", f"spin: {spin}", f"d: {d}", f"theta: {theta}")
+                print(f"angle: {angle}", f"delta_angle: {delta_angle}", f"theta: {theta}")
         self._stop_wheels(state=wheel_state)
         self._end_action(previous_action_was_move=True)
         # If the Magenbot failed to turn, mark this as a collision (even if it wasn't)
