@@ -688,7 +688,15 @@ class Magnebot(FloorplanController):
             else:
                 self._previous_collision = CollisionAction.move_negative
         # Set the current collision state.
-        self._collision_detection = Magnebot._COLLISION_ON if stop_on_collision else Magnebot._COLLISION_OFF
+        if isinstance(stop_on_collision, bool):
+            if stop_on_collision:
+                self._collision_detection = Magnebot._COLLISION_ON
+            else:
+                self._collision_detection = Magnebot._COLLISION_OFF
+        elif isinstance(stop_on_collision, CollisionDetection):
+            self._collision_detection = stop_on_collision
+        else:
+            raise Exception("Invalid object type for stop_on_collision.")
         # Don't try to collide with the same thing twice.
         if self._collision_detection.previous_was_same and \
                 ((distance > 0 and self._previous_collision == CollisionAction.move_positive) or
@@ -1065,10 +1073,10 @@ class Magnebot(FloorplanController):
         status = self._do_ik(target=target_position, arm=arm, arrived_at=0.05,
                              target_orientation=target_orientation, orientation_mode=orientation_mode,
                              is_success=__success, start=__start, end=__end)
-        if status == ActionStatus.cannot_reach:
-            return status
-        elif target in self.state.held[arm]:
+        if target in self.state.held[arm]:
             return ActionStatus.success
+        elif status == ActionStatus.cannot_reach:
+            return status
         else:
             return ActionStatus.failed_to_grasp
 
@@ -2277,16 +2285,20 @@ class Magnebot(FloorplanController):
         # Stop on a collision with the wall.
         if self._collision_detection.walls and self.colliding_with_wall:
             return True
+        # Always check for collisions with objects in the include list.
+        for object_id in self.colliding_objects:
+            if object_id in self._collision_detection.include_objects:
+                return True
         # If we don't care about objects, end here.
         if not self._collision_detection.objects:
             return False
         for object_id in self.colliding_objects:
-            # Ignore objects in the include list.
-            if object_id in self._collision_detection.include_objects:
+            # Ignore objects in the exclude list.
+            if object_id in self._collision_detection.exclude_objects:
                 continue
             # Stop on a collision if the object has sufficiently high mass or is in the exclude list.
             if self.objects_static[object_id].mass > self._collision_detection.mass or \
-                    object_id in self._collision_detection.exclude_objects:
+                    object_id in self._collision_detection.include_objects:
                 return True
         return False
 
