@@ -2294,6 +2294,17 @@ class Magnebot(Controller):
     @final
     def _init_scene(self, scene: List[dict], post_processing: List[dict] = None, end: List[dict] = None,
                     magnebot_position: Dict[str, float] = None) -> ActionStatus:
+        """
+        Add a scene to TDW. Set post-processing. Add objects (if any). Add the Magnebot. Request and cache data.
+
+        :param scene: A list of commands to initialize the scene.
+        :param post_processing: A list of commands to set post-processing values. Can be None.
+        :param end: A list of commands sent at the end of scene initialization (on the same frame). Can be None.
+        :param magnebot_position: The position of the Magnebot. If None, defaults to {"x": 0, "y": 0, "z": 0}.
+
+        :return: An `ActionStatus` (always `success`).
+        """
+
         commands: List[dict] = []
         # Initialize the scene.
         commands.extend(scene)
