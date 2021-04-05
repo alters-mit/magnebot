@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple
+from typing import List, Tuple
 from pathlib import Path
 from json import dumps
 from PIL import ImageFont, ImageDraw
@@ -114,8 +114,6 @@ class OccupancyMapper(FloorplanController):
                            "height": screen_height},
                           {"$type": "set_shadow_strength",
                            "strength": 1.0}])
-
-        scene_bounds: Dict[str, Dict[str, float]] = dict()
         font_size = 28
         font = ImageFont.truetype("fonts/inconsolata/Inconsolata_Expanded-Regular.ttf", font_size)
 
@@ -159,12 +157,6 @@ class OccupancyMapper(FloorplanController):
                 spawn_positions[scene_key][layout] = dict()
 
                 scene_env = SceneEnvironment(resp=resp)
-                # Cache the environment data.
-                if scene_key not in scene_bounds:
-                    scene_bounds[scene_key] = {"x_min": scene_env.x_min,
-                                               "x_max": scene_env.x_max,
-                                               "z_min": scene_env.z_min,
-                                               "z_max": scene_env.z_max}
                 # Spherecast to each point.
                 x = scene_env.x_min
                 while x < scene_env.x_max:

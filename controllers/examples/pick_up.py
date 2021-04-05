@@ -13,7 +13,7 @@ class PickUp(Magnebot):
 
         # Load scene 4a, layout 0, and spawn the avatar in room 5.
         # See documentation for images of the floorplans and rooms.
-        self.init_scene(scene="4a", layout=2, room=4)
+        self.init_floorplan_scene(scene="4a", layout=2, room=4)
         # Get all of the nearby objects.
         nearby: List[int] = list()
 

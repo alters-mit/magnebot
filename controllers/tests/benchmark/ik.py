@@ -1,15 +1,14 @@
-from typing import List, Dict
 from time import time
 import numpy as np
 from tqdm import tqdm
 from tdw.tdw_utils import TDWUtils
 from tdw.object_init_data import AudioInitData
-from magnebot import TestController, ActionStatus, Arm
+from magnebot import Magnebot, ActionStatus, Arm
 from magnebot.ik.target_orientation import TargetOrientation
 from magnebot.ik.orientation_mode import OrientationMode
 
 
-class IK(TestController):
+class IK(Magnebot):
     """
     Reach for random targets using the automated IK orientation system.
     If the action succeeds OR if the action fails but we expected it to fail, record the trial as a "correct guess".
@@ -156,28 +155,15 @@ class IK(TestController):
         pbar.close()
         return successes / (len(self.positions) * 2)
 
-    def init_scene(self, scene: str = None, layout: int = None, room: int = None, a: AudioInitData = None) -> ActionStatus:
+    def init_scene(self, a: AudioInitData = None) -> ActionStatus:
         """
         Added optional parameter `a` to add an object to the scene.
         """
 
-        self._clear_data()
-        commands = [{"$type": "load_scene",
-                     "scene_name": "ProcGenScene"},
-                    TDWUtils.create_empty_room(12, 12)]
-        commands.extend(self._get_scene_init_commands(magnebot_position={"x": 0, "y": 0, "z": 0}, a=a))
-        resp = self.communicate(commands)
-        self._cache_static_data(resp=resp)
-        # Wait for the Magnebot to reset to its neutral position.
-        self._do_arm_motion()
-        self._end_action()
-        return ActionStatus.success
-
-    def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None, a: AudioInitData = None) -> List[dict]:
         if a is not None:
             o_id, o_commands = a.get_commands()
             self._object_init_commands[o_id] = o_commands
-        return super()._get_scene_init_commands(magnebot_position=magnebot_position)
+        return super().init_scene()
 
 
 if __name__ == "__main__":

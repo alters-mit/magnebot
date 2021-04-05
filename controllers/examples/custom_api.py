@@ -1,4 +1,3 @@
-from typing import Dict, List
 import numpy as np
 from tdw.tdw_utils import TDWUtils
 from tdw.output_data import Bounds
@@ -11,7 +10,7 @@ from magnebot.ik.target_orientation import TargetOrientation
 
 class CustomAPI(Magnebot):
     """
-    This is an example example of how to set up your own scene initialization recipe and add an action to the API.
+    This is an example example of how to set up your own scene setup and arm articulation action to the API.
     """
 
     def __init__(self, port: int = 1071, screen_width: int = 1024, screen_height: int = 1024):
@@ -24,39 +23,35 @@ class CustomAPI(Magnebot):
         # The starting y positional coordinate for each object on the surface.
         self.object_y = 0.794254
 
-    def init_scene(self, scene: str = None, layout: int = None, room: int = None,
-                   width: int = 12, length: int = 12) -> ActionStatus:
+    def init_scene(self, width: int = 12, length: int = 12) -> ActionStatus:
         """
         Create a simple box-shaped room.
 
-        :param scene: This parameter is ignored.
-        :param layout: This parameter is ignored.
-        :param room: This parameter is ignored.
         :param width: The width of the room.
         :param length: The length of the room.
 
         :return: An `ActionStatus` (always success).
         """
 
-        self._clear_data()
-
         # Load the "ProcGenScene".
         # TDWUtils.create_empty_room() is a wrapper function for the `create_exterior_walls` command.
         # It's possible to create much more complicated scenes with this command.
         # See: `tdw/Python/example_controllers/proc_gen_room.py` for some examples.
-        commands = [{"$type": "load_scene",
-                     "scene_name": "ProcGenScene"},
-                    TDWUtils.create_empty_room(width, length)]
-        # Get the rest of the scene initialization commands.
-        commands.extend(self._get_scene_init_commands(magnebot_position={"x": 0, "y": 0, "z": 0}))
-        # Send all of the commands.
-        resp = self.communicate(commands)
-        self._cache_static_data(resp=resp)
-        # Wait for the Magnebot to reset to its neutral position.
-        self._do_arm_motion()
-        self._end_action()
-
-        return ActionStatus.success
+        scene = [{"$type": "load_scene",
+                  "scene_name": "ProcGenScene"},
+                 TDWUtils.create_empty_room(width, length)]
+        # Add a surface to the scene. Remember its object ID.
+        self.surface_id = self._add_object(model_name="trunck",
+                                           position={"x": -2.133, "y": 0, "z": 2.471},
+                                           rotation={"x": 0, "y": -29, "z": 0},
+                                           scale={"x": 1, "y": 0.8, "z": 1},
+                                           mass=300)
+        # Put an object on top of the surface. Remember its ID.
+        self.object_id = self._add_object(model_name="vase_02",
+                                          position={"x": -1.969, "y": 0.794254, "z": 2.336})
+        # Initialize the scene.
+        return self._init_scene(scene=scene,
+                                post_processing=self._get_post_processing_commands())
 
     def push(self, target: int,  arm: Arm) -> ActionStatus:
         """
@@ -164,25 +159,6 @@ class CustomAPI(Magnebot):
         self.move_by(-0.5, stop_on_collision=False)
         self.reset_arm(arm=Arm.left)
         self.reset_arm(arm=Arm.right)
-
-    def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
-        """
-        This is an example of how to add objects to a custom scene.
-        """
-
-        # Add a surface to the scene. Remember its object ID.
-        self.surface_id = self._add_object(model_name="trunck",
-                                           position={"x": -2.133, "y": 0, "z": 2.471},
-                                           rotation={"x": 0, "y": -29, "z": 0},
-                                           scale={"x": 1, "y": 0.8, "z": 1},
-                                           mass=300)
-        # Put an object on top of the surface. Remember its ID.
-        self.object_id = self._add_object(model_name="vase_02",
-                                          position={"x": -1.969, "y": 0.794254, "z": 2.336})
-
-        # Get the rest of the commands (this adds the Magnebot, requests output data, etc.)
-        commands = super()._get_scene_init_commands(magnebot_position=magnebot_position)
-        return commands
 
 
 if __name__ == "__main__":

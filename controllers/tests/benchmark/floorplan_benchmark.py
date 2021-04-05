@@ -15,7 +15,7 @@ class FloorplanBenchmark(Magnebot):
         :return: The total time elapsed.
         """
 
-        self.init_scene(scene="5a", layout=0, room=2)
+        self.init_floorplan_scene(scene="5a", layout=0, room=2)
 
         # Set global values.
         self.communicate([{"$type": "enable_reflection_probes",
