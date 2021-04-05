@@ -1,10 +1,10 @@
 from io import BytesIO
 from PIL import Image
 import matplotlib.pyplot as plt
-from magnebot.test_controller import TestController
+from magnebot import Magnebot
 
 
-class MagnebotColorSegmentation(TestController):
+class MagnebotColorSegmentation(Magnebot):
     """
     Test whether the Magnebot body parts receive segmentation colors.
     """

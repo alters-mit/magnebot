@@ -11,7 +11,7 @@ class ActionStatus(Enum):
     from magnebot import Magnebot
 
     m = Magnebot()
-    m.init_scene(scene="2a", layout=1)
+    m.init_floorplan_scene(scene="2a", layout=1)
     status = m.move_by(1)
     print(status) # ActionStatus.success
     ```

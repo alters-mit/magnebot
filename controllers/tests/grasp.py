@@ -1,11 +1,9 @@
-from typing import Dict, List
-from magnebot import Arm, ActionStatus
-from magnebot.test_controller import TestController
+from magnebot import Arm, ActionStatus, Magnebot
 from magnebot.ik.orientation_mode import OrientationMode
 from magnebot.ik.target_orientation import TargetOrientation
 
 
-class Grasp(TestController):
+class Grasp(Magnebot):
     """
     Test the grasp() function.
     """
@@ -14,12 +12,11 @@ class Grasp(TestController):
         super().__init__(port=port)
         self.target_id: int = -1
 
-    def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
+    def init_scene(self) -> ActionStatus:
         self.target_id = self._add_object(model_name="blue_satchal",
                                           position={"x": -0.1024729, "y": 0, "z": -0.6279346},
                                           rotation={"x": -7.730941e+11, "y": 152.176, "z": 4.398})
-        commands = super()._get_scene_init_commands(magnebot_position=magnebot_position)
-        return commands
+        return super().init_scene()
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+from pkg_resources import resource_filename
 from json import loads
 from typing import List, Dict, Optional, Union, Tuple
 from csv import DictReader
@@ -8,7 +9,8 @@ from _tkinter import TclError
 from ikpy.chain import Chain
 from ikpy.link import OriginLink, URDFLink, Link
 from ikpy.utils import geometry
-from tdw.floorplan_controller import FloorplanController
+from overrides import final
+from tdw.controller import Controller
 from tdw.output_data import OutputData, Version, StaticRobot, SegmentationColors, Bounds, Rigidbodies, LogMessage,\
     Robot, TriggerCollision, Raycast
 from tdw.output_data import Magnebot as Mag
@@ -22,7 +24,7 @@ from magnebot.object_static import ObjectStatic
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.scene_state import SceneState
 from magnebot.action_status import ActionStatus
-from magnebot.paths import SPAWN_POSITIONS_PATH, OCCUPANCY_MAPS_DIRECTORY, SCENE_BOUNDS_PATH, TURN_CONSTANTS_PATH,\
+from magnebot.paths import SPAWN_POSITIONS_PATH, OCCUPANCY_MAPS_DIRECTORY, TURN_CONSTANTS_PATH,\
     IK_ORIENTATIONS_LEFT_PATH, IK_ORIENTATIONS_RIGHT_PATH, IK_POSITIONS_PATH
 from magnebot.arm import Arm
 from magnebot.joint_type import JointType
@@ -34,9 +36,10 @@ from magnebot.ik.orientation_mode import OrientationMode
 from magnebot.ik.orientation import Orientation, ORIENTATIONS
 from magnebot.collision_action import CollisionAction
 from magnebot.collision_detection import CollisionDetection
+from magnebot.scene_environment import SceneEnvironment
 
 
-class Magnebot(FloorplanController):
+class Magnebot(Controller):
     """
     [TDW controller](https://github.com/threedworld-mit/tdw) for Magnebots. This high-level API supports:
 
@@ -55,7 +58,7 @@ class Magnebot(FloorplanController):
 
     m = Magnebot()
     # Initializes the scene.
-    status = m.init_scene(scene="2a", layout=1)
+    status = m.init_floorplan_scene(scene="2a", layout=1)
     print(status) # ActionStatus.success
 
     # Prints the current position of the Magnebot.
@@ -269,7 +272,7 @@ class Magnebot(FloorplanController):
         from magnebot import Magnebot
         
         m = Magnebot()
-        m.init_scene(scene="2a", layout=1)
+        m.init_floorplan_scene(scene="2a", layout=1)
         
         # Print each object ID and segmentation color.     
         for object_id in m.objects_static:
@@ -286,7 +289,7 @@ class Magnebot(FloorplanController):
         from magnebot import Magnebot
 
         m = Magnebot()
-        m.init_scene(scene="2a", layout=1)
+        m.init_floorplan_scene(scene="2a", layout=1)
         print(m.magnebot_static.magnets)
         ```
         """
@@ -310,7 +313,7 @@ class Magnebot(FloorplanController):
         from magnebot import Magnebot
 
         m = Magnebot(launch_build=False)
-        m.init_scene(scene="1a", layout=0)
+        m.init_floorplan_scene(scene="1a", layout=0)
         x = 30
         y = 16
         print(m.occupancy_map[x][y]) # 0 (free and navigable position)
@@ -326,7 +329,7 @@ class Magnebot(FloorplanController):
         self.occupancy_map: Optional[np.array] = None
 
         # The scene bounds. This is used along with the occupancy map to get (x, z) worldspace positions.
-        self._scene_bounds: Optional[dict] = None
+        self._scene_bounds: Dict[str,  float] = dict()
 
         # Commands that will be sent on the next frame.
         self._next_frame_commands: List[dict] = list()
@@ -384,9 +387,28 @@ class Magnebot(FloorplanController):
         if check_pypi_version:
             check_version()
 
-    def init_scene(self, scene: str, layout: int, room: int = None) -> ActionStatus:
+    def init_scene(self) -> ActionStatus:
         """
-        **Always call this function before any other API calls.** Initialize a scene, populate it with objects, and add the Magnebot.
+        Initialize the Magnebot in an empty test room.
+
+        ```python
+        from magnebot import Magnebot
+
+        m = Magnebot()
+        m.init_scene()
+
+        # Your code here.
+        ```
+
+        :return: An `ActionStatus` (always `success`).
+        """
+
+        return self._init_scene(scene=[{"$type": "load_scene", "scene_name": "ProcGenScene"},
+                                       TDWUtils.create_empty_room(12, 12)])
+
+    def init_floorplan_scene(self, scene: str, layout: int, room: int = None) -> ActionStatus:
+        """
+        Initialize a scene, populate it with objects, and add the Magnebot.
 
         It might take a few minutes to initialize the scene. You can call `init_scene()` more than once to reset the simulation; subsequent resets at runtime should be extremely fast.
 
@@ -396,7 +418,7 @@ class Magnebot(FloorplanController):
         from magnebot import Magnebot
 
         m = Magnebot()
-        m.init_scene(scene="2b", layout=0, room=1)
+        m.init_floorplan_scene(scene="2b", layout=0, room=1)
 
         # Your code here.
         ```
@@ -425,16 +447,23 @@ class Magnebot(FloorplanController):
         :return: An `ActionStatus` (always success).
         """
 
-        # Clear all data from the previous scene.
-        self._clear_data()
-        # Load the occupancy map.
-        self.occupancy_map = np.load(str(OCCUPANCY_MAPS_DIRECTORY.joinpath(f"{scene[0]}_{layout}.npy").resolve()))
-        # Get the scene bounds.
-        self._scene_bounds = loads(SCENE_BOUNDS_PATH.read_text())[scene[0]]
+        # Get the scene command.
+        scene = [self.get_add_scene(scene_name=f"floorplan_{scene}")]
 
-        commands = self.get_scene_init_commands(scene=scene, layout=layout, audio=True)
+        # Get object initialization commands from the floorplan layout file.
+        floorplans = loads(Path(resource_filename("tdw", "floorplan_layouts.json")).
+                           read_text(encoding="utf-8"))
+        scene_index = scene[0]
+        if scene_index not in floorplans:
+            raise Exception(f"Floorplan not found: {scene_index}")
+        if layout not in floorplans[scene_index]:
+            raise Exception(f"Layout not found: {layout}")
+        object_data = [AudioInitData(**o) for o in floorplans[scene_index][layout]]
+        for o in object_data:
+            o_id, o_commands = o.get_commands()
+            self._object_init_commands[o_id] = o_commands
 
-        # Spawn the Magnebot in the center of a room.
+        # Get the spawn position of the Magnebot.
         rooms = loads(SPAWN_POSITIONS_PATH.read_text())[scene[0]][str(layout)]
         room_keys = list(rooms.keys())
         if room is None:
@@ -442,14 +471,14 @@ class Magnebot(FloorplanController):
         else:
             room = str(room)
             assert room in room_keys, f"Invalid room: {room}; valid rooms are: {room_keys}"
-        commands.extend(self._get_scene_init_commands(magnebot_position=rooms[room]))
+        magnebot_position: Dict[str, float] = rooms[room]
 
-        resp = self.communicate(commands)
-        self._cache_static_data(resp=resp)
-        # Wait for the Magnebot to reset to its neutral position.
-        status = self._do_arm_motion()
-        self._end_action()
-        return status
+        # Load the occupancy map.
+        self.occupancy_map = np.load(str(OCCUPANCY_MAPS_DIRECTORY.joinpath(f"{scene[0]}_{layout}.npy").resolve()))
+        # Initialize the scene.
+        return self._init_scene(scene=scene,
+                                post_processing=self._get_post_processing_commands(),
+                                magnebot_position=magnebot_position)
 
     def turn_by(self, angle: float, aligned_at: float = 3, stop_on_collision: Union[bool, CollisionDetection] = True) -> ActionStatus:
         """
@@ -1156,7 +1185,7 @@ class Magnebot(FloorplanController):
         from magnebot import Magnebot
 
         m = Magnebot()
-        m.init_scene(scene="2a", layout=1)
+        m.init_floorplan_scene(scene="2a", layout=1)
         status = m.rotate_camera(roll=-10, pitch=-90, yaw=45)
         print(status) # ActionStatus.clamped_camera_rotation
         print(m.camera_rpy) # [-10 -70 45]
@@ -1212,7 +1241,7 @@ class Magnebot(FloorplanController):
         from magnebot import Magnebot
 
         m = Magnebot()
-        m.init_scene(scene="2a", layout=1)
+        m.init_floorplan_scene(scene="2a", layout=1)
         m.rotate_camera(roll=-10, pitch=-90, yaw=45)
         m.reset_camera()
         print(m.camera_rpy) # [0 0 0]
@@ -1289,11 +1318,13 @@ class Magnebot(FloorplanController):
         """
         Converts the position `(i, j)` in the occupancy map to `(x, z)` worldspace coordinates.
 
+        This only works if you've loaded an occupancy map via `self.init_floorplan_scene()`.
+
         ```python
         from magnebot import Magnebot
 
         m = Magnebot(launch_build=False)
-        m.init_scene(scene="1a", layout=0)
+        m.init_floorplan_scene(scene="1a", layout=0)
         x = 30
         y = 16
         print(m.occupancy_map[x][y]) # 0 (free and navigable position)
@@ -1521,63 +1552,6 @@ class Magnebot(FloorplanController):
         if self.auto_save_images:
             self.state.save_images(output_directory=self.images_directory)
         return resp
-
-    def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
-        """
-        :param magnebot_position: The position of the Magnebot. If none, the position is (0, 0, 0).
-
-        :return: A list of commands that every controller needs for initializing the scene.
-        """
-
-        if magnebot_position is None:
-            magnebot_position = TDWUtils.VECTOR3_ZERO
-
-        # Destroy the previous Magnebot, if any.
-        # Add the Magnebot.
-        # Set the maximum number of held objects per magnet.
-        # Set the number of objects that the Magnebot can hold.
-        # Add the avatar (camera).
-        # Parent the avatar to the Magnebot.
-        # Set pass masks.
-        # Disable the image sensor.
-        commands = [{"$type": "add_magnebot",
-                     "position": magnebot_position},
-                    {"$type": "set_immovable",
-                     "immovable": True},
-                    {"$type": "create_avatar",
-                     "type": "A_Img_Caps_Kinematic"},
-                    {"$type": "set_pass_masks",
-                     "pass_masks": ["_img", "_id", "_depth"]},
-                    {"$type": "enable_image_sensor",
-                     "enable": False},
-                    {"$type": "set_anti_aliasing",
-                     "mode": "subpixel"}]
-        # Add the objects.
-        for object_id in self._object_init_commands:
-            commands.extend(self._object_init_commands[object_id])
-        # Request output data.
-        commands.extend([{"$type": "send_robots",
-                          "frequency": "always"},
-                         {"$type": "send_transforms",
-                          "frequency": "always"},
-                         {"$type": "send_magnebots",
-                          "frequency": "always"},
-                         {"$type": "send_static_robots",
-                          "frequency": "once"},
-                         {"$type": "send_segmentation_colors",
-                          "frequency": "once"},
-                         {"$type": "send_rigidbodies",
-                          "frequency": "once"},
-                         {"$type": "send_bounds",
-                          "frequency": "once"},
-                         {"$type": "send_collisions",
-                          "enter": True,
-                          "stay": False,
-                          "exit": True,
-                          "collision_types": ["obj", "env"]}])
-        if self._debug:
-            commands.append({"$type": "send_log_messages"})
-        return commands
 
     def _start_action(self) -> None:
         """
@@ -2061,6 +2035,9 @@ class Magnebot(FloorplanController):
 
         SceneState.FRAME_COUNT = 0
 
+        # Get the scene bounds.
+        self._scene_bounds = SceneEnvironment(resp=resp).get_bounds()
+
         # Get segmentation color data.
         segmentation_colors = get_data(resp=resp, d_type=SegmentationColors)
         names: Dict[int, str] = dict()
@@ -2313,3 +2290,81 @@ class Magnebot(FloorplanController):
         # Convert the torso value to a percentage and then to a joint position.
         p = (y_position * (Magnebot._TORSO_MAX_Y - Magnebot._TORSO_MIN_Y)) + Magnebot._TORSO_MIN_Y
         return float(p * 1.5)
+
+    @final
+    def _init_scene(self, scene: List[dict], post_processing: List[dict] = None, end: List[dict] = None,
+                    magnebot_position: Dict[str, float] = None) -> ActionStatus:
+        commands: List[dict] = []
+        # Initialize the scene.
+        commands.extend(scene)
+        # Initialize post-processing settings.
+        if post_processing is not None:
+            commands.extend(post_processing)
+        # Add objects.
+        for object_id in self._object_init_commands:
+            commands.extend(self._object_init_commands[object_id])
+
+        # Add the Magnebot. Add the avatar and set up its camera. Request output data.
+        commands.extend([{"$type": "add_magnebot",
+                          "position": magnebot_position if magnebot_position is not None else TDWUtils.VECTOR3_ZERO},
+                         {"$type": "set_immovable",
+                          "immovable": True},
+                         {"$type": "create_avatar",
+                          "type": "A_Img_Caps_Kinematic"},
+                         {"$type": "set_pass_masks",
+                          "pass_masks": ["_img", "_id", "_depth"]},
+                         {"$type": "enable_image_sensor",
+                          "enable": False},
+                         {"$type": "set_anti_aliasing",
+                          "mode": "subpixel"},
+                         {"$type": "send_robots",
+                          "frequency": "always"},
+                         {"$type": "send_transforms",
+                          "frequency": "always"},
+                         {"$type": "send_magnebots",
+                          "frequency": "always"},
+                         {"$type": "send_static_robots",
+                          "frequency": "once"},
+                         {"$type": "send_segmentation_colors",
+                          "frequency": "once"},
+                         {"$type": "send_rigidbodies",
+                          "frequency": "once"},
+                         {"$type": "send_bounds",
+                          "frequency": "once"},
+                         {"$type": "send_environments"},
+                         {"$type": "send_collisions",
+                          "enter": True,
+                          "stay": False,
+                          "exit": True,
+                          "collision_types": ["obj", "env"]}])
+        # Request log messages.
+        if self._debug:
+            commands.append({"$type": "send_log_messages"})
+        # Add misc. end commands.
+        if end is not None:
+            commands.extend(end)
+        # Clear all data from the previous scene.
+        self._clear_data()
+        # Send the commands.
+        resp = self.communicate(commands)
+        self._cache_static_data(resp=resp)
+        # Wait for the Magnebot to reset to its neutral position.
+        status = self._do_arm_motion()
+        self._end_action()
+        return status
+
+    def _get_post_processing_commands(self) -> List[dict]:
+        """
+        :return: A list of post-processing commands for scene setup.
+        """
+
+        return [{"$type": "set_aperture",
+                 "aperture": 8.0},
+                {"$type": "set_focus_distance",
+                 "focus_distance": 2.25},
+                {"$type": "set_post_exposure",
+                 "post_exposure": 0.4},
+                {"$type": "set_ambient_occlusion_intensity",
+                 "intensity": 0.175},
+                {"$type": "set_ambient_occlusion_thickness_modifier",
+                 "thickness": 3.5}]

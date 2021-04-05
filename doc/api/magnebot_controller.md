@@ -238,9 +238,28 @@ These functions should be sent at the start of the simulation.
 
 **`self.init_scene(scene, layout, room=None)`**
 
+**`self.init_scene()`**
+
 **Always call this function before any other API calls.** Initialize a scene, populate it with objects, and add the Magnebot.
 
 It might take a few minutes to initialize the scene. You can call `init_scene()` more than once to reset the simulation; subsequent resets at runtime should be extremely fast.
+
+There are two options for calling `init_scene()`:
+
+##### Option 1: Empty test scene
+
+If you don't supply any arguments, the Magnebot will spawn in an empty test room.
+
+```python
+from magnebot import Magnebot
+
+m = Magnebot()
+m.init_scene()
+
+# Your code here.
+```
+
+##### Option 2: Initialize a floorplan and populate it with objects
 
 Set the `scene` and `layout` parameters in `init_scene()` to load an interior scene with furniture and props. Set the `room` to spawn the avatar in the center of a specific room.
 

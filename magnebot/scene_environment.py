@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 from tdw.output_data import Environments as Envs
 from magnebot.util import get_data
 
@@ -98,3 +98,13 @@ class SceneEnvironment:
             if e.z_1 > self.z_max:
                 self.z_max = e.z_1
             self.rooms.append(e)
+
+    def get_bounds(self) -> Dict[str, float]:
+        """
+        :return: A dictionary of bounds data.
+        """
+
+        return {"x_min": self.x_min,
+                "x_max": self.x_max,
+                "z_min": self.z_min,
+                "z_max": self.z_max}

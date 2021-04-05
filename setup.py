@@ -28,5 +28,5 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=['tdw', 'numpy', 'requests', 'matplotlib', 'pillow', "py_md_doc", "tqdm", "scipy",
-                      "ikpy @ git+https://github.com/alters-mit/ikpy"],
+                      "ikpy @ git+https://github.com/alters-mit/ikpy", "overrides"],
 )

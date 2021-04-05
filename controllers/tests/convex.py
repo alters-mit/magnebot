@@ -1,11 +1,11 @@
 from typing import List, Tuple
 import numpy as np
 from tdw.tdw_utils import TDWUtils
-from magnebot import TestController, ActionStatus, Arm
+from magnebot import Magnebot, ActionStatus, Arm
 from magnebot.collision_detection import CollisionDetection
 
 
-class Convex(TestController):
+class Convex(Magnebot):
     """
     Test how often the Magnebot can grasp a strangely-shaped object.
     """
@@ -22,11 +22,8 @@ class Convex(TestController):
               'shallow_basket_wicker', 'skillet_open', 'tan_lounger_chair', 'toaster_002', 'vase_05', 'vase_06',
               'vitra_meda_chair', 'white_lounger_chair', 'wood_chair']
 
-    def init_scene(self, scene: str = None, layout: int = None, room: int = None) -> ActionStatus:
+    def init_scene(self) -> ActionStatus:
         origin = np.array([0, 0, 0])
-        commands = [{"$type": "load_scene",
-                     "scene_name": "ProcGenScene"},
-                    TDWUtils.create_empty_room(12, 12)]
         # Add random objects in a circle.
         num_objects = 10
         d_theta = 360 / num_objects
@@ -42,13 +39,7 @@ class Convex(TestController):
                                        "y": self._rng.uniform(-180, 180),
                                        "z": self._rng.uniform(-180, 180)})
             theta += d_theta
-        commands.extend(self._get_scene_init_commands())
-        resp = self.communicate(commands)
-        self._cache_static_data(resp=resp)
-        # Wait for the Magnebot to reset to its neutral position.
-        status = self._do_arm_motion()
-        self._end_action()
-        return status
+        return super().init_scene()
 
     def run(self, random_seed: int = None) -> Tuple[int, int, List[str]]:
         if random_seed is None:
@@ -81,7 +72,7 @@ class Convex(TestController):
 
 
 if __name__ == "__main__":
-    m = Convex()
+    m = Convex(debug=True)
     s, c, f = m.run()
     print("Success:", s)
     print("Cannot grasp:", c)
