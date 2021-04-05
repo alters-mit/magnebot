@@ -82,7 +82,7 @@ class Convex(TestController):
 
 if __name__ == "__main__":
     m = Convex()
-    s, c, f = m.run(random_seed=5753802)
+    s, c, f = m.run()
     print("Success:", s)
     print("Cannot grasp:", c)
     print("Failed to grasp:", f)

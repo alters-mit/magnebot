@@ -34,11 +34,13 @@
 - Added optional parameters `target_orientation` and `orientation_mode` to `reach_for()` and `grasp()`.
   - Added new enum classes: `TargetOrientation` and `OrientationMode`
   - (Backend): Added new class: `Orientation` (a wrapper class of pairings of `TargetOrientation` and `OrientationMode`)
+- **Improved collision detection.** The `stop_on_collision ` parameter in the `turn_by()`, `turn_to()`, `move_by()`, and `move_to()`, actions can either be a boolean or a `CollisionDetection` object, which can be used to fine-tune collision detection logic.
 - Adjusted all example, promo, and test controllers to use the improved IK system.
 - Added: `ObjectStatic.CONVEX_SIDES` A dictionary of model names and which sides of the bounds are known to be convex.
 - Added: `ObjectStatic.BOUNDS_SIDES` The order of bounds sides. The values in `CONVEX_SIDES` correspond to indices in this list.
 - Added: `doc/arm_articulation.md`
   - Added images of the IK orientation solutions: `doc/images/ik/`
+- Added: `doc/movement.md`
 - (Backend): Added: `util/ik_solution.py`
 - (Backend): Added: `controllers/tests/benchmark/ik.py` IK action tests and benchmarks.
 - (Backend): Added: `controllers/tests/convex.py` Test the `grasp()` action with strangely-shaped objects.
