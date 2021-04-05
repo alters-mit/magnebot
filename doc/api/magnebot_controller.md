@@ -19,7 +19,7 @@ from magnebot import Magnebot
 
 m = Magnebot()
 # Initializes the scene.
-status = m.init_scene(scene="2a", layout=1)
+status = m.init_floorplan_scene(scene="2a", layout=1)
 print(status) # ActionStatus.success
 
 # Prints the current position of the Magnebot.
@@ -37,7 +37,8 @@ print(m.state.magnebot_transform.position)
 | Function | Description |
 | --- | --- |
 | [\_\_init\_\_](#\_\_init\_\_) | |
-| [init_scene](#init_scene) | Initialize a scene, populate it with objects, and add the Magnebot. |
+| [init_scene](#init_scene) | Initialize the Magnebot in an empty test room. |
+| [init_floorplan_scene](#init_floorplan_scene) | Initialize a scene, populate it with objects, and add the Magnebot. |
 | [turn_by](#turn_by) | Turn the Magnebot by an angle. |
 | [turn_to](#turn_to) | Turn the Magnebot to face a target object or position. |
 | [move_by](#move_by) | Move the Magnebot forward or backward by a given distance. |
@@ -127,7 +128,7 @@ print(Arm.left)
 from magnebot import Magnebot
 
 m = Magnebot()
-m.init_scene(scene="2a", layout=1)
+m.init_floorplan_scene(scene="2a", layout=1)
 
 # Print the initial position of the Magnebot.
 print(m.state.magnebot_transform.position)
@@ -154,7 +155,7 @@ print(m.state.magnebot_transform.position)
 from magnebot import Magnebot
 
 m = Magnebot()
-m.init_scene(scene="2a", layout=1)
+m.init_floorplan_scene(scene="2a", layout=1)
 
 # Print each object ID and segmentation color.     
 for object_id in m.objects_static:
@@ -168,7 +169,7 @@ for object_id in m.objects_static:
 from magnebot import Magnebot
 
 m = Magnebot()
-m.init_scene(scene="2a", layout=1)
+m.init_floorplan_scene(scene="2a", layout=1)
 print(m.magnebot_static.magnets)
 ```
 
@@ -189,7 +190,7 @@ Each element is an integer describing the occupancy at that position.
 from magnebot import Magnebot
 
 m = Magnebot(launch_build=False)
-m.init_scene(scene="1a", layout=0)
+m.init_floorplan_scene(scene="1a", layout=0)
 x = 30
 y = 16
 print(m.occupancy_map[x][y]) # 0 (free and navigable position)
@@ -234,21 +235,9 @@ These functions should be sent at the start of the simulation.
 
 #### init_scene
 
-**`self.init_scene(scene, layout)`**
-
-**`self.init_scene(scene, layout, room=None)`**
-
 **`self.init_scene()`**
 
-**Always call this function before any other API calls.** Initialize a scene, populate it with objects, and add the Magnebot.
-
-It might take a few minutes to initialize the scene. You can call `init_scene()` more than once to reset the simulation; subsequent resets at runtime should be extremely fast.
-
-There are two options for calling `init_scene()`:
-
-##### Option 1: Empty test scene
-
-If you don't supply any arguments, the Magnebot will spawn in an empty test room.
+Initialize the Magnebot in an empty test room.
 
 ```python
 from magnebot import Magnebot
@@ -259,7 +248,17 @@ m.init_scene()
 # Your code here.
 ```
 
-##### Option 2: Initialize a floorplan and populate it with objects
+_Returns:_  An `ActionStatus` (always `success`).
+
+#### init_floorplan_scene
+
+**`self.init_floorplan_scene(scene, layout)`**
+
+**`self.init_floorplan_scene(scene, layout, room=None)`**
+
+Initialize a scene, populate it with objects, and add the Magnebot.
+
+It might take a few minutes to initialize the scene. You can call `init_scene()` more than once to reset the simulation; subsequent resets at runtime should be extremely fast.
 
 Set the `scene` and `layout` parameters in `init_scene()` to load an interior scene with furniture and props. Set the `room` to spawn the avatar in the center of a specific room.
 
@@ -267,7 +266,7 @@ Set the `scene` and `layout` parameters in `init_scene()` to load an interior sc
 from magnebot import Magnebot
 
 m = Magnebot()
-m.init_scene(scene="2b", layout=0, room=1)
+m.init_floorplan_scene(scene="2b", layout=0, room=1)
 
 # Your code here.
 ```
@@ -559,7 +558,7 @@ See `self.camera_rpy` for the current (roll, pitch, yaw) angles of the camera.
 from magnebot import Magnebot
 
 m = Magnebot()
-m.init_scene(scene="2a", layout=1)
+m.init_floorplan_scene(scene="2a", layout=1)
 status = m.rotate_camera(roll=-10, pitch=-90, yaw=45)
 print(status) # ActionStatus.clamped_camera_rotation
 print(m.camera_rpy) # [-10 -70 45]
@@ -589,7 +588,7 @@ Reset the rotation of the Magnebot's camera to its default angles.
 from magnebot import Magnebot
 
 m = Magnebot()
-m.init_scene(scene="2a", layout=1)
+m.init_floorplan_scene(scene="2a", layout=1)
 m.rotate_camera(roll=-10, pitch=-90, yaw=45)
 m.reset_camera()
 print(m.camera_rpy) # [0 0 0]
@@ -640,11 +639,13 @@ These are utility functions that won't advance the simulation by any frames.
 
 Converts the position `(i, j)` in the occupancy map to `(x, z)` worldspace coordinates.
 
+This only works if you've loaded an occupancy map via `self.init_floorplan_scene()`.
+
 ```python
 from magnebot import Magnebot
 
 m = Magnebot(launch_build=False)
-m.init_scene(scene="1a", layout=0)
+m.init_floorplan_scene(scene="1a", layout=0)
 x = 30
 y = 16
 print(m.occupancy_map[x][y]) # 0 (free and navigable position)

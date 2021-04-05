@@ -8,7 +8,7 @@ Static data for the Magnebot. See: `Magnebot.magnebot_static`
 from magnebot import Magnebot
 
 m = Magnebot()
-m.init_scene(scene="2a", layout=1)
+m.init_scene()
 print(m.magnebot_static.magnets)
 ```
 
@@ -23,7 +23,7 @@ Key = The body part object ID.
 from magnebot import Magnebot
 
 m = Magnebot()
-m.init_scene(scene="2a", layout=1)
+m.init_scene()
 
 # Print the object ID and segmentation color of each joint.
 for b_id in m.magnebot_static.joints:
@@ -43,7 +43,7 @@ Each body part has a different segmentation color:
 from magnebot import Magnebot
 
 m = Magnebot()
-m.init_scene(scene="2a", layout=1)
+m.init_scene()
 
 # Print the object ID and segmentation color of each body part.
 for b_id in m.magnebot_static.body_parts:
@@ -56,7 +56,7 @@ for b_id in m.magnebot_static.body_parts:
 from magnebot import Magnebot, ArmJoint
 
 m = Magnebot()
-m.init_scene(scene="2a", layout=1)
+m.init_scene()
 
 # Print the object ID and segmentation color of the left shoulder.
 b_id = m.magnebot_static.arm_joints[ArmJoint.shoulder_left]
@@ -70,7 +70,7 @@ print(b_id, color)
 from magnebot import Magnebot, Wheel
 
 m = Magnebot()
-m.init_scene(scene="2a", layout=1)
+m.init_scene()
 
 # Print the object ID and segmentation color of the left back wheel.
 b_id = m.magnebot_static.wheels[Wheel.wheel_left_back]
@@ -84,7 +84,7 @@ print(b_id, color)
 from magnebot import Magnebot, Arm
 
 m = Magnebot()
-m.init_scene(scene="2a", layout=1)
+m.init_scene()
 
 # Print the object ID and the segmentation color of the left magnet.
 b_id = m.magnebot_static.magnets[Arm.left]

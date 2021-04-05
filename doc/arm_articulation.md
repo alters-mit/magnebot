@@ -9,11 +9,11 @@ The `reach_for()` and `move_by()` actions have optional `target_orientation` and
 If `orientation_mode` and `target_orientation` are set to `none`, the solver will use the "full" referential frame, which is typically the most "normal" looking motion (the arm will extend towards the target). However, these are not typically the *best* orientation parameters; an IK action might fail with one set of orientation parameters and succeed with another: 
 
 ```python
-from magnebot import TestController, Arm
+from magnebot import Magnebot, Arm
 from magnebot.ik.target_orientation import TargetOrientation
 from magnebot.ik.orientation_mode import OrientationMode
 
-m = TestController()
+m = Magnebot()
 m.init_scene()
 m.add_camera(position={"x": 0.6, "y": 1.6, "z": 1.6})
 target = {"x": 0.2, "y": 0.5, "z": 0.5}
@@ -31,9 +31,9 @@ m.end()
 By default, `target_orientation=TargetOrientation.auto` and `orientation_mode=OrientationMode.auto`: 
 
 ```python
-from magnebot import TestController, Arm
+from magnebot import Magnebot, Arm
 
-m = TestController()
+m = Magnebot()
 m.init_scene()
 # Use default orientation parameters (auto, auto).
 target = {"x": 0.2, "y": 0.5, "z": 0.5}
@@ -94,7 +94,7 @@ The `arrived_at` parameter in the `reach_for()` action determines minimum distan
 
 You can define your own action that uses inverse kinematics by calling the hidden function `self._start_ik()`. For example implementation, see `controllers/examples/custom_api.py` which adds a `push()` action. For documentation, read the docstring for `_start_ik()` in `magnebot_controller.py`.
 
-There are many useful backend functions for creating a custom API. [Read this](custom_api.md) for a list. The following are functions useful specifically for IK actions:
+There are many useful backend functions for creating a custom API. [Read this](custom_apis.md) for a list. The following are functions useful specifically for IK actions:
 
 | Function                               | Description                                                  |
 | -------------------------------------- | ------------------------------------------------------------ |

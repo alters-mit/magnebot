@@ -212,7 +212,7 @@ class Magnebot(Controller):
         from magnebot import Magnebot
         
         m = Magnebot()
-        m.init_scene(scene="2a", layout=1)
+        m.init_floorplan_scene(scene="2a", layout=1)
         
         # Print the initial position of the Magnebot.
         print(m.state.magnebot_transform.position)

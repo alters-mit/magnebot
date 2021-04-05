@@ -143,7 +143,7 @@ class SceneState:
         ```python
         from magnebot import Magnebot
 
-        m = Magnebot(id_pass=True)
+        m = Magnebot()
         m.init_floorplan_scene(scene="2a", layout=1, room=1)
 
         # Get the ID pass.
