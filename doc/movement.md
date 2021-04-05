@@ -5,7 +5,7 @@ There are four movement actions in the [Magnebot API](../api/magnebot_controller
 ## Directions
 
 - `move_by(x)` moves the Magnebot forward by x meters.
-- `move_by(x)` moves the Magnebot backward by x meters.
+- `move_by(-x)` moves the Magnebot backward by x meters.
 - `turn_by(x)` turns the Magnebot clockwise by x degrees.
 - `turn_by(-x)` turns the Magnebot counterclockwise by x degrees.
 
