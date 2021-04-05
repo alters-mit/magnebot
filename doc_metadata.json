@@ -10,7 +10,7 @@
       "functions": ["init_scene"]
     },
     "Movement": {
-      "description": "These functions move or turn the Magnebot.\n\nWhile moving, the Magnebot might start to tip over (usually because it's holding something heavy). If this happens, the Magnebot will stop moving and drop any objects with mass > 30. You can then prevent the Magnebot from tipping over.",
+      "description": "These functions move or turn the Magnebot. [Read this for more information about movement and collision detection.](../movement.md)",
       "functions": ["turn_by", "turn_to", "move_by", "move_to", "reset_position"]
     },
     "Arm Articulation": {

@@ -60,6 +60,9 @@ m.end()
 # Documentation
 
 - **[Magnebot API](https://github.com/alters-mit/magnebot/blob/main/doc/api/magnebot_controller.md)**
+  - [Arm articulation](https://github.com/alters-mit/magnebot/blob/main/doc/arm_articulation.md)
+  - [Movement](https://github.com/alters-mit/magnebot/blob/main/doc/movement.md)
+  - [Custom APIs](https://github.com/alters-mit/magnebot/blob/main/doc/custom_apis.md)
 - [APIs for other classes in the Magnebot module](https://github.com/alters-mit/magnebot/tree/main/doc/api)
 - [Changelog](https://github.com/alters-mit/magnebot/blob/main/doc/changelog.md)
 - [Troubleshooting and debugging](https://github.com/alters-mit/magnebot/blob/main/doc/troubleshooting.md)
@@ -68,7 +71,6 @@ m.end()
   - [The Command API documentation](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md)
   - [Robotics in TDW](https://github.com/threedworld-mit/tdw/blob/master/Documentation/misc_frontend/robots.md)
   - [Docker and TDW](https://github.com/threedworld-mit/tdw/blob/master/Documentation/Docker/docker.md)
-- [How to write custom APIs](https://github.com/alters-mit/magnebot/blob/main/doc/custom_apis.md)
 - [Benchmark](https://github.com/alters-mit/magnebot/blob/main/doc/benchmark.md)
 
 # Examples

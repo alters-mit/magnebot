@@ -2,6 +2,7 @@ from typing import List, Tuple
 import numpy as np
 from tdw.tdw_utils import TDWUtils
 from magnebot import TestController, ActionStatus, Arm
+from magnebot.collision_detection import CollisionDetection
 
 
 class Convex(TestController):
@@ -61,19 +62,20 @@ class Convex(TestController):
         for o_id in self.objects_static:
             status = self.move_to(target=o_id)
             if status == ActionStatus.collision:
-                self.move_by(-0.2, stop_on_collision=False, arrived_at=0.05)
+                self.move_by(-0.2, arrived_at=0.05, stop_on_collision=CollisionDetection(exclude_objects=[o_id]))
             status = self.grasp(target=o_id, arm=Arm.right)
             if status == ActionStatus.success:
                 self.drop(target=o_id, arm=Arm.right)
                 successes += 1
             else:
+                print(status)
                 if status == ActionStatus.cannot_reach:
                     cannots += 1
                 failures.append(self.objects_static[o_id].name)
             self.reset_arm(arm=Arm.right)
             self.reset_arm(arm=Arm.left)
-            self.move_by(-0.5, stop_on_collision=False)
-            self.move_to(target={"x": 0, "y": 0, "z": 0}, stop_on_collision=False)
+            self.move_by(-0.5, stop_on_collision=CollisionDetection(exclude_objects=[o_id]))
+            self.move_to(target={"x": 0, "y": 0, "z": 0})
         m.end()
         return successes, cannots, failures
 

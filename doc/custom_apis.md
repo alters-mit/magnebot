@@ -75,26 +75,32 @@ class CustomMagnebot(Magnebot):
 
 If you want to send the same command every time `communicate()` is called (for example, if you want a camera to track an object), add the command to `self._per_frame_commands`.
 
+### Movement actions
+
+[**Read this document.**](movement.md)
+
 ### Arm articulation (IK) actions
 
 [**Read this document.**](arm_articulation.md)
 
-## Other useful functions
+## Backend functions
 
-These functions aren't in the API documentation because they are intended for only backend coding. For further documentation, including a description of their parameters, please see the docstrings for each of these functions in the [`magnebot_controller.py`](https://github.com/alters-mit/magnebot/blob/main/magnebot/magnebot_controller.py) code. For IK-related functions, [read this](arm_articulation.md).
+These functions aren't in the API documentation because they are intended for only backend coding. For further documentation, including a description of their parameters, please see the docstrings for each of these functions in the [`magnebot_controller.py`](https://github.com/alters-mit/magnebot/blob/main/magnebot/magnebot_controller.py) code.
+
+- For IK-related functions, [read this](arm_articulation.md).
+- For movement-related functions, [read this.](movement.md)
+- Other backend helper functions:
 
 | Function                     | Description                                                  |
 | ---------------------------- | ------------------------------------------------------------ |
-| `_start_move_or_turn()`      | Start a move or turn action.                                 |
+| `_start_action()`            | Call this at the start of any action.                        |
+| `_end_action()`              | Call this at the end of any action.                          |
 | `_get_reset_arm_commands()`  | Get a list of commands to reset an arm.                      |
-| `_do_arm_motion()`           | Wait until the arms have stopped moving.                     |
-| `_cache_static_data()`       | Cache static data after initializing the scene. You probably shouldn't override this, but you'll need to call it if you override `init_scene()`. |
+| `_clear_data()`              | Clear all data from a previous trial. This should always been called within `init_scene()` before initializing any objects, the Magnebot, etc. |
+| `_get_scene_init_commands()` | Returns a list of commands that should always be sent at the start of a scene. |
+| `_add_object()`              | Add an object to the scene. Call this within `_get_scene_init_commands()`. Returns an object ID. |
+| `_cache_static_data()`       | Cache static data after initializing the scene. This should always be called in `init_scene()` after calling `_clear_data()` and initializing the objects, Magnebot, etc. |
 | `_append_drop_commands()`    | Append commands to drop an object to `_next_frame_commands`  |
 | `_wait_until_objects_stop()` | Wait until all objects in the list stop moving.              |
 | `_absolute_to_relative()`    | Get the converted position relative to the Magnebot's position and rotation. |
-| `_stop_wheels()`             | Stop wheel movement.                                         |
-| `_stop_tipping()`            | Handle situations where the Magnebot is tipping by dropping all heavy objects. |
-| `_wheels_are_turning()`      | Returns True if the wheels are currently turning.            |
 | `_stop_joints()`             | Stop all joint movement.                                     |
-| `_collided()`                | Returns True if the Magnebot collided with a wall or with an object that should cause it to stop moving. |
-| `_is_stoppable_collision()`  | Returns True if this collision should make the Magnebot stop. |
