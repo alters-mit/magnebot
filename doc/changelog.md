@@ -2,7 +2,11 @@
 
 ## 1.2.0
 
-**This release introduces significant changes improvements to the arm articulation system. Please read this changelog carefully.** The overall effect is that `grasp()` and `reach_for()` are far faster and more accurate but they behave somewhat differently. **For more information regarding the improvements to arm articulation, [read this.](arm_articulation.md)**
+**This release introduces significant changes. Please read this changelog carefully.** Below is a brief summary:
+
+- `grasp()` and `reach_for()` are much faster and accurate. For more information, [read this.](arm_articulation.md)
+- Scene initialization has been split into `init_scene()` and `init_floorplan_scene()` and custom scene setup overall has been simplified. For more information, [read this.](scene.md)
+- Movement actions such as `move_by()` and `turn_to()` have the option of fine-tuning collision detection rules. For more information, [read this.](movement.md)
 
 **To upgrade to Magnebot 1.2.0, you must do the following:** 
 
@@ -18,6 +22,23 @@
 
 ***
 
+- **Rewrote documentation for custom APIs:**
+  - Rewrote `custom_apis.md`
+  - Added: `doc/arm_articulation.md` (arm actions and IK)
+    - Added images of the IK orientation solutions: `doc/images/ik/`
+  - Added: `doc/movement.md` (move and turn actions)
+  - Added: `doc/scene.md` (scene setup actions)
+- **`self.init_scene()` now loads an empty test scene.** To load a floorplan scene, call `self.init_floorplan_scene()`
+  - Removed `TestController` because it no longer does anything that `Magnebot` doesn't
+  - **Simplified custom scene setup.** It should be much easier now for users to define their own scenes. Replaced `self._get_scene_init_commands()` with `self._init_scene()` and `self._get_post_processing_commands()`.
+  - (Backend): `Magnebot` is now a subclass of `Controller` instead of `FloorplanController`
+  - (Backend): `self._scene_bounds` is set via output data returned during `self._init_scene()` rather than via pre-cached data. Deleted the pre-cached scene bounds data.
+    - Added: `SceneEnvironment.get_bounds()`
+- **Improved collision detection.** The `stop_on_collision ` parameter in the `turn_by()`, `turn_to()`, `move_by()`, and `move_to()`, actions can either be a boolean or a `CollisionDetection` object, which can be used to fine-tune collision detection logic.
+- Removed `ActionStatus.ongoing` because it's never used and replaced it with `ActionStatus.failure` (generic failure code)
+- Added optional parameters `target_orientation` and `orientation_mode` to `reach_for()` and `grasp()`.
+  - Added new enum classes: `TargetOrientation` and `OrientationMode`
+  - (Backend): Added new class: `Orientation` (a wrapper class of pairings of `TargetOrientation` and `OrientationMode`)
 - **Fixed: IK actions are slow and inaccurate due to not using orientation parameters correctly.** *Greatly* improved the speed and accuracy of `reach_for()` and `grasp()` (hereafter referred to as "IK actions"). By default, the IK actions automatically try to set a target orientation and orientation. To do this, they compare the target position against an array of pre-calculated positions and orientation parameters, and select the nearest. If the IK actions try to bend to a target and fail, they will try adjacent orientation parameters before giving up (this is a bit slow but results in increased accuracy).
   - Fixed: `reach_for()` doesn't always end in the middle of an arm motion if the magnet arrives at the target position.
   - (Backend): Added: `self._get_ik_orientations()`,
@@ -31,20 +52,14 @@
   - (Backend): Added cached data of all convex faces of each model in the TDW full model library: `data/objects/convex.json`
 - Fixed: IK actions will sometimes try to reach for impossible positions. Now, they will immediately fail if there isn't a known solution at those coordinates or the position is beyond the reach of the arm.
 - Fixed: Magnebot sometimes spins in circles during a turn action
-- Added optional parameters `target_orientation` and `orientation_mode` to `reach_for()` and `grasp()`.
-  - Added new enum classes: `TargetOrientation` and `OrientationMode`
-  - (Backend): Added new class: `Orientation` (a wrapper class of pairings of `TargetOrientation` and `OrientationMode`)
-- **Improved collision detection.** The `stop_on_collision ` parameter in the `turn_by()`, `turn_to()`, `move_by()`, and `move_to()`, actions can either be a boolean or a `CollisionDetection` object, which can be used to fine-tune collision detection logic.
-- Adjusted all example, promo, and test controllers to use the improved IK system.
+- Adjusted all example, promo, and test controllers to use the improved IK system and scene setup code
 - Added: `ObjectStatic.CONVEX_SIDES` A dictionary of model names and which sides of the bounds are known to be convex.
 - Added: `ObjectStatic.BOUNDS_SIDES` The order of bounds sides. The values in `CONVEX_SIDES` correspond to indices in this list.
-- Added: `doc/arm_articulation.md`
-  - Added images of the IK orientation solutions: `doc/images/ik/`
-- Added: `doc/movement.md`
 - (Backend): Added: `util/ik_solution.py`
 - (Backend): Added: `controllers/tests/benchmark/ik.py` IK action tests and benchmarks.
 - (Backend): Added: `controllers/tests/convex.py` Test the `grasp()` action with strangely-shaped objects.
 - (Backend): Added: `util/convex.py` For every object in the full model library, determine which sides of the bounds are convex.
+- (Backend): Added `overrides` as a required module
 
 ## 1.1.2
 
