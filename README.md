@@ -42,7 +42,7 @@ m = Magnebot()
 
 # Initialize the scene, populate it with objects, and add the Magnebot.
 # This can take a few minutes to finish.
-m.init_scene(scene="1a", layout=0, room=1)
+m.init_floorplan_scene(scene="1a", layout=0, room=1)
 
 # Reach for a target position.
 status = m.reach_for(arm=Arm.left, target={"x": 0.1, "y": 0.6, "z": 0.4}, absolute=False)
@@ -60,10 +60,11 @@ m.end()
 # Documentation
 
 - **[Magnebot API](https://github.com/alters-mit/magnebot/blob/main/doc/api/magnebot_controller.md)**
+- [**APIs for other classes in the Magnebot module**](https://github.com/alters-mit/magnebot/tree/main/doc/api)
+- **[How to define custom APIs](https://github.com/alters-mit/magnebot/blob/main/doc/custom_apis.md)**
+  - [Scene setup](https://github.com/alters-mit/magnebot/blob/main/doc/scene_setup.md)
   - [Arm articulation](https://github.com/alters-mit/magnebot/blob/main/doc/arm_articulation.md)
   - [Movement](https://github.com/alters-mit/magnebot/blob/main/doc/movement.md)
-  - [Custom APIs](https://github.com/alters-mit/magnebot/blob/main/doc/custom_apis.md)
-- [APIs for other classes in the Magnebot module](https://github.com/alters-mit/magnebot/tree/main/doc/api)
 - [Changelog](https://github.com/alters-mit/magnebot/blob/main/doc/changelog.md)
 - [Troubleshooting and debugging](https://github.com/alters-mit/magnebot/blob/main/doc/troubleshooting.md)
 - For more information regarding TDW, see the [TDW repo](https://github.com/threedworld-mit/tdw/). Relevant documentation includes:

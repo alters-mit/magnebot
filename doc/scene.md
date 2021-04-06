@@ -218,6 +218,94 @@ if __name__ == "__main__":
     m.move_to(m.target_object_id)
 ```
 
+## TDW model libraries
+
+To learn more about TDW's model libraries, [read this.](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/librarian/model_librarian.md)  The model librarian metadata classes are all cached in [`TransformInitData.LIBRARIES`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/object_init_data.md#transforminitdata):
+
+```python
+from tdw.object_init_data import TransformInitData
+from magnebot import Magnebot
+
+class MyMagnebot(Magnebot):
+    def __init__(self, port: int = 1071):
+        super().__init__(port=port)
+        for record in TransformInitData.LIBRARIES["models_core.json"].records:
+            print(record.name, record.bounds)
+```
+
+To learn more about the `ObjectInfo` class (which stores physics data), [read this.](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/py_impact.md#objectinfo) A subset of TDW's models have default physics values, which are stored in the dictionary `Magnebot._OBJECT_AUDIO`: 
+
+```python
+from tdw.object_init_data import TransformInitData
+from magnebot import Magnebot
+
+class MyMagnebot(Magnebot):
+    def __init__(self, port: int = 1071):
+        super().__init__(port=port)
+        for model_name in Magnebot._OBJECT_AUDIO:
+            record = TransformInitData.LIBRARIES["models_core.json"].get_record(model_name)
+            # Some objects in `_OBJECT_AUDIO` don't have their own records, such as pieces of a jigsaw puzzle.
+            if record is None:
+                continue
+            mass = Magnebot._OBJECT_AUDIO[model_name].mass  # See API documentation for ObjectInfo
+            bounds = TransformInitData.LIBRARIES["models_core.json"].get_record(model_name).bounds
+            print(model_name, mass, bounds)
+```
+
+This is a simple example of how to add a randomly selected small object to the scene:
+
+```python
+from tdw.object_init_data import TransformInitData
+from magnebot import Magnebot, ActionStatus
+
+class MyMagnebot(Magnebot):
+    def __init__(self, port: int = 1071):
+        super().__init__(port=port)
+        self.target_object_id = -1
+        # Get all models with default physics values with a low mass.
+        self.small_models = [o.name for o in Magnebot._OBJECT_AUDIO.values() if o.mass <= 1 and
+                             TransformInitData.LIBRARIES["models_core.json"].get_record(o.name) is not None]
+
+    def init_scene(self) -> ActionStatus:
+        # Choose a random model.
+        model_name = self._rng.choice(self.small_models)
+        self.target_object_id = self._add_object(model_name=model_name,
+                                                 position={"x": 3, "y": 0, "z": -4.5})
+        return super().init_scene()
+
+
+if __name__ == "__main__":
+    m = MyMagnebot()
+    m.init_scene()
+    m.move_to(m.target_object_id)
+```
+
+## Caching and clearing static data
+
+`self._init_scene()` will clear any data from a previous trial before initializing a scene via the `self._clear_data()` function and will cache new static data via the `self._cache_static_data()` function. You can override either of these functions to manage your own static data.
+
+In this example, the controller keeps track of all of the small objects in the current trial:
+
+```python
+from typing import List
+from magnebot import Magnebot
+
+class MyMagnebot(Magnebot):
+    def __init__(self, port: int = 1071):
+        super().__init__(port=port)
+        self.small_objects: List[int] = list()
+
+    def _cache_static_data(self, resp: List[bytes]) -> None:
+        super()._cache_static_data(resp=resp)
+        # Get all small objects currently in the scene.
+        self.small_objects = [object_id for object_id in self.objects_static if 
+                              self.objects_static[object_id].mass <= 1]
+
+    def _clear_data(self) -> None:
+        super()._clear_data()
+        self.small_objects.clear()
+```
+
 ## Limitations
 
 - **You should only create objects within your scene initialization function.** Once you call `self._init_scene()`, it will clear any previous static data and cache new static data. It will also request output data. If you add objects *afterwards*, they won't appear in `self.objects_static` or `self.state`!
