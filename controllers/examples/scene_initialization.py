@@ -8,7 +8,7 @@ if __name__ == "__main__":
     # Instantiate the controller.
     m = Magnebot()
     # Initialize the scene. Populate it with objects. Spawn the Magnebot in a room.
-    m.init_scene(scene="2a", layout=1, room=1)
+    m.init_floorplan_scene(scene="2a", layout=1, room=1)
     # Show the rendered image.
     pil_images = m.state.get_pil_images()
     pil_images["img"].show()

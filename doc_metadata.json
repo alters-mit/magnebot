@@ -1,5 +1,5 @@
 {
-  "Magnebot(FloorplanController)":
+  "Magnebot(Controller)":
   {
     "Constructor": {
       "description": "",
@@ -7,7 +7,7 @@
     },
     "Scene Setup": {
       "description": "These functions should be sent at the start of the simulation.",
-      "functions": ["init_scene"]
+      "functions": ["init_scene", "init_floorplan_scene"]
     },
     "Movement": {
       "description": "These functions move or turn the Magnebot. [Read this for more information about movement and collision detection.](../movement.md)",

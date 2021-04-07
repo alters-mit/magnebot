@@ -1,28 +1,30 @@
-from typing import List, Dict
-from magnebot import TestController, Arm, ActionStatus
+from tdw.tdw_utils import TDWUtils
+from magnebot import Magnebot, Arm, ActionStatus
 
 
-class ReachHigh(TestController):
+class ReachHigh(Magnebot):
     """
     Test whether the Magnebot can grasp an object on a shelf.
     """
 
     def __init__(self, port: int = 1071, screen_width: int = 1024, screen_height: int = 1024):
         super().__init__(port=port, screen_height=screen_height, screen_width=screen_width, skip_frames=0)
-        self._debug = False
         self.target_id: int = -1
 
-    def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
+    def init_scene(self) -> ActionStatus:
         self._add_object(model_name="cabinet_36_wood_beach_honey", position={"x": 0.04, "y": 0, "z": 1.081}, mass=300)
         self.target_id = self._add_object(model_name="jug05",
                                           position={"x": -0.231, "y": 0.9215012, "z": 0.865})
-        commands = super()._get_scene_init_commands(magnebot_position=magnebot_position)
-        commands.extend([self.get_add_material("parquet_long_horizontal_clean", library="materials_high.json"),
-                         {"$type": "set_proc_gen_floor_material",
-                          "name": "parquet_long_horizontal_clean"},
-                         {"$type": "set_proc_gen_floor_texture_scale",
-                          "scale": {"x": 8, "y": 8}}])
-        return commands
+        scene = [{"$type": "load_scene",
+                  "scene_name": "ProcGenScene"},
+                 TDWUtils.create_empty_room(12, 12),
+                 self.get_add_material("parquet_long_horizontal_clean", library="materials_high.json"),
+                 {"$type": "set_proc_gen_floor_material",
+                  "name": "parquet_long_horizontal_clean"},
+                 {"$type": "set_proc_gen_floor_texture_scale",
+                  "scale": {"x": 8, "y": 8}}]
+        return self._init_scene(scene=scene,
+                                post_processing=self._get_post_processing_commands())
 
 
 if __name__ == "__main__":

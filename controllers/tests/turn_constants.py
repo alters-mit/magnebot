@@ -2,8 +2,7 @@ from typing import List
 from pathlib import Path
 from time import time
 import numpy as np
-from magnebot.test_controller import TestController, Magnebot
-from magnebot.action_status import ActionStatus
+from magnebot import Magnebot, ActionStatus
 
 """
 Calculate the time elapsed for a single turn action given a range of combinations of turn constants.
@@ -23,7 +22,7 @@ class Result:
                f"{round(self.drift, 3)}"
 
 
-class TurnConstants(TestController):
+class TurnConstants(Magnebot):
     def run(self, angle: float):
         self._debug = False
         # Destroy the old data.

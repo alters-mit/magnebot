@@ -8,7 +8,7 @@ Info for an object that doesn't change between frames, such as its ID and mass.
 from magnebot import Magnebot
 
 m = Magnebot()
-m.init_scene(scene="2a", layout=1)
+m.init_floorplan_scene(scene="2a", layout=1)
 
 # Print each object ID and segmentation color.
 for object_id in m.objects_static:

@@ -1,12 +1,12 @@
 import numpy as np
-from magnebot import TestController, ActionStatus
+from magnebot import Magnebot, ActionStatus
 
 """
 Test Magnebot camera rotation.
 """
 
 if __name__ == "__main__":
-    m = TestController()
+    m = Magnebot()
     m.init_scene()
     status = m.rotate_camera(roll=0, pitch=0, yaw=0)
     # No rotation.

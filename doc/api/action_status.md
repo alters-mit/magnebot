@@ -10,7 +10,7 @@ Usage:
 from magnebot import Magnebot
 
 m = Magnebot()
-m.init_scene(scene="2a", layout=1)
+m.init_floorplan_scene(scene="2a", layout=1)
 status = m.move_by(1)
 print(status) # ActionStatus.success
 ```
@@ -21,7 +21,7 @@ If the Magnebot _didn't try_ to do something, the action failed without advancin
 
 | Value | Description |
 | --- | --- |
-| `ongoing` | The action is ongoing. |
+| `failure` | Generic failure code (useful for custom APIs). |
 | `success` | The action was successful. |
 | `failed_to_move` | Tried to move to a target position or object but failed. |
 | `failed_to_turn` | Tried to turn but failed to align with the target angle, position, or object. |

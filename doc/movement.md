@@ -101,7 +101,21 @@ m.end()
 
 Unlike [arm articulation](arm_articulation.md), where you will often need to define a custom action to achieve a certain pose or motion, the move and turn actions that already exist in the Magnebot API should be sufficient for most use cases. Additionally, move and turn actions are somewhat harder to code than arm articulation actions due to the complexities of collision detection.
 
-As with all [custom actions](custom_apis.md), a move action should begin with `self._start_action()` and end with `self._end_action()`. You should also start the action with `self._start_move_or_turn()` which will make the Magnebot moveable and set its torso and column to their neutral positions.
+A move action should begin with `self._start_action()` and end with `self._end_action()`. You should also start the action with `self._start_move_or_turn()` which will make the Magnebot moveable and set its torso and column to their neutral positions:
+
+```python
+from magnebot import Magnebot, ActionStatus
+
+class MyMagnebot(Magnebot):
+    def my_action(self) -> ActionStatus:
+        self._start_action()
+        self._start_move_or_turn()
+        
+        # Your code here.
+
+        self._end_action()
+        return ActionStatus.success
+```
 
 To move or turn, you will need to set the angles of the Magnebot's wheels. The wheel IDs are stored in [`self.magnebot_static.wheels`](api/magnebot_static.md) and the current wheel angles are stored in [`self.state.joint_angles`](api/scene_state.md). Set the target angle with [`set_revolute_target`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md#set_revolute_target). [This code in `move_by()`](https://github.com/alters-mit/magnebot/blob/3f537fcd95685efeadf7200208a310a4c6a2f10c/magnebot/magnebot_controller.py#L699-L707) is a good example of how to set the target angles for each wheel.
 

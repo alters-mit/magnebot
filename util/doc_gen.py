@@ -18,7 +18,6 @@ if __name__ == "__main__":
              "ik/target_orientation.py",
              "transform.py",
              "wheel.py",
-             "test_controller.py",
              "drive.py",
              "turn_constants.py"]
     md = PyMdDoc(input_directory="magnebot", files=files, metadata_path="doc_metadata.json")

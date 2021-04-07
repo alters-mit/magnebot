@@ -1,11 +1,11 @@
-from magnebot import TestController
+from magnebot import Magnebot
 
 """
 Test `Magnebot.turn_by()`.
 """
 
 if __name__ == "__main__":
-    m = TestController()
+    m = Magnebot()
     m.init_scene()
     m.turn_by(45)
     m.turn_by(-30)

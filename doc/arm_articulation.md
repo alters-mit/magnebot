@@ -9,11 +9,11 @@ The `reach_for()` and `move_by()` actions have optional `target_orientation` and
 If `orientation_mode` and `target_orientation` are set to `none`, the solver will use the "full" referential frame, which is typically the most "normal" looking motion (the arm will extend towards the target). However, these are not typically the *best* orientation parameters; an IK action might fail with one set of orientation parameters and succeed with another: 
 
 ```python
-from magnebot import TestController, Arm
+from magnebot import Magnebot, Arm
 from magnebot.ik.target_orientation import TargetOrientation
 from magnebot.ik.orientation_mode import OrientationMode
 
-m = TestController()
+m = Magnebot()
 m.init_scene()
 m.add_camera(position={"x": 0.6, "y": 1.6, "z": 1.6})
 target = {"x": 0.2, "y": 0.5, "z": 0.5}
@@ -31,9 +31,9 @@ m.end()
 By default, `target_orientation=TargetOrientation.auto` and `orientation_mode=OrientationMode.auto`: 
 
 ```python
-from magnebot import TestController, Arm
+from magnebot import Magnebot, Arm
 
-m = TestController()
+m = Magnebot()
 m.init_scene()
 # Use default orientation parameters (auto, auto).
 target = {"x": 0.2, "y": 0.5, "z": 0.5}
@@ -94,7 +94,22 @@ The `arrived_at` parameter in the `reach_for()` action determines minimum distan
 
 You can define your own action that uses inverse kinematics by calling the hidden function `self._start_ik()`. For example implementation, see `controllers/examples/custom_api.py` which adds a `push()` action. For documentation, read the docstring for `_start_ik()` in `magnebot_controller.py`.
 
-There are many useful backend functions for creating a custom API. [Read this](custom_api.md) for a list. The following are functions useful specifically for IK actions:
+Every arm articulation action needs to begin with `self._start_action()` and end with `self._end_action()`:
+
+```python
+from magnebot import Magnebot, ActionStatus
+
+class MyMagnebot(Magnebot):
+    def my_action(self) -> ActionStatus:
+        self._start_action()
+        
+        # Your code here.
+        
+        self._end_action()
+        return ActionStatus.success
+```
+
+There are many other useful backend functions for creating a custom API. [Read this](custom_apis.md) for a list. The following are functions useful specifically for IK actions:
 
 | Function                               | Description                                                  |
 | -------------------------------------- | ------------------------------------------------------------ |
@@ -106,6 +121,7 @@ There are many useful backend functions for creating a custom API. [Read this](c
 | `self._stop_joints()`                  | Stop all joint movement.                                     |
 | `self._get_ik_orientations()`          | Returns a list of possible IK orientation parameters, given the target position and arm. |
 | `self._y_position_to_torso_position()` | Converts a y worldspace coordinate to a torso prismatic joint position. |
+| `self._absolute_to_relative()`         | Covert a worldspace position to a position relative to the Magnebot. |
 
 ## Getting a target position for `grasp()`
 
@@ -117,6 +133,13 @@ In the `grasp()` action, the Magnebot needs to pick a target position on the sur
   - There is a cached list of valid sides per object; the Magnebot selects the nearest side from this list. For example, if the object isn't an open box, the top of the box isn't a valid side because that's just empty space.
   - If there isn't a valid nearest side, the Magnebot will aim for the center of the object and hope for the best.
   - The controller [raycasts](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md#send_raycast) from the nearest side of the object to the center of the object to get the nearest point on the mesh surface.
+
+## Other arm articulation actions
+
+Other arm articulation actions, namely `reset_arm()` and `drop()`, don't rely on IK.
+
+- `reset_arm()` explicitly sets the target positions of each arm joint via the backend function `self._get_reset_arm_commands()`. 
+- `drop()` is similarly structured: The commands to drop the object are created via `self._append_drop_commands()`. Additionally, calling the function `self._wait_until_objects_stop(object_ids)` will wait until all of the objects in the list stop moving. This is potentially very useful for other actions: In the [Transport Challenge API](https://github.com/alters-mit/transport_challenge), for example, `self._wait_until_objects_stop()` is called within the `put_in()` action in order to wait until the objects that were put in the container stop moving before checking whether they're actually in the container.
 
 ## Debug mode
 
