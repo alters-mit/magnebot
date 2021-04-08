@@ -1,9 +1,9 @@
 from typing import List
 from time import time
-from magnebot.test_controller import TestController
+from magnebot import Magnebot
 
 
-class Benchmark(TestController):
+class Benchmark(Magnebot):
     """
     Run simple benchmarks for the average speed of an action.
 

@@ -1,10 +1,9 @@
-from typing import Dict, List
 from tdw.tdw_utils import TDWUtils
-from magnebot import TestController, Arm
+from magnebot import Magnebot, Arm
 from magnebot.action_status import ActionStatus
 
 
-class PickUp(TestController):
+class PickUp(Magnebot):
     """
     Test the Magnebot's ability to grasp, lift, go to, and drop objects.
     """
@@ -15,13 +14,13 @@ class PickUp(TestController):
         self.target_object_1: int = -1
         self.box: int = -1
 
-    def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
+    def init_scene(self) -> ActionStatus:
         # Add some objects to an empty room. Record their object IDs.
         self.target_object_0 = self._add_object("jug05", position={"x": -0.408, "y": 0, "z": 0.428},)
         self.target_object_1 = self._add_object("jug05", position={"x": -1.76, "y": 0, "z": -1.08})
         self.box = self._add_object("basket_18inx18inx12iin", position={"x": 0.03, "y": 0, "z": -2.38},
                                     scale={"x": 1, "y": 0.5, "z": 1})
-        return super()._get_scene_init_commands(magnebot_position=magnebot_position)
+        return super().init_scene()
 
 
 if __name__ == "__main__":

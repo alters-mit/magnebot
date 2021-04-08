@@ -15,7 +15,7 @@ class SimpleNavigation(Magnebot):
     ACTIONS = [a for a in CollisionAction][1:]
 
     def run(self) -> None:
-        self.init_scene(scene="1a", layout=1, room=1)
+        self.init_floorplan_scene(scene="1a", layout=1, room=1)
         # Add a camera for debugging.
         self.add_camera(position={"x": 1.43, "y": 1.87, "z": 0.77}, look_at=True, follow=True)
         previous_action: int = 0

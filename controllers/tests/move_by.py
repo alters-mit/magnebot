@@ -1,4 +1,4 @@
-from magnebot import TestController, ActionStatus
+from magnebot import Magnebot, ActionStatus
 
 """
 Test `Magnebot.move_by()`.
@@ -10,7 +10,7 @@ def assert_status(status: ActionStatus) -> None:
 
 
 if __name__ == "__main__":
-    c = TestController()
+    c = Magnebot()
     c.init_scene()
     assert_status(c.move_by(0.8))
     assert_status(c.move_by(2))

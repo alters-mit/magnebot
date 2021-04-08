@@ -11,7 +11,7 @@ class ActionStatus(Enum):
     from magnebot import Magnebot
 
     m = Magnebot()
-    m.init_scene(scene="2a", layout=1)
+    m.init_floorplan_scene(scene="2a", layout=1)
     status = m.move_by(1)
     print(status) # ActionStatus.success
     ```
@@ -22,7 +22,7 @@ class ActionStatus(Enum):
 
     """
 
-    ongoing = 0  # The action is ongoing.
+    failure = 0  # Generic failure code (useful for custom APIs).
     success = 1  # The action was successful.
     failed_to_move = 2  # Tried to move to a target position or object but failed.
     failed_to_turn = 3  # Tried to turn but failed to align with the target angle, position, or object.

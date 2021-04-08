@@ -20,7 +20,7 @@ class SceneState:
     from magnebot import Magnebot
 
     m = Magnebot()
-    m.init_scene(scene="2a", layout=1, room=1)
+    m.init_floorplan_scene(scene="2a", layout=1, room=1)
     m.move_by(1)
 
     # m.state is the SceneState of the most-recent frame.
@@ -50,7 +50,7 @@ class SceneState:
         from magnebot import Magnebot
 
         m = Magnebot()
-        m.init_scene(scene="2a", layout=1, room=1)
+        m.init_floorplan_scene(scene="2a", layout=1, room=1)
         print(m.state.magnebot_transform.position)
         ```
         """
@@ -64,7 +64,7 @@ class SceneState:
         from magnebot import Magnebot
     
         m = Magnebot()
-        m.init_scene(scene="2a", layout=1, room=1)
+        m.init_floorplan_scene(scene="2a", layout=1, room=1)
         for j_id in m.state.joint_positions:
             position = m.state.joint_positions[j_id]
             name = m.magnebot_static.joints[j_id].name
@@ -90,7 +90,7 @@ class SceneState:
         from magnebot import Magnebot, Arm
     
         m = Magnebot()
-        m.init_scene(scene="2a", layout=1, room=1)
+        m.init_floorplan_scene(scene="2a", layout=1, room=1)
         print(m.state.held[Arm.left]) # []
         ```
         """
@@ -107,7 +107,7 @@ class SceneState:
         from magnebot import Magnebot
 
         m = Magnebot()
-        m.init_scene(scene="2a", layout=1, room=1)
+        m.init_floorplan_scene(scene="2a", layout=1, room=1)
         
         # Print the position of each object.
         for object_id in m.state.object_transforms:
@@ -143,8 +143,8 @@ class SceneState:
         ```python
         from magnebot import Magnebot
 
-        m = Magnebot(id_pass=True)
-        m.init_scene(scene="2a", layout=1, room=1)
+        m = Magnebot()
+        m.init_floorplan_scene(scene="2a", layout=1, room=1)
 
         # Get the ID pass.
         id_pass = m.state.images["id"]

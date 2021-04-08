@@ -7,14 +7,17 @@ if __name__ == "__main__":
              "arm.py",
              "arm_joint.py",
              "collision_action.py",
+             "collision_detection.py",
              "joint_static.py",
              "magnebot_controller.py",
              "magnebot_static.py",
              "object_static.py",
+             "ik/orientation.py",
+             "ik/orientation_mode.py",
              "scene_state.py",
+             "ik/target_orientation.py",
              "transform.py",
              "wheel.py",
-             "test_controller.py",
              "drive.py",
              "turn_constants.py"]
     md = PyMdDoc(input_directory="magnebot", files=files, metadata_path="doc_metadata.json")

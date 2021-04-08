@@ -1,8 +1,7 @@
-from typing import List, Dict
-from magnebot import TestController, Arm, ActionStatus
+from magnebot import Magnebot, Arm, ActionStatus
 
 
-class PickUpHeavy(TestController):
+class PickUpHeavy(Magnebot):
     """
     Test Magnebot tipping. The Magnebot will try to pick up a heavy object, failed, and then correct the tip.
     """
@@ -12,11 +11,10 @@ class PickUpHeavy(TestController):
         self._debug = False
         self.target_id: int = -1
 
-    def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
+    def init_scene(self) -> ActionStatus:
         self.target_id = self._add_object(model_name="trunck",
                                           position={"x": 0.04, "y": 0, "z": 1.081}, mass=100)
-        commands = super()._get_scene_init_commands()
-        return commands
+        return super().init_scene()
 
 
 if __name__ == "__main__":
@@ -38,7 +36,7 @@ if __name__ == "__main__":
     status = m.grasp(target=m.target_id, arm=Arm.left)
     assert status == ActionStatus.success, status
     status = m.turn_by(45)
-    assert status != ActionStatus.success, status
+    assert status == ActionStatus.success, status
     status = m.move_by(-1)
     assert status != ActionStatus.success, status
     m.reset_position()

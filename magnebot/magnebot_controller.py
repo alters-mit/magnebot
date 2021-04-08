@@ -1,15 +1,18 @@
+from pkg_resources import resource_filename
 from json import loads
 from typing import List, Dict, Optional, Union, Tuple
 from csv import DictReader
 from pathlib import Path
 import numpy as np
+from scipy.spatial import cKDTree
 from _tkinter import TclError
 from ikpy.chain import Chain
 from ikpy.link import OriginLink, URDFLink, Link
 from ikpy.utils import geometry
-from tdw.floorplan_controller import FloorplanController
+from overrides import final
+from tdw.controller import Controller
 from tdw.output_data import OutputData, Version, StaticRobot, SegmentationColors, Bounds, Rigidbodies, LogMessage,\
-    Robot, TriggerCollision
+    Robot, TriggerCollision, Raycast
 from tdw.output_data import Magnebot as Mag
 from tdw.tdw_utils import TDWUtils, QuaternionUtils
 from tdw.object_init_data import AudioInitData
@@ -21,17 +24,22 @@ from magnebot.object_static import ObjectStatic
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.scene_state import SceneState
 from magnebot.action_status import ActionStatus
-from magnebot.paths import SPAWN_POSITIONS_PATH, TORSO_Y, OCCUPANCY_MAPS_DIRECTORY, SCENE_BOUNDS_PATH, \
-    TURN_CONSTANTS_PATH
+from magnebot.paths import SPAWN_POSITIONS_PATH, OCCUPANCY_MAPS_DIRECTORY, TURN_CONSTANTS_PATH,\
+    IK_ORIENTATIONS_LEFT_PATH, IK_ORIENTATIONS_RIGHT_PATH, IK_POSITIONS_PATH
 from magnebot.arm import Arm
 from magnebot.joint_type import JointType
 from magnebot.arm_joint import ArmJoint
 from magnebot.constants import MAGNEBOT_RADIUS, OCCUPANCY_CELL_SIZE
 from magnebot.turn_constants import TurnConstants
+from magnebot.ik.target_orientation import TargetOrientation
+from magnebot.ik.orientation_mode import OrientationMode
+from magnebot.ik.orientation import Orientation, ORIENTATIONS
 from magnebot.collision_action import CollisionAction
+from magnebot.collision_detection import CollisionDetection
+from magnebot.scene_environment import SceneEnvironment
 
 
-class Magnebot(FloorplanController):
+class Magnebot(Controller):
     """
     [TDW controller](https://github.com/threedworld-mit/tdw) for Magnebots. This high-level API supports:
 
@@ -50,12 +58,14 @@ class Magnebot(FloorplanController):
 
     m = Magnebot()
     # Initializes the scene.
-    status = m.init_scene(scene="2a", layout=1)
+    status = m.init_floorplan_scene(scene="2a", layout=1)
     print(status) # ActionStatus.success
 
     # Prints the current position of the Magnebot.
     print(m.state.magnebot_transform.position)
     ```
+
+    [TOC]
 
     ***
 
@@ -119,6 +129,11 @@ class Magnebot(FloorplanController):
     The camera roll, pitch, yaw constraints in degrees.
     """
     CAMERA_RPY_CONSTRAINTS: List[float] = [55, 70, 85]
+    # Collision detection settings if `stop_on_collision == True`.
+    _COLLISION_ON: CollisionDetection = CollisionDetection()
+    # Collision detection settings if `stop_on_collision == False`.
+    _COLLISION_OFF: CollisionDetection = CollisionDetection(walls=False, objects=False, previous_was_same=False)
+
     # The y value of the column's position assuming a level floor and angle.
     _COLUMN_Y: float = 0.159
     # The minimum y value of the torso, offset from the column (see `COLUMN_Y`).
@@ -130,32 +145,24 @@ class Magnebot(FloorplanController):
 
     # The order in which joint angles will be set.
     _JOINT_ORDER: Dict[Arm, List[ArmJoint]] = {Arm.left: [ArmJoint.column,
+                                                          ArmJoint.torso,
                                                           ArmJoint.shoulder_left,
                                                           ArmJoint.elbow_left,
                                                           ArmJoint.wrist_left],
                                                Arm.right: [ArmJoint.column,
+                                                           ArmJoint.torso,
                                                            ArmJoint.shoulder_right,
                                                            ArmJoint.elbow_right,
                                                            ArmJoint.wrist_right]}
     # The expected joint articulation per joint
     _JOINT_AXES: Dict[ArmJoint, JointType] = {ArmJoint.column: JointType.revolute,
+                                              ArmJoint.torso: JointType.prismatic,
                                               ArmJoint.shoulder_left: JointType.spherical,
                                               ArmJoint.elbow_left: JointType.revolute,
                                               ArmJoint.wrist_left: JointType.spherical,
                                               ArmJoint.shoulder_right: JointType.spherical,
                                               ArmJoint.elbow_right: JointType.revolute,
                                               ArmJoint.wrist_right: JointType.spherical}
-
-    # The ratio of prisimatic joint y values for the torso vs. worldspace y values.
-    # These aren't always an exact ratio (ok, Unity...), so they're cached here.
-    _TORSO_Y: Dict[float, float] = dict()
-    with TORSO_Y.open(encoding='utf-8-sig') as f:
-        r = DictReader(f)
-        for row in r:
-            _TORSO_Y[float(row["prismatic"])] = float(row["actual"])
-    # The default height of the torso.
-    _DEFAULT_TORSO_Y: float = 1
-
     # Turn constants by angle.
     _TURN_CONSTANTS: Dict[int, TurnConstants] = dict()
     with TURN_CONSTANTS_PATH.open(encoding='utf-8-sig') as f:
@@ -205,7 +212,7 @@ class Magnebot(FloorplanController):
         from magnebot import Magnebot
         
         m = Magnebot()
-        m.init_scene(scene="2a", layout=1)
+        m.init_floorplan_scene(scene="2a", layout=1)
         
         # Print the initial position of the Magnebot.
         print(m.state.magnebot_transform.position)
@@ -265,7 +272,7 @@ class Magnebot(FloorplanController):
         from magnebot import Magnebot
         
         m = Magnebot()
-        m.init_scene(scene="2a", layout=1)
+        m.init_floorplan_scene(scene="2a", layout=1)
         
         # Print each object ID and segmentation color.     
         for object_id in m.objects_static:
@@ -282,7 +289,7 @@ class Magnebot(FloorplanController):
         from magnebot import Magnebot
 
         m = Magnebot()
-        m.init_scene(scene="2a", layout=1)
+        m.init_floorplan_scene(scene="2a", layout=1)
         print(m.magnebot_static.magnets)
         ```
         """
@@ -306,7 +313,7 @@ class Magnebot(FloorplanController):
         from magnebot import Magnebot
 
         m = Magnebot(launch_build=False)
-        m.init_scene(scene="1a", layout=0)
+        m.init_floorplan_scene(scene="1a", layout=0)
         x = 30
         y = 16
         print(m.occupancy_map[x][y]) # 0 (free and navigable position)
@@ -322,7 +329,7 @@ class Magnebot(FloorplanController):
         self.occupancy_map: Optional[np.array] = None
 
         # The scene bounds. This is used along with the occupancy map to get (x, z) worldspace positions.
-        self._scene_bounds: Optional[dict] = None
+        self._scene_bounds: Dict[str,  float] = dict()
 
         # Commands that will be sent on the next frame.
         self._next_frame_commands: List[dict] = list()
@@ -336,6 +343,18 @@ class Magnebot(FloorplanController):
         # If True, the previous action was a move or a turn.
         # This way, we don't waste time resetting the torso and column.
         self._previous_action_was_move: bool = False
+
+        # Current collision detection settings.
+        self._collision_detection: CollisionDetection = Magnebot._COLLISION_ON
+
+        # Positions relative to the Magnebot with pre-calulated IK orientation solutions.
+        self._ik_positions: np.array = np.load(str(IK_POSITIONS_PATH.resolve()))
+        # The orientations in the cloud of IK targets. Each orientation corresponds to a position in self._ik_positions.
+        self._ik_orientations: Dict[Arm, np.array] = dict()
+        for arm, ik_path in zip([Arm.left, Arm.right], [IK_ORIENTATIONS_LEFT_PATH, IK_ORIENTATIONS_RIGHT_PATH]):
+            if not ik_path.exists():
+                continue
+            self._ik_orientations[arm] = np.load(str(ik_path.resolve()))
 
         # Trigger events at the end of the most recent action.
         # Key = The trigger collider object.
@@ -368,9 +387,28 @@ class Magnebot(FloorplanController):
         if check_pypi_version:
             check_version()
 
-    def init_scene(self, scene: str, layout: int, room: int = None) -> ActionStatus:
+    def init_scene(self) -> ActionStatus:
         """
-        **Always call this function before any other API calls.** Initialize a scene, populate it with objects, and add the Magnebot.
+        Initialize the Magnebot in an empty test room.
+
+        ```python
+        from magnebot import Magnebot
+
+        m = Magnebot()
+        m.init_scene()
+
+        # Your code here.
+        ```
+
+        :return: An `ActionStatus` (always `success`).
+        """
+
+        return self._init_scene(scene=[{"$type": "load_scene", "scene_name": "ProcGenScene"},
+                                       TDWUtils.create_empty_room(12, 12)])
+
+    def init_floorplan_scene(self, scene: str, layout: int, room: int = None) -> ActionStatus:
+        """
+        Initialize a scene, populate it with objects, and add the Magnebot.
 
         It might take a few minutes to initialize the scene. You can call `init_scene()` more than once to reset the simulation; subsequent resets at runtime should be extremely fast.
 
@@ -380,7 +418,7 @@ class Magnebot(FloorplanController):
         from magnebot import Magnebot
 
         m = Magnebot()
-        m.init_scene(scene="2b", layout=0, room=1)
+        m.init_floorplan_scene(scene="2b", layout=0, room=1)
 
         # Your code here.
         ```
@@ -409,33 +447,41 @@ class Magnebot(FloorplanController):
         :return: An `ActionStatus` (always success).
         """
 
-        # Clear all data from the previous scene.
-        self._clear_data()
-        # Load the occupancy map.
-        self.occupancy_map = np.load(str(OCCUPANCY_MAPS_DIRECTORY.joinpath(f"{scene[0]}_{layout}.npy").resolve()))
-        # Get the scene bounds.
-        self._scene_bounds = loads(SCENE_BOUNDS_PATH.read_text())[scene[0]]
+        # Get the scene command.
+        scene_commands = [self.get_add_scene(scene_name=f"floorplan_{scene}")]
 
-        commands = self.get_scene_init_commands(scene=scene, layout=layout, audio=True)
+        # Get object initialization commands from the floorplan layout file.
+        floorplans = loads(Path(resource_filename("tdw", "floorplan_layouts.json")).
+                           read_text(encoding="utf-8"))
+        scene_index = scene[0]
+        layout = str(layout)
+        if scene_index not in floorplans:
+            raise Exception(f"Floorplan not found: {scene_index}")
+        if layout not in floorplans[scene_index]:
+            raise Exception(f"Layout not found: {layout}")
+        object_data = [AudioInitData(**o) for o in floorplans[scene_index][layout]]
+        for o in object_data:
+            o_id, o_commands = o.get_commands()
+            self._object_init_commands[o_id] = o_commands
 
-        # Spawn the Magnebot in the center of a room.
-        rooms = loads(SPAWN_POSITIONS_PATH.read_text())[scene[0]][str(layout)]
+        # Get the spawn position of the Magnebot.
+        rooms = loads(SPAWN_POSITIONS_PATH.read_text())[scene[0]][layout]
         room_keys = list(rooms.keys())
         if room is None:
             room = self._rng.choice(room_keys)
         else:
             room = str(room)
             assert room in room_keys, f"Invalid room: {room}; valid rooms are: {room_keys}"
-        commands.extend(self._get_scene_init_commands(magnebot_position=rooms[room]))
+        magnebot_position: Dict[str, float] = rooms[room]
 
-        resp = self.communicate(commands)
-        self._cache_static_data(resp=resp)
-        # Wait for the Magnebot to reset to its neutral position.
-        status = self._do_arm_motion()
-        self._end_action()
-        return status
+        # Load the occupancy map.
+        self.occupancy_map = np.load(str(OCCUPANCY_MAPS_DIRECTORY.joinpath(f"{scene[0]}_{layout}.npy").resolve()))
+        # Initialize the scene.
+        return self._init_scene(scene=scene_commands,
+                                post_processing=self._get_post_processing_commands(),
+                                magnebot_position=magnebot_position)
 
-    def turn_by(self, angle: float, aligned_at: float = 3, stop_on_collision: bool = True) -> ActionStatus:
+    def turn_by(self, angle: float, aligned_at: float = 3, stop_on_collision: Union[bool, CollisionDetection] = True) -> ActionStatus:
         """
         Turn the Magnebot by an angle.
 
@@ -450,7 +496,7 @@ class Magnebot(FloorplanController):
 
         :param angle: The target angle in degrees. Positive value = clockwise turn.
         :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
-        :param stop_on_collision: If True, if the Magnebot collides with the environment or a heavy object it will stop turning. It will also stop turn if the previous action ended in a collision and was a `turn_by()` in the same direction as this action. Usually this should be True; set it to False if you need the Magnebot to move away from a bad position (for example, to reverse direction if it's starting to tip over).
+        :param stop_on_collision: If True, if the Magnebot will stop when it detects certain collisions. If False, ignore collisions. This can also be a [`CollisionDetection`](collision_detection.md) object. [Read this](../movement.md) for more information.
 
         :return: An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
         """
@@ -469,9 +515,20 @@ class Magnebot(FloorplanController):
             else:
                 self._previous_collision = CollisionAction.turn_negative
 
+        # Set the current collision state.
+        if isinstance(stop_on_collision, bool):
+            if stop_on_collision:
+                self._collision_detection = Magnebot._COLLISION_ON
+            else:
+                self._collision_detection = Magnebot._COLLISION_OFF
+        elif isinstance(stop_on_collision, CollisionDetection):
+            self._collision_detection = stop_on_collision
+        else:
+            raise Exception("Invalid object type for stop_on_collision.")
         # Don't try to collide with the same thing twice.
-        if stop_on_collision and ((angle > 0 and self._previous_collision == CollisionAction.turn_positive) or
-                                  (angle < 0 and self._previous_collision == CollisionAction.turn_negative)):
+        if self._collision_detection.previous_was_same and \
+                ((angle > 0 and self._previous_collision == CollisionAction.turn_positive) or
+                 (angle < 0 and self._previous_collision == CollisionAction.turn_negative)):
             __set_collision_action(True)
             return ActionStatus.collision
 
@@ -494,8 +551,8 @@ class Magnebot(FloorplanController):
         if self._debug:
             print(f"turn_by: {angle}")
         wheel_state = self.state
-        target_angle = angle
-        delta_angle = target_angle
+        delta_angle = angle
+        previous_delta_angle = angle
         while attempts < num_attempts:
             # Get the nearest turn constants.
             da = int(np.abs(delta_angle))
@@ -550,14 +607,13 @@ class Magnebot(FloorplanController):
                     __set_collision_action(True)
                     return ActionStatus.tipping
                 # Check if we collided with the environment or with any objects.
-                elif stop_on_collision and self._collided():
+                elif self._collided():
                     self._stop_wheels(state=state_1)
                     if self._debug:
                         print("Collision. Stopping movement.")
                     self._end_action(previous_action_was_move=True)
                     __set_collision_action(True)
                     return ActionStatus.collision
-
                 if not self._wheels_are_turning(state_0=state_0, state_1=state_1):
                     turn_done = True
                 turn_frames += 1
@@ -585,10 +641,13 @@ class Magnebot(FloorplanController):
             # Course-correct the angle.
             delta_angle = angle - theta
             # Handle cases where we flip over the axis.
-            if angle + delta_angle <= -180 and (theta > 0 or theta < angle):
+            if np.abs(previous_delta_angle) < np.abs(delta_angle):
+                if self._debug:
+                    print(f"Overshot! Flipping delta_theta.")
                 delta_angle *= -1
+            previous_delta_angle = delta_angle
             if self._debug:
-                print(f"angle: {angle}", f"delta_angle: {delta_angle}", f"spin: {spin}", f"d: {d}", f"theta: {theta}")
+                print(f"angle: {angle}", f"delta_angle: {delta_angle}", f"theta: {theta}")
         self._stop_wheels(state=wheel_state)
         self._end_action(previous_action_was_move=True)
         # If the Magenbot failed to turn, mark this as a collision (even if it wasn't)
@@ -596,7 +655,7 @@ class Magnebot(FloorplanController):
         __set_collision_action(True)
         return ActionStatus.failed_to_turn
 
-    def turn_to(self, target: Union[int, Dict[str, float]], aligned_at: float = 3, stop_on_collision: bool = True) -> ActionStatus:
+    def turn_to(self, target: Union[int, Dict[str, float]], aligned_at: float = 3, stop_on_collision: Union[bool, CollisionDetection] = True) -> ActionStatus:
         """
         Turn the Magnebot to face a target object or position.
 
@@ -611,7 +670,7 @@ class Magnebot(FloorplanController):
 
         :param target: Either the ID of an object or a Vector3 position.
         :param aligned_at: If the different between the current angle and the target angle is less than this value, then the action is successful.
-        :param stop_on_collision: If True, if the Magnebot collides with the environment or a heavy object it will stop turning. Usually this should be True; set it to False if you need the Magnebot to move away from a bad position (for example, to reverse direction if it's starting to tip over).
+        :param stop_on_collision: If True, if the Magnebot will stop when it detects certain collisions. If False, ignore collisions. This can also be a [`CollisionDetection`](collision_detection.md) object. [Read this](../movement.md) for more information.
 
         :return: An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
         """
@@ -627,7 +686,7 @@ class Magnebot(FloorplanController):
                                            v2=target - self.state.magnebot_transform.position)
         return self.turn_by(angle=angle, aligned_at=aligned_at, stop_on_collision=stop_on_collision)
 
-    def move_by(self, distance: float, arrived_at: float = 0.3, stop_on_collision: bool = True) -> ActionStatus:
+    def move_by(self, distance: float, arrived_at: float = 0.3, stop_on_collision: Union[bool, CollisionDetection] = True) -> ActionStatus:
         """
         Move the Magnebot forward or backward by a given distance.
 
@@ -640,7 +699,7 @@ class Magnebot(FloorplanController):
 
         :param distance: The target distance. If less than zero, the Magnebot will move backwards.
         :param arrived_at: If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
-        :param stop_on_collision: If True, if the Magnebot collides with the environment or a heavy object it will stop moving. Usually this should be True; set it to False if you need the Magnebot to move away from a bad position (for example, to reverse direction if it's starting to tip over).
+        :param stop_on_collision: If True, if the Magnebot will stop when it detects certain collisions. If False, ignore collisions. This can also be a [`CollisionDetection`](collision_detection.md) object. [Read this](../movement.md) for more information.
 
         :return: An `ActionStatus` indicating if the Magnebot moved by `distance` and if not, why.
         """
@@ -658,10 +717,20 @@ class Magnebot(FloorplanController):
                 self._previous_collision = CollisionAction.move_positive
             else:
                 self._previous_collision = CollisionAction.move_negative
-
+        # Set the current collision state.
+        if isinstance(stop_on_collision, bool):
+            if stop_on_collision:
+                self._collision_detection = Magnebot._COLLISION_ON
+            else:
+                self._collision_detection = Magnebot._COLLISION_OFF
+        elif isinstance(stop_on_collision, CollisionDetection):
+            self._collision_detection = stop_on_collision
+        else:
+            raise Exception("Invalid object type for stop_on_collision.")
         # Don't try to collide with the same thing twice.
-        if stop_on_collision and ((distance > 0 and self._previous_collision == CollisionAction.move_positive) or
-                                  (distance < 0 and self._previous_collision == CollisionAction.move_negative)):
+        if self._collision_detection.previous_was_same and \
+                ((distance > 0 and self._previous_collision == CollisionAction.move_positive) or
+                 (distance < 0 and self._previous_collision == CollisionAction.move_negative)):
             __set_collision_action(True)
             return ActionStatus.collision
 
@@ -725,7 +794,7 @@ class Magnebot(FloorplanController):
                 move_state_0 = move_state_1
 
                 # Check if we collided with the environment or with any objects.
-                if stop_on_collision and self._collided():
+                if self._collided():
                     self._stop_wheels(state=move_state_1)
                     if self._debug:
                         print("Collision. Stopping movement.")
@@ -776,7 +845,7 @@ class Magnebot(FloorplanController):
             return ActionStatus.failed_to_move
 
     def move_to(self, target: Union[int, Dict[str, float]], arrived_at: float = 0.3,
-                aligned_at: float = 3, stop_on_collision: bool = True) -> ActionStatus:
+                aligned_at: float = 3, stop_on_collision: Union[bool, CollisionDetection] = True) -> ActionStatus:
         """
         Move the Magnebot to a target object or position.
 
@@ -793,7 +862,7 @@ class Magnebot(FloorplanController):
         :param target: Either the ID of an object or a Vector3 position.
         :param arrived_at: While moving, if at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
         :param aligned_at: While turning, if the different between the current angle and the target angle is less than this value, then the action is successful.
-        :param stop_on_collision: If True, if the Magnebot collides with the environment or a heavy object it will stop moving or turning. Usually this should be True; set it to False if you need the Magnebot to move away from a bad position (for example, to reverse direction if it's starting to tip over).
+        :param stop_on_collision: If True, if the Magnebot will stop when it detects certain collisions. If False, ignore collisions. This can also be a [`CollisionDetection`](collision_detection.md) object. [Read this](../movement.md) for more information.
 
         :return: An `ActionStatus` indicating if the Magnebot moved to the target and if not, why.
         """
@@ -819,7 +888,7 @@ class Magnebot(FloorplanController):
 
     def reset_position(self) -> ActionStatus:
         """
-        Set the Magnebot's position from `(x, y, z)` to `(x, 0, z)`, set its rotation to the default rotation (see `tdw.tdw_utils.QuaternionUtils.IDENTITY`), and drop all held objects. The action ends when all previously-held objects stop moving.
+        Reset the Magnebot so that it isn't tipping over. Set the Magnebot's position from `(x, y, z)` to `(x, 0, z)`, set its rotation to the default rotation (see `tdw.tdw_utils.QuaternionUtils.IDENTITY`), and drop all held objects. The action ends when all previously-held objects stop moving.
 
         This will be interpreted by the physics engine as a _very_ sudden and fast movement. This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
 
@@ -841,7 +910,9 @@ class Magnebot(FloorplanController):
         self._end_action()
         return ActionStatus.success
 
-    def reach_for(self, target: Dict[str, float], arm: Arm, absolute: bool = True, arrived_at: float = 0.125) -> ActionStatus:
+    def reach_for(self, target: Dict[str, float], arm: Arm, absolute: bool = True, arrived_at: float = 0.125,
+                  target_orientation: TargetOrientation = TargetOrientation.auto,
+                  orientation_mode: OrientationMode = OrientationMode.auto) -> ActionStatus:
         """
         Reach for a target position.
 
@@ -857,43 +928,34 @@ class Magnebot(FloorplanController):
         :param arm: The arm that will reach for the target.
         :param absolute: If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot.
         :param arrived_at: If the magnet is this distance or less from `target`, then the action is successful.
+        :param target_orientation: [The target orientation of the IK solution.](../arm_articulation.md)
+        :param orientation_mode: [The orientation mode of the IK solution.](../arm_articulation.md)
 
         :return: An `ActionStatus` indicating if the magnet at the end of the `arm` is at the `target` and if not, why.
         """
 
-        self._start_action()
+        def __success(state):
+            """
+            :param state: The current scene state during arm motion.
 
-        # Get the destination, which will be used to determine if the action was a success.
-        destination = TDWUtils.vector3_to_array(target)
+            :return: True if the magnet is at the target position.
+            """
+
+            magnet_position = Magnebot._absolute_to_relative(
+                position=state.joint_positions[self.magnebot_static.magnets[arm]],
+                state=state)
+            return np.linalg.norm(magnet_position - target_arr) < arrived_at
+
         if absolute:
-            destination = Magnebot._absolute_to_relative(position=destination, state=self.state)
+            target = Magnebot._absolute_to_relative(position=TDWUtils.vector3_to_array(target), state=self.state)
+            target = TDWUtils.array_to_vector3(target)
+        target_arr = TDWUtils.vector3_to_array(target)
+        return self._do_ik(target=target, arm=arm, arrived_at=arrived_at,
+                           target_orientation=target_orientation, orientation_mode=orientation_mode,
+                           is_success=__success, start=None, end=None)
 
-        # Start the IK action.
-        status = self._start_ik(target=target, arm=arm, absolute=absolute, arrived_at=arrived_at,
-                                do_prismatic_first=target["y"] > Magnebot._TORSO_Y[Magnebot._DEFAULT_TORSO_Y])
-        if status != ActionStatus.success:
-            self._end_action()
-            return status
-
-        # Wait for the arm motion to end.
-        self._do_arm_motion(conditional=lambda state: self._magnet_is_at_target(target=destination,
-                                                                                arm=arm,
-                                                                                state=state))
-        self._end_action()
-
-        # Check how close the magnet is to the expected relative position.
-        magnet_position = Magnebot._absolute_to_relative(
-            position=self.state.joint_positions[self.magnebot_static.magnets[arm]],
-            state=self.state)
-        d = np.linalg.norm(destination - magnet_position)
-        if d < arrived_at:
-            return ActionStatus.success
-        else:
-            if self._debug:
-                print(f"Tried and failed to reach for target: {d}")
-            return ActionStatus.failed_to_reach
-
-    def grasp(self, target: int, arm: Arm) -> ActionStatus:
+    def grasp(self, target: int, arm: Arm, target_orientation: TargetOrientation = TargetOrientation.auto,
+              orientation_mode: OrientationMode = OrientationMode.auto) -> ActionStatus:
         """
         Try to grasp the target object with the arm. The Magnebot will reach for the nearest position on the object.
 
@@ -907,9 +969,38 @@ class Magnebot(FloorplanController):
 
         :param target: The ID of the target object.
         :param arm: The arm of the magnet that will try to grasp the object.
+        :param target_orientation: [The target orientation of the IK solution.](../arm_articulation.md)
+        :param orientation_mode: [The orientation mode of the IK solution.](../arm_articulation.md)
 
         :return: An `ActionStatus` indicating if the magnet at the end of the `arm` is holding the `target` and if not, why.
         """
+
+        def __success(state):
+            """
+            :param state: The current scene state during arm motion.
+
+            :return: True if the magnet is grasping the object.
+            """
+
+            return Magnebot._is_grasping(target, arm, state)
+
+        def __start():
+            """
+            Enable the magnet.
+            """
+
+            self._next_frame_commands.append({"$type": "set_magnet_targets",
+                                              "arm": arm.name,
+                                              "targets": [target]})
+
+        def __end():
+            """
+            Stop trying to grasp the target.
+            """
+
+            self._next_frame_commands.append({"$type": "set_magnet_targets",
+                                              "arm": arm.name,
+                                              "targets": []})
 
         if target in self.state.held[arm]:
             if self._debug:
@@ -917,44 +1008,105 @@ class Magnebot(FloorplanController):
             return ActionStatus.success
 
         self._start_action()
-        # Enable grasping.
-        self._next_frame_commands.append({"$type": "set_magnet_targets",
-                                          "arm": arm.name,
-                                          "targets": [target]})
-        sides, resp = self._get_bounds_sides(target=target)
-        state = SceneState(resp=resp)
-        # Get the position of the magnet.
-        magnet_position = state.joint_positions[self.magnebot_static.magnets[arm]]
-        # Get the closest side to the magnet.
-        closest: np.array = sides[0]
-        d = np.inf
-        for side in sides:
-            dd = np.linalg.norm(side - magnet_position)
-            if dd < d:
-                closest = side
-                d = dd
-        target_position = TDWUtils.array_to_vector3(closest)
+        __start()
+        # Get the bounds positions of the object.
+        resp = self.communicate({"$type": "send_bounds",
+                                 "ids": [target],
+                                 "frequency": "once"})
+        bounds = get_data(resp=resp, d_type=Bounds)
+        self.state = SceneState(resp=resp)
+        # Spherecast to the center of the bounds.
+        magnet_position = self.state.joint_positions[self.magnebot_static.magnets[arm]]
+        resp = self.communicate({"$type": "send_spherecast",
+                                 "radius": 0.2,
+                                 "origin": TDWUtils.array_to_vector3(magnet_position),
+                                 "destination": TDWUtils.array_to_vector3(bounds.get_center(0))})
+        self.state = SceneState(resp=resp)
+        magnet_position = self.state.joint_positions[self.magnebot_static.magnets[arm]]
 
+        # Get the nearest spherecasted point.
+        nearest_distance = np.inf
+        nearest_position = np.array([0, 0, 0])
+        got_raycast_point = False
+        for i in range(len(resp) - 1):
+            r_id = OutputData.get_data_type_id(resp[i])
+            if r_id == "rayc":
+                raycast = Raycast(resp[i])
+                # Ignore raycasts that didn't hit the target.
+                if not raycast.get_hit() or not raycast.get_hit_object() or raycast.get_object_id() != target:
+                    continue
+                got_raycast_point = True
+                point = np.array(raycast.get_point())
+                raycast_distance = np.linalg.norm(point - magnet_position)
+                if raycast_distance < nearest_distance:
+                    nearest_distance = raycast_distance
+                    nearest_position = point
+        # We found a good target!
+        if got_raycast_point:
+            target_position = nearest_position
+        # Try to get a target from cached bounds data.
+        else:
+            sides_dict = {"left": np.array(bounds.get_left(0)),
+                          "right": np.array(bounds.get_right(0)),
+                          "front": np.array(bounds.get_front(0)),
+                          "back": np.array(bounds.get_back(0)),
+                          "top": np.array(bounds.get_top(0)),
+                          "bottom": np.array(bounds.get_bottom(0))}
+            # If we haven't cached the bounds for this object, just return all of the sides.
+            if self.objects_static[target].name not in ObjectStatic.CONVEX_SIDES:
+                sides = list(sides_dict.values())
+            else:
+                # Get only the convex sides of the object using cached data.
+                sides: List[np.array] = list()
+                for i, side in enumerate(ObjectStatic.BOUNDS_SIDES):
+                    if i in ObjectStatic.CONVEX_SIDES[self.objects_static[target].name]:
+                        sides.append(sides_dict[side])
+            center = np.array(bounds.get_center(0))
+            # If there are no valid bounds sides, aim for the center and hope for the best.
+            if len(sides) == 0:
+                target_position = center
+            else:
+                # If the object is higher up than the magnet, remove the lowest side.
+                if self.state.object_transforms[target].position[1] > magnet_position[1] and len(sides) > 1:
+                    lowest: int = -1
+                    y = np.inf
+                    for i in range(len(sides)):
+                        if sides[i][1] < y:
+                            lowest = i
+                            y = sides[i][1]
+                    del sides[lowest]
+                # Get the closest side to the magnet.
+                nearest_side: np.array = sides[0]
+                d = np.inf
+                for side in sides:
+                    dd = np.linalg.norm(side - magnet_position)
+                    if dd < d:
+                        nearest_side = side
+                        d = dd
+                # Raycast from the nearest side to the center.
+                resp = self.communicate({"$type": "send_raycast",
+                                         "origin": TDWUtils.array_to_vector3(nearest_side),
+                                         "destination": TDWUtils.array_to_vector3(center)})
+                self.state = SceneState(resp=resp)
+                raycast = get_data(resp=resp, d_type=Raycast)
+                # If the raycast hit the object, aim for that point.
+                if raycast.get_hit() and raycast.get_hit_object() and raycast.get_object_id() == target:
+                    target_position = np.array(raycast.get_point())
+                else:
+                    target_position = center
         if self._debug:
             self._next_frame_commands.append({"$type": "add_position_marker",
-                                              "position": target_position})
-        # Start the IK action.
-        status = self._start_ik(target=target_position, arm=arm, absolute=True,
-                                do_prismatic_first=target_position["y"] > Magnebot._TORSO_Y[Magnebot._DEFAULT_TORSO_Y])
-        if status != ActionStatus.success:
-            # Disable grasping.
-            self._next_frame_commands.append({"$type": "set_magnet_targets",
-                                              "arm": arm.name,
-                                              "targets": []})
-            self._end_action()
-            return status
-
-        # Wait for the arm motion to end.
-        self._do_arm_motion(conditional=lambda s: Magnebot._is_grasping(target, arm, s))
-        self._end_action()
-
+                                              "position": TDWUtils.array_to_vector3(target_position)})
+        # Do the IK action.
+        target_position = TDWUtils.array_to_vector3(self._absolute_to_relative(position=target_position,
+                                                                               state=self.state))
+        status = self._do_ik(target=target_position, arm=arm, arrived_at=0.05,
+                             target_orientation=target_orientation, orientation_mode=orientation_mode,
+                             is_success=__success, start=__start, end=__end)
         if target in self.state.held[arm]:
             return ActionStatus.success
+        elif status == ActionStatus.cannot_reach:
+            return status
         else:
             return ActionStatus.failed_to_grasp
 
@@ -1034,7 +1186,7 @@ class Magnebot(FloorplanController):
         from magnebot import Magnebot
 
         m = Magnebot()
-        m.init_scene(scene="2a", layout=1)
+        m.init_floorplan_scene(scene="2a", layout=1)
         status = m.rotate_camera(roll=-10, pitch=-90, yaw=45)
         print(status) # ActionStatus.clamped_camera_rotation
         print(m.camera_rpy) # [-10 -70 45]
@@ -1090,7 +1242,7 @@ class Magnebot(FloorplanController):
         from magnebot import Magnebot
 
         m = Magnebot()
-        m.init_scene(scene="2a", layout=1)
+        m.init_floorplan_scene(scene="2a", layout=1)
         m.rotate_camera(roll=-10, pitch=-90, yaw=45)
         m.reset_camera()
         print(m.camera_rpy) # [0 0 0]
@@ -1167,11 +1319,13 @@ class Magnebot(FloorplanController):
         """
         Converts the position `(i, j)` in the occupancy map to `(x, z)` worldspace coordinates.
 
+        This only works if you've loaded an occupancy map via `self.init_floorplan_scene()`.
+
         ```python
         from magnebot import Magnebot
 
         m = Magnebot(launch_build=False)
-        m.init_scene(scene="1a", layout=0)
+        m.init_floorplan_scene(scene="1a", layout=0)
         x = 30
         y = 16
         print(m.occupancy_map[x][y]) # 0 (free and navigable position)
@@ -1205,7 +1359,7 @@ class Magnebot(FloorplanController):
                 continue
         # This should never happen, but it's better to prevent the build rom crashing.
         return []
-        
+
     def end(self) -> None:
         """
         End the simulation. Terminate the build process.
@@ -1400,63 +1554,6 @@ class Magnebot(FloorplanController):
             self.state.save_images(output_directory=self.images_directory)
         return resp
 
-    def _get_scene_init_commands(self, magnebot_position: Dict[str, float] = None) -> List[dict]:
-        """
-        :param magnebot_position: The position of the Magnebot. If none, the position is (0, 0, 0).
-
-        :return: A list of commands that every controller needs for initializing the scene.
-        """
-
-        if magnebot_position is None:
-            magnebot_position = TDWUtils.VECTOR3_ZERO
-
-        # Destroy the previous Magnebot, if any.
-        # Add the Magnebot.
-        # Set the maximum number of held objects per magnet.
-        # Set the number of objects that the Magnebot can hold.
-        # Add the avatar (camera).
-        # Parent the avatar to the Magnebot.
-        # Set pass masks.
-        # Disable the image sensor.
-        commands = [{"$type": "add_magnebot",
-                     "position": magnebot_position},
-                    {"$type": "set_immovable",
-                     "immovable": True},
-                    {"$type": "create_avatar",
-                     "type": "A_Img_Caps_Kinematic"},
-                    {"$type": "set_pass_masks",
-                     "pass_masks": ["_img", "_id", "_depth"]},
-                    {"$type": "enable_image_sensor",
-                     "enable": False},
-                    {"$type": "set_anti_aliasing",
-                     "mode": "subpixel"}]
-        # Add the objects.
-        for object_id in self._object_init_commands:
-            commands.extend(self._object_init_commands[object_id])
-        # Request output data.
-        commands.extend([{"$type": "send_robots",
-                          "frequency": "always"},
-                         {"$type": "send_transforms",
-                          "frequency": "always"},
-                         {"$type": "send_magnebots",
-                          "frequency": "always"},
-                         {"$type": "send_static_robots",
-                          "frequency": "once"},
-                         {"$type": "send_segmentation_colors",
-                          "frequency": "once"},
-                         {"$type": "send_rigidbodies",
-                          "frequency": "once"},
-                         {"$type": "send_bounds",
-                          "frequency": "once"},
-                         {"$type": "send_collisions",
-                          "enter": True,
-                          "stay": False,
-                          "exit": True,
-                          "collision_types": ["obj", "env"]}])
-        if self._debug:
-            commands.append({"$type": "send_log_messages"})
-        return commands
-
     def _start_action(self) -> None:
         """
         Start the next action.
@@ -1479,7 +1576,7 @@ class Magnebot(FloorplanController):
                                            "immovable": True},
                                           {"$type": "set_prismatic_target",
                                            "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
-                                           "target": Magnebot._DEFAULT_TORSO_Y},
+                                           "target": 1},
                                           {"$type": "set_revolute_target",
                                            "joint_id": self.magnebot_static.arm_joints[ArmJoint.column],
                                            "target": 0}])
@@ -1493,9 +1590,12 @@ class Magnebot(FloorplanController):
     def _start_ik(self, target: Dict[str, float], arm: Arm, absolute: bool = True, arrived_at: float = 0.125,
                   state: SceneState = None, allow_column: bool = True, fixed_torso_prismatic: float = None,
                   object_id: int = None, do_prismatic_first: bool = False,
-                  orientation_mode: str = None, target_orientation: np.array = None) -> ActionStatus:
+                  orientation_mode: OrientationMode = OrientationMode.auto,
+                  target_orientation: TargetOrientation = TargetOrientation.auto) -> ActionStatus:
         """
         Start an IK action.
+
+        Regarding `target_orientation` and `orientation_mode`: These affect the IK solution and end pose of the arm. The action might succeed or fail depending on these settings. If both parameters are set to `auto`, the Magnebot will try to choose the best possible settings. For more information, [read this](https://notebook.community/Phylliade/ikpy/tutorials/Orientation).
 
         :param target: The target position.
         :param arm: The arm that will be bending.
@@ -1512,37 +1612,58 @@ class Magnebot(FloorplanController):
         :return: An `ActionStatus` describing whether the IK action began.
         """
 
-        def __get_ik_solution() -> Tuple[bool, List[float]]:
-            """
-            Get an IK solution to a target given the height of the torso.
+        # If the `state` argument is None, work off of `self.state`.
+        if state is None:
+            state = self.state
+        if isinstance(target, dict):
+            target = TDWUtils.vector3_to_array(target)
+        # Convert to relative coordinates.
+        if absolute:
+            target = self._absolute_to_relative(position=target, state=state)
+        target: np.array
+        # If the target is too far away, fail immediately.
+        distance = np.linalg.norm(target - np.array([0, target[1], 0]))
+        if distance > 0.99:
+            return ActionStatus.cannot_reach
 
-            :return: Tuple: True if this solution will bring the end of the IK chain to the target position; the IK solution.
-            """
+        # Try to get an orientation mode.
+        if target_orientation == TargetOrientation.auto and orientation_mode == OrientationMode.auto:
+            orientations = self._get_ik_orientations(arm=arm, target=target)
+            # If we didn't get a solution, the action is VERY likely to fail.
+            # See: `controllers/tests/benchmark/ik.py`
+            if len(orientations) == 0:
+                return ActionStatus.cannot_reach
+            target_orientation = orientations[0].target_orientation
+            orientation_mode = orientations[0].orientation_mode
 
-            # Generate an IK chain, given the current desired torso height.
-            # The extra height is the y position of the column's base.
-            chain = self.__get_ik_chain(arm=arm, torso_y=Magnebot._TORSO_Y[round(torso_prismatic, 2)],
-                                        allow_column=allow_column, object_id=object_id)
+        # Get the initial angles of each joint.
+        # The first angle is always 0 (the origin link).
+        initial_angles = self._get_initial_angles(arm=arm, has_object=object_id is not None)
 
-            # Get the IK solution.
-            ik = chain.inverse_kinematics(target_position=target,
-                                          initial_position=initial_angles,
-                                          orientation_mode=orientation_mode, target_orientation=target_orientation)
+        # Generate an IK chain, given the current desired torso height.
+        # The extra height is the y position of the column's base.
+        chain = self.__get_ik_chain(arm=arm, allow_column=allow_column, object_id=object_id)
 
-            if self._debug:
-                # Plot the IK solution.
-                # This won't always work on a remote server.
-                try:
-                    import matplotlib.pyplot
-                    ax = matplotlib.pyplot.figure().add_subplot(111, projection='3d')
-                    ax.set_xlabel("X")
-                    ax.set_ylabel("Y")
-                    ax.set_zlabel("Z")
-                    chain.plot(ik, ax, target=target)
-                    matplotlib.pyplot.show()
-                except TclError as e:
-                    print(f"Tried creating a debug plot of the IK solution with but got an error:\n{e}\n"
-                          f"(This is probably because you're using a remote server.)")
+        # Get the IK solution.
+        ik = chain.inverse_kinematics(target_position=target,
+                                      initial_position=initial_angles,
+                                      orientation_mode=str(orientation_mode.value) if isinstance(orientation_mode.value, str) else None,
+                                      target_orientation=np.array(target_orientation.value) if isinstance(target_orientation.value, list) else None)
+        # Plot the IK solution.
+        if self._debug:
+            try:
+                import matplotlib.pyplot
+                ax = matplotlib.pyplot.figure().add_subplot(111, projection='3d')
+                ax.set_xlabel("X")
+                ax.set_ylabel("Y")
+                ax.set_zlabel("Z")
+                chain.plot(ik, ax, target=target,
+                           link_names=["column", "torso", "shoulder_pitch", "elbow_pitch", "wrist_pitch"])
+                matplotlib.pyplot.show()
+            # This won't always work on a remote server.
+            except TclError as e:
+                print(f"Tried creating a debug plot of the IK solution with but got an error:\n{e}\n"
+                      f"(This is probably because you're using a remote server.)")
 
         # Get the forward kinematics matrix of the IK solution.
         transformation_matrices = chain.forward_kinematics(ik, full_kinematics=True)
@@ -1552,56 +1673,33 @@ class Magnebot(FloorplanController):
             (node, orientation) = geometry.from_transformation_matrix(transformation_matrices[index])
             nodes.append(node)
         # Check if the last position on the node is very close to the target.
-            # If so, this IK solution is expected to succeed.
-            end_node = np.array(nodes[-1][:-1])
-            d = np.linalg.norm(end_node - target)
-            # Return whether the IK solution is expected to succeed; and the IK solution.
-            return d <= arrived_at, ik
-
-        # If the `state` argument is None, work off of `self.state`.
-        if state is None:
-            state = self.state
-        if isinstance(target, dict):
-            target = TDWUtils.vector3_to_array(target)
-        # Convert to relative coordinates.
-        if absolute:
-            target = self._absolute_to_relative(position=target, state=state)
-
-        # Get the initial angles of each joint.
-        # The first angle is always 0 (the origin link).
-        initial_angles = self._get_initial_angles(arm=arm, has_object=object_id is not None)
-
-        # Try to get an IK solution from various heights.
-        # Start at the default height and incrementally raise the torso.
-        # We need to do this iteratively because ikpy doesn't support prismatic joints!
-        # But it should be ok because there's only one prismatic joint in this robot.
-        angles: List[float] = list()
-        if target[1] > Magnebot._TORSO_Y[Magnebot._DEFAULT_TORSO_Y]:
-            torso_prismatic = max(Magnebot._TORSO_Y.keys())
-        else:
-            torso_prismatic = Magnebot._DEFAULT_TORSO_Y
-        got_solution = False
-        while not got_solution and torso_prismatic > 0.6:
-            got_solution, angles = __get_ik_solution()
-            if not got_solution:
-                torso_prismatic -= 0.1
-        if not got_solution:
-            torso_prismatic = self._DEFAULT_TORSO_Y
-            while not got_solution and torso_prismatic <= 1.5:
-                    got_solution, angles = __get_ik_solution()
-                    if not got_solution:
-                        torso_prismatic += 0.1
-        # If we couldn't find a solution at any torso height, then there isn't a solution.
-        if not got_solution:
+        # If so, this IK solution is expected to succeed.
+        end_node = np.array(nodes[-1][:-1])
+        d = np.linalg.norm(end_node - target)
+        if d > arrived_at:
             return ActionStatus.cannot_reach
 
-        # Convert the angles to degrees. Remove the first node (the origin link) and last node (the magnet).
-        if object_id is not None:
-            # Remove the object.
-            angles = [float(np.rad2deg(a)) for a in angles[1:-2]]
+        angles = list()
+        torso_prismatic = 0
+        # For the purposes of getting the angles, remove the origin link, the magnet, and the object.
+        if object_id is None:
+            ik_angles = ik[1:-1]
         else:
-            angles = [float(np.rad2deg(a)) for a in angles[1:-1]]
-
+            ik_angles = ik[1:-2]
+        # Convert all of the angles or positions.
+        for i, angle in enumerate(ik_angles):
+            # This is the torso.
+            if i == 1:
+                if fixed_torso_prismatic is not None:
+                    torso_prismatic = fixed_torso_prismatic
+                    angles.append(fixed_torso_prismatic)
+                else:
+                    # Convert the torso value to a percentage and then to a joint position.
+                    torso_prismatic = Magnebot._y_position_to_torso_position(y_position=angle)
+                    angles.append(torso_prismatic)
+            # Append all other angles normally.
+            else:
+                angles.append(float(np.rad2deg(angle)))
         if self._debug:
             print(angles)
 
@@ -1613,18 +1711,15 @@ class Magnebot(FloorplanController):
         if fixed_torso_prismatic is not None:
             torso_prismatic = fixed_torso_prismatic
         # Slide the torso to the desired height.
-        torso_id = self.magnebot_static.arm_joints[ArmJoint.torso]
-        torso_command = {"$type": "set_prismatic_target",
-                         "joint_id": torso_id,
-                         "target": torso_prismatic}
         if do_prismatic_first:
-            self.communicate(torso_command)
+            torso_id = self.magnebot_static.arm_joints[ArmJoint.torso]
+            self.communicate({"$type": "set_prismatic_target",
+                              "joint_id": torso_id,
+                              "target": torso_prismatic})
             self._do_arm_motion(joint_ids=[torso_id])
 
         # Convert the IK solution into TDW commands, using the expected joint and axis order.
-        self._append_ik_commands(angles=angles, arm=arm)
-        if not do_prismatic_first:
-            self._next_frame_commands.append(torso_command)
+        self._append_ik_commands(angles=angles, arm=arm, torso=fixed_torso_prismatic is None and not do_prismatic_first)
         return ActionStatus.success
 
     def _get_initial_angles(self, arm: Arm, has_object: bool = False) -> np.array:
@@ -1648,12 +1743,13 @@ class Magnebot(FloorplanController):
             initial_angles.append(0)
         return np.radians(initial_angles)
 
-    def _append_ik_commands(self, angles: np.array, arm: Arm) -> None:
+    def _append_ik_commands(self, angles: np.array, arm: Arm, torso: bool) -> None:
         """
         Convert target angles to TDW commands and append them to `_next_frame_commands`.
 
         :param angles: The target angles in degrees.
         :param arm: The arm.
+        :param torso: If True, add torso commands.
         """
 
         # Convert the IK solution into TDW commands, using the expected joint and axis order.
@@ -1676,6 +1772,13 @@ class Magnebot(FloorplanController):
                                  "joint_id": joint_id,
                                  "target": {"x": angles[i], "y": angles[i + 1], "z": angles[i + 2]}})
                 i += 3
+            elif joint_type == JointType.prismatic:
+                # Sometimes, we want the torso at its current position.
+                if torso:
+                    commands.append({"$type": "set_prismatic_target",
+                                     "joint_id": joint_id,
+                                     "target": angles[i]})
+                i += 1
             else:
                 raise Exception(f"Joint type not defined: {joint_type} for {joint_name}.")
             # Increment to the next joint in the order.
@@ -1696,7 +1799,7 @@ class Magnebot(FloorplanController):
         if reset_torso:
             commands.extend([{"$type": "set_prismatic_target",
                               "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
-                              "target": Magnebot._DEFAULT_TORSO_Y},
+                              "target": 1},
                              {"$type": "set_revolute_target",
                               "joint_id": self.magnebot_static.arm_joints[ArmJoint.column],
                               "target": 0}])
@@ -1713,6 +1816,9 @@ class Magnebot(FloorplanController):
                 commands.append({"$type": "set_spherical_target",
                                  "joint_id": joint_id,
                                  "target": {"x": 0, "y": 0, "z": 0}})
+            # See above for how the torso is reset.
+            elif joint_type == JointType.prismatic:
+                pass
             else:
                 raise Exception(f"Joint type not defined: {joint_type} for {joint_name}.")
         return commands
@@ -1757,6 +1863,70 @@ class Magnebot(FloorplanController):
         else:
             return ActionStatus.success
 
+    def _do_ik(self, target: Dict[str, float], arm: Arm, arrived_at: float, is_success, start, end,
+               target_orientation: TargetOrientation = TargetOrientation.auto,
+               orientation_mode: OrientationMode = OrientationMode.auto) -> ActionStatus:
+        """
+        Shared code for `reach_for()` and `grasp()`.
+        Solve for an IK target and move the arm joints until they're done moving or the action is successful.
+        If the orientation parameters are (auto, auto), try several other orientation parameters before giving up.
+
+        :param target: The target position for the magnet at the arm to reach, RELATIVE to the Magnebot.
+        :param arm: The arm that will reach for the target.
+        :param is_success: A function that returns a boolean a SceneState parameter. Used to determine if the action was successful during or after arm motion.
+        :param start: A function that is called at the start of this function and retry. Can be None.
+        :param end: A function that is called at the end of this function and retry. Can be None.
+        :param arrived_at: If the magnet is this distance or less from `target`, then the action is successful.
+        :param target_orientation: [The target orientation of the IK solution.](../arm_articulation.md)
+        :param orientation_mode: [The orientation mode of the IK solution.](../arm_articulation.md)
+
+        :return: An `ActionStatus` indicating if the IK action was successful and if not, why.
+        """
+
+        self._start_action()
+        if start is not None:
+            start()
+
+        # Start the IK action.
+        status = self._start_ik(target=target, arm=arm, absolute=False, arrived_at=arrived_at,
+                                do_prismatic_first=target["y"] > Magnebot._DEFAULT_TORSO_Y,
+                                target_orientation=target_orientation, orientation_mode=orientation_mode)
+        if status != ActionStatus.success:
+            if end is not None:
+                end()
+            self._end_action()
+            return status
+
+        # Wait for the arm motion to end.
+        self._do_arm_motion(conditional=lambda s: is_success(s))
+        self._end_action()
+        if is_success(self.state):
+            if end is not None:
+                end()
+            return ActionStatus.success
+        else:
+            # Try alternative orientation parameters.
+            if target_orientation == TargetOrientation.auto and orientation_mode == OrientationMode.auto:
+                for orientation in self._get_ik_orientations(target=TDWUtils.vector3_to_array(target), arm=arm)[1:]:
+                    self._start_action()
+                    if start is not None:
+                        start()
+                    status = self._start_ik(target=target, arm=arm, absolute=False, arrived_at=arrived_at,
+                                            do_prismatic_first=target["y"] > Magnebot._DEFAULT_TORSO_Y,
+                                            target_orientation=orientation.target_orientation,
+                                            orientation_mode=orientation.orientation_mode)
+                    # Ignore this solution.
+                    if status != ActionStatus.success:
+                        continue
+                    # Wait for the arm motion to end.
+                    self._do_arm_motion(conditional=lambda s: is_success(s))
+                    self._end_action()
+                    if is_success(self.state):
+                        if end is not None:
+                            end()
+                        return ActionStatus.success
+            return ActionStatus.failed_to_reach
+
     @staticmethod
     def _is_grasping(target: int, arm: Arm, state: SceneState) -> bool:
         """
@@ -1769,10 +1939,9 @@ class Magnebot(FloorplanController):
 
         return target in state.held[arm]
 
-    def __get_ik_chain(self, arm: Arm, torso_y: float, object_id: int = None, allow_column: bool = True) -> Chain:
+    def __get_ik_chain(self, arm: Arm, object_id: int = None, allow_column: bool = True) -> Chain:
         """
         :param arm: The arm of the chain (determines the x position).
-        :param torso_y: The y coordinate of the torso.
         :param object_id: If not None, append this object to the IK chain.
         :param allow_column: If True, allow column rotation.
 
@@ -1782,16 +1951,23 @@ class Magnebot(FloorplanController):
         links: List[Link] = [OriginLink()]
         if allow_column:
             links.append(URDFLink(name="column",
-                                  translation_vector=np.array([0, torso_y, 0]),
+                                  translation_vector=np.array([0, Magnebot._COLUMN_Y, 0]),
                                   orientation=np.array([0, 0, 0]),
                                   rotation=np.array([0, 1, 0]),
                                   bounds=(np.deg2rad(-179), np.deg2rad(179))))
         else:
             links.append(URDFLink(name="column",
-                                  translation_vector=np.array([0, torso_y, 0]),
+                                  translation_vector=np.array([0, Magnebot._COLUMN_Y, 0]),
                                   orientation=np.array([0, 0, 0]),
                                   rotation=None))
-        links.extend([URDFLink(name="shoulder_pitch",
+        links.extend([URDFLink(name="torso",
+                               translation_vector=np.array([0, 0, 0]),
+                               orientation=np.array([0, 0, 0]),
+                               rotation=np.array([0, 1, 0]),
+                               is_revolute=False,
+                               use_symbolic_matrix=False,
+                               bounds=(Magnebot._TORSO_MIN_Y, Magnebot._TORSO_MAX_Y)),
+                      URDFLink(name="shoulder_pitch",
                                translation_vector=np.array([0.215 * (-1 if arm == Arm.left else 1), 0.059, 0.019]),
                                orientation=np.array([0, 0, 0]),
                                rotation=np.array([1, 0, 0]),
@@ -1859,6 +2035,9 @@ class Magnebot(FloorplanController):
         """
 
         SceneState.FRAME_COUNT = 0
+
+        # Get the scene bounds.
+        self._scene_bounds = SceneEnvironment(resp=resp).get_bounds()
 
         # Get segmentation color data.
         segmentation_colors = get_data(resp=resp, d_type=SegmentationColors)
@@ -1951,20 +2130,6 @@ class Magnebot(FloorplanController):
                                                      origin=state.magnebot_transform.position,
                                                      rotation=state.magnebot_transform.rotation)
 
-    def _magnet_is_at_target(self, target: np.array, arm: Arm, state: SceneState) -> bool:
-        """
-        :param target: The target position.
-        :param arm: The arm.
-        :param state: The state.
-
-        :return: True if the magnet is at the target position.
-        """
-
-        magnet_position = Magnebot._absolute_to_relative(
-            position=state.joint_positions[self.magnebot_static.magnets[arm]],
-            state=state)
-        return np.linalg.norm(magnet_position - target) < 0.001
-
     def _stop_wheels(self, state: SceneState) -> None:
         """
         Stop wheel movement.
@@ -1999,23 +2164,6 @@ class Magnebot(FloorplanController):
         # Wait for the objects to stop moving.
         self._wait_until_objects_stop(object_ids=held_objects)
 
-    def _get_bounds_sides(self, target: int) -> Tuple[List[np.array], List[bytes]]:
-        """
-        :param target: The ID of the target object.
-
-        :return: Tuple: Sides on the bounds of the object that can be used for an action; the response from the build.
-        """
-
-        # Reach for the center of the object.
-        resp = self.communicate([{"$type": "send_bounds",
-                                  "ids": [target],
-                                  "frequency": "once"}])
-        # Get the side on the bounds closet to the magnet.
-        bounds = get_data(resp=resp, d_type=Bounds)
-        sides = [bounds.get_left(0), bounds.get_right(0), bounds.get_front(0), bounds.get_back(0),
-                 bounds.get_top(0), bounds.get_bottom(0)]
-        return [np.array(s) for s in sides], resp
-
     def _wheels_are_turning(self, state_0: SceneState, state_1: SceneState) -> bool:
         """
         :param state_0: The previous scene state.
@@ -2046,6 +2194,7 @@ class Magnebot(FloorplanController):
         self._about_to_tip = False
         self._previous_collision = CollisionAction.none
         self._previous_action_was_move = False
+        self._collision_detection = Magnebot._COLLISION_ON
 
     def _stop_joints(self, state: SceneState, joint_ids: List[int] = None) -> None:
         """
@@ -2075,27 +2224,61 @@ class Magnebot(FloorplanController):
                                                   "joint_id": joint_id,
                                                   "target": TDWUtils.array_to_vector3(joint_angles)})
 
+    def _get_ik_orientations(self, target: np.array, arm: Arm) -> List[Orientation]:
+        """
+        Try to automatically choose an orientation for an IK solution.
+        Our best-guess approach is to load a numpy array of known IK orientation solutions per position,
+        find the position in the array closest to `target`, and use that IK orientation solution.
+
+        For more information: https://notebook.community/Phylliade/ikpy/tutorials/Orientation
+        And: https://github.com/alters-mit/magnebot/blob/main/doc/arm_articulation.md
+
+        :param arm: The arm doing the motion.
+        :param target: The target position.
+
+        :return: A list of best guesses for IK orientation. The first element in the list is almost always the best option. The other elements are neighboring options.
+        """
+
+        # Get the index of the nearest position using scipy, and use that index to get the corresponding orientation.
+        # Source: https://stackoverflow.com/questions/52364222/find-closest-similar-valuevector-inside-a-matrix
+        # noinspection PyArgumentList
+        orientations = [self._ik_orientations[arm][cKDTree(self._ik_positions).query(target, k=1)[1]]]
+
+        # If we couldn't find a solution, assume that there isn't one and return an empty list.
+        if orientations[0] < 0:
+            return []
+
+        # Append other orientation options that are nearby.
+        # noinspection PyArgumentList
+        orientations.extend(list(set([self._ik_orientations[arm][i] for i in
+                                      cKDTree(self._ik_positions).query(target, k=9)[1] if
+                                      self._ik_orientations[arm][i] not in orientations])))
+        return [ORIENTATIONS[o] for o in orientations if o >= 0]
+
     def _collided(self) -> bool:
         """
         :return: True if the Magnebot collided with a wall or with an object that should cause it to stop moving.
         """
 
-        if self.colliding_with_wall:
+        # Stop on a collision with the wall.
+        if self._collision_detection.walls and self.colliding_with_wall:
             return True
+        # Always check for collisions with objects in the include list.
         for object_id in self.colliding_objects:
-            # Stop on certain collisions between the Magnebot and other objects.
-            if self._is_stoppable_collision(object_id=object_id):
+            if object_id in self._collision_detection.include_objects:
+                return True
+        # If we don't care about objects, end here.
+        if not self._collision_detection.objects:
+            return False
+        for object_id in self.colliding_objects:
+            # Ignore objects in the exclude list.
+            if object_id in self._collision_detection.exclude_objects:
+                continue
+            # Stop on a collision if the object has sufficiently high mass or is in the exclude list.
+            if self.objects_static[object_id].mass > self._collision_detection.mass or \
+                    object_id in self._collision_detection.include_objects:
                 return True
         return False
-
-    def _is_stoppable_collision(self, object_id: int) -> bool:
-        """
-        :param object_id: The object ID.
-
-        :return: True if this collision should make the Magnebot stop.
-        """
-
-        return self.objects_static[object_id].mass > 8
 
     @staticmethod
     def _y_position_to_torso_position(y_position: float) -> float:
@@ -2108,3 +2291,92 @@ class Magnebot(FloorplanController):
         # Convert the torso value to a percentage and then to a joint position.
         p = (y_position * (Magnebot._TORSO_MAX_Y - Magnebot._TORSO_MIN_Y)) + Magnebot._TORSO_MIN_Y
         return float(p * 1.5)
+
+    @final
+    def _init_scene(self, scene: List[dict], post_processing: List[dict] = None, end: List[dict] = None,
+                    magnebot_position: Dict[str, float] = None) -> ActionStatus:
+        """
+        Add a scene to TDW. Set post-processing. Add objects (if any). Add the Magnebot. Request and cache data.
+
+        :param scene: A list of commands to initialize the scene.
+        :param post_processing: A list of commands to set post-processing values. Can be None.
+        :param end: A list of commands sent at the end of scene initialization (on the same frame). Can be None.
+        :param magnebot_position: The position of the Magnebot. If None, defaults to {"x": 0, "y": 0, "z": 0}.
+
+        :return: An `ActionStatus` (always `success`).
+        """
+
+        commands: List[dict] = []
+        # Initialize the scene.
+        commands.extend(scene)
+        # Initialize post-processing settings.
+        if post_processing is not None:
+            commands.extend(post_processing)
+        # Add objects.
+        for object_id in self._object_init_commands:
+            commands.extend(self._object_init_commands[object_id])
+
+        # Add the Magnebot. Add the avatar and set up its camera. Request output data.
+        commands.extend([{"$type": "add_magnebot",
+                          "position": magnebot_position if magnebot_position is not None else TDWUtils.VECTOR3_ZERO},
+                         {"$type": "set_immovable",
+                          "immovable": True},
+                         {"$type": "create_avatar",
+                          "type": "A_Img_Caps_Kinematic"},
+                         {"$type": "set_pass_masks",
+                          "pass_masks": ["_img", "_id", "_depth"]},
+                         {"$type": "enable_image_sensor",
+                          "enable": False},
+                         {"$type": "set_anti_aliasing",
+                          "mode": "subpixel"},
+                         {"$type": "send_robots",
+                          "frequency": "always"},
+                         {"$type": "send_transforms",
+                          "frequency": "always"},
+                         {"$type": "send_magnebots",
+                          "frequency": "always"},
+                         {"$type": "send_static_robots",
+                          "frequency": "once"},
+                         {"$type": "send_segmentation_colors",
+                          "frequency": "once"},
+                         {"$type": "send_rigidbodies",
+                          "frequency": "once"},
+                         {"$type": "send_bounds",
+                          "frequency": "once"},
+                         {"$type": "send_environments"},
+                         {"$type": "send_collisions",
+                          "enter": True,
+                          "stay": False,
+                          "exit": True,
+                          "collision_types": ["obj", "env"]}])
+        # Request log messages.
+        if self._debug:
+            commands.append({"$type": "send_log_messages"})
+        # Add misc. end commands.
+        if end is not None:
+            commands.extend(end)
+        # Clear all data from the previous scene.
+        self._clear_data()
+        # Send the commands.
+        resp = self.communicate(commands)
+        self._cache_static_data(resp=resp)
+        # Wait for the Magnebot to reset to its neutral position.
+        status = self._do_arm_motion()
+        self._end_action()
+        return status
+
+    def _get_post_processing_commands(self) -> List[dict]:
+        """
+        :return: A list of post-processing commands for scene setup.
+        """
+
+        return [{"$type": "set_aperture",
+                 "aperture": 8.0},
+                {"$type": "set_focus_distance",
+                 "focus_distance": 2.25},
+                {"$type": "set_post_exposure",
+                 "post_exposure": 0.4},
+                {"$type": "set_ambient_occlusion_intensity",
+                 "intensity": 0.175},
+                {"$type": "set_ambient_occlusion_thickness_modifier",
+                 "thickness": 3.5}]

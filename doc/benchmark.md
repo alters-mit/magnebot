@@ -2,7 +2,7 @@
 
 ## `benchmark.py`
 
-This is a simple benchmark for measuring the speed of movement actions. It uses the [`TestController`](api/test_controller.md) class, meaning that the Magnebot will spawn into an empty room. This Magnebot will always be faster in this scene than in a floorplan scene used by the `Magnebot` class.
+This is a simple benchmark for measuring the speed of movement actions. The Magnebot will spawn into an empty room. Note that empty rooms loaded via `self.init_scene()` always run faster than floorplan scenes loaded via `self.init_floorplan_scene().
 
 To run the benchmark:
 

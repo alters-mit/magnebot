@@ -19,12 +19,42 @@ from magnebot import Magnebot
 
 m = Magnebot()
 # Initializes the scene.
-status = m.init_scene(scene="2a", layout=1)
+status = m.init_floorplan_scene(scene="2a", layout=1)
 print(status) # ActionStatus.success
 
 # Prints the current position of the Magnebot.
 print(m.state.magnebot_transform.position)
 ```
+
+## Overview of API
+
+- [Frames](#frames)
+- [Parameter types](#parameter-types)
+- [Class Variables](#class-variables)
+- [Fields](#fields)
+- [Functions](#functions)
+
+| Function | Description |
+| --- | --- |
+| [\_\_init\_\_](#\_\_init\_\_) | |
+| [init_scene](#init_scene) | Initialize the Magnebot in an empty test room. |
+| [init_floorplan_scene](#init_floorplan_scene) | Initialize a scene, populate it with objects, and add the Magnebot. |
+| [turn_by](#turn_by) | Turn the Magnebot by an angle. |
+| [turn_to](#turn_to) | Turn the Magnebot to face a target object or position. |
+| [move_by](#move_by) | Move the Magnebot forward or backward by a given distance. |
+| [move_to](#move_to) | Move the Magnebot to a target object or position. |
+| [reset_position](#reset_position) | Reset the Magnebot so that it isn't tipping over. |
+| [reach_for](#reach_for) | Reach for a target position. |
+| [grasp](#grasp) | Try to grasp the target object with the arm. |
+| [drop](#drop) | Drop an object held by a magnet. |
+| [reset_arm](#reset_arm) | Reset an arm to its neutral position. |
+| [rotate_camera](#rotate_camera) | Rotate the Magnebot's camera by the (roll, pitch, yaw) axes. |
+| [reset_camera](#reset_camera) | Reset the rotation of the Magnebot's camera to its default angles. |
+| [add_camera](#add_camera) | Add a third person camera (i.e. a camera not attached to the any object) to the scene. |
+| [get_occupancy_position](#get_occupancy_position) | Converts the position `(i, j)` in the occupancy map to `(x, z)` worldspace coordinates. |
+| [get_visible_objects](#get_visible_objects) | Get all objects visible to the Magnebot in `self.state` using the id (segmentation color) image. |
+| [end](#end) | End the simulation. |
+| [communicate](#communicate) | Use this function to send low-level TDW API commands and receive low-level output data. |
 
 ***
 
@@ -98,7 +128,7 @@ print(Arm.left)
 from magnebot import Magnebot
 
 m = Magnebot()
-m.init_scene(scene="2a", layout=1)
+m.init_floorplan_scene(scene="2a", layout=1)
 
 # Print the initial position of the Magnebot.
 print(m.state.magnebot_transform.position)
@@ -125,7 +155,7 @@ print(m.state.magnebot_transform.position)
 from magnebot import Magnebot
 
 m = Magnebot()
-m.init_scene(scene="2a", layout=1)
+m.init_floorplan_scene(scene="2a", layout=1)
 
 # Print each object ID and segmentation color.     
 for object_id in m.objects_static:
@@ -139,7 +169,7 @@ for object_id in m.objects_static:
 from magnebot import Magnebot
 
 m = Magnebot()
-m.init_scene(scene="2a", layout=1)
+m.init_floorplan_scene(scene="2a", layout=1)
 print(m.magnebot_static.magnets)
 ```
 
@@ -160,7 +190,7 @@ Each element is an integer describing the occupancy at that position.
 from magnebot import Magnebot
 
 m = Magnebot(launch_build=False)
-m.init_scene(scene="1a", layout=0)
+m.init_floorplan_scene(scene="1a", layout=0)
 x = 30
 y = 16
 print(m.occupancy_map[x][y]) # 0 (free and navigable position)
@@ -201,15 +231,32 @@ Note that it is possible for the Magnebot to go to positions that aren't "free".
 
 ### Scene Setup
 
-_These functions should be sent at the start of the simulation._
+These functions should be sent at the start of the simulation.
 
 #### init_scene
 
-**`self.init_scene(scene, layout)`**
+**`self.init_scene()`**
 
-**`self.init_scene(scene, layout, room=None)`**
+Initialize the Magnebot in an empty test room.
 
-**Always call this function before any other API calls.** Initialize a scene, populate it with objects, and add the Magnebot.
+```python
+from magnebot import Magnebot
+
+m = Magnebot()
+m.init_scene()
+
+# Your code here.
+```
+
+_Returns:_  An `ActionStatus` (always `success`).
+
+#### init_floorplan_scene
+
+**`self.init_floorplan_scene(scene, layout)`**
+
+**`self.init_floorplan_scene(scene, layout, room=None)`**
+
+Initialize a scene, populate it with objects, and add the Magnebot.
 
 It might take a few minutes to initialize the scene. You can call `init_scene()` more than once to reset the simulation; subsequent resets at runtime should be extremely fast.
 
@@ -219,7 +266,7 @@ Set the `scene` and `layout` parameters in `init_scene()` to load an interior sc
 from magnebot import Magnebot
 
 m = Magnebot()
-m.init_scene(scene="2b", layout=0, room=1)
+m.init_floorplan_scene(scene="2b", layout=0, room=1)
 
 # Your code here.
 ```
@@ -254,9 +301,7 @@ _Returns:_  An `ActionStatus` (always success).
 
 ### Movement
 
-_These functions move or turn the Magnebot._
-
-_While moving, the Magnebot might start to tip over (usually because it's holding something heavy). If this happens, the Magnebot will stop moving and drop any objects with mass > 30. You can then prevent the Magnebot from tipping over._
+These functions move or turn the Magnebot. [Read this for more information about movement and collision detection.](../movement.md)
 
 #### turn_by
 
@@ -280,7 +325,7 @@ Possible [return values](action_status.md):
 | --- | --- | --- | --- |
 | angle |  float |  | The target angle in degrees. Positive value = clockwise turn. |
 | aligned_at |  float  | 3 | If the difference between the current angle and the target angle is less than this value, then the action is successful. |
-| stop_on_collision |  bool  | True | If True, if the Magnebot collides with the environment or a heavy object it will stop turning. It will also stop turn if the previous action ended in a collision and was a `turn_by()` in the same direction as this action. Usually this should be True; set it to False if you need the Magnebot to move away from a bad position (for example, to reverse direction if it's starting to tip over). |
+| stop_on_collision |  Union[bool, CollisionDetection] | True | If True, if the Magnebot will stop when it detects certain collisions. If False, ignore collisions. This can also be a [`CollisionDetection`](collision_detection.md) object. [Read this](../movement.md) for more information. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
 
@@ -306,7 +351,7 @@ Possible [return values](action_status.md):
 | --- | --- | --- | --- |
 | target |  Union[int, Dict[str, float] |  | Either the ID of an object or a Vector3 position. |
 | aligned_at |  float  | 3 | If the different between the current angle and the target angle is less than this value, then the action is successful. |
-| stop_on_collision |  bool  | True | If True, if the Magnebot collides with the environment or a heavy object it will stop turning. Usually this should be True; set it to False if you need the Magnebot to move away from a bad position (for example, to reverse direction if it's starting to tip over). |
+| stop_on_collision |  Union[bool, CollisionDetection] | True | If True, if the Magnebot will stop when it detects certain collisions. If False, ignore collisions. This can also be a [`CollisionDetection`](collision_detection.md) object. [Read this](../movement.md) for more information. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
 
@@ -330,7 +375,7 @@ Possible [return values](action_status.md):
 | --- | --- | --- | --- |
 | distance |  float |  | The target distance. If less than zero, the Magnebot will move backwards. |
 | arrived_at |  float  | 0.3 | If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
-| stop_on_collision |  bool  | True | If True, if the Magnebot collides with the environment or a heavy object it will stop moving. Usually this should be True; set it to False if you need the Magnebot to move away from a bad position (for example, to reverse direction if it's starting to tip over). |
+| stop_on_collision |  Union[bool, CollisionDetection] | True | If True, if the Magnebot will stop when it detects certain collisions. If False, ignore collisions. This can also be a [`CollisionDetection`](collision_detection.md) object. [Read this](../movement.md) for more information. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot moved by `distance` and if not, why.
 
@@ -358,7 +403,7 @@ Possible [return values](action_status.md):
 | target |  Union[int, Dict[str, float] |  | Either the ID of an object or a Vector3 position. |
 | arrived_at |  float  | 0.3 | While moving, if at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
 | aligned_at |  float  | 3 | While turning, if the different between the current angle and the target angle is less than this value, then the action is successful. |
-| stop_on_collision |  bool  | True | If True, if the Magnebot collides with the environment or a heavy object it will stop moving or turning. Usually this should be True; set it to False if you need the Magnebot to move away from a bad position (for example, to reverse direction if it's starting to tip over). |
+| stop_on_collision |  Union[bool, CollisionDetection] | True | If True, if the Magnebot will stop when it detects certain collisions. If False, ignore collisions. This can also be a [`CollisionDetection`](collision_detection.md) object. [Read this](../movement.md) for more information. |
 
 _Returns:_  An `ActionStatus` indicating if the Magnebot moved to the target and if not, why.
 
@@ -366,7 +411,7 @@ _Returns:_  An `ActionStatus` indicating if the Magnebot moved to the target and
 
 **`self.reset_position()`**
 
-Set the Magnebot's position from `(x, y, z)` to `(x, 0, z)`, set its rotation to the default rotation (see `tdw.tdw_utils.QuaternionUtils.IDENTITY`), and drop all held objects. The action ends when all previously-held objects stop moving.
+Reset the Magnebot so that it isn't tipping over. Set the Magnebot's position from `(x, y, z)` to `(x, 0, z)`, set its rotation to the default rotation (see `tdw.tdw_utils.QuaternionUtils.IDENTITY`), and drop all held objects. The action ends when all previously-held objects stop moving.
 
 This will be interpreted by the physics engine as a _very_ sudden and fast movement. This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
 
@@ -380,15 +425,17 @@ _Returns:_  An `ActionStatus` (always success).
 
 ### Arm Articulation
 
-_These functions move and bend the joints of the Magnebots's arms._
+These functions move and bend the joints of the Magnebots's arms.
 
-_During an arm articulation action, the Magnebot is always "immovable", meaning that its wheels are locked and it isn't possible for its root object to move or rotate._
+During an arm articulation action, the Magnebot is always "immovable", meaning that its wheels are locked and it isn't possible for its root object to move or rotate.
+
+For more information regarding how arm articulation works, [read this](../arm_articulation.md).
 
 #### reach_for
 
 **`self.reach_for(target, arm)`**
 
-**`self.reach_for(target, arm, absolute=True, arrived_at=0.125)`**
+**`self.reach_for(target, arm, absolute=True, arrived_at=0.125, target_orientation=TargetOrientation.auto, orientation_mode=OrientationMode.auto)`**
 
 Reach for a target position.
 
@@ -407,12 +454,16 @@ Possible [return values](action_status.md):
 | arm |  Arm |  | The arm that will reach for the target. |
 | absolute |  bool  | True | If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot. |
 | arrived_at |  float  | 0.125 | If the magnet is this distance or less from `target`, then the action is successful. |
+| target_orientation |  TargetOrientation  | TargetOrientation.auto | [The target orientation of the IK solution.](../arm_articulation.md) |
+| orientation_mode |  OrientationMode  | OrientationMode.auto | [The orientation mode of the IK solution.](../arm_articulation.md) |
 
 _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` is at the `target` and if not, why.
 
 #### grasp
 
 **`self.grasp(target, arm)`**
+
+**`self.grasp(target, arm, target_orientation=TargetOrientation.auto, orientation_mode=OrientationMode.auto)`**
 
 Try to grasp the target object with the arm. The Magnebot will reach for the nearest position on the object.
 
@@ -429,6 +480,8 @@ Possible [return values](action_status.md):
 | --- | --- | --- | --- |
 | target |  int |  | The ID of the target object. |
 | arm |  Arm |  | The arm of the magnet that will try to grasp the object. |
+| target_orientation |  TargetOrientation  | TargetOrientation.auto | [The target orientation of the IK solution.](../arm_articulation.md) |
+| orientation_mode |  OrientationMode  | OrientationMode.auto | [The orientation mode of the IK solution.](../arm_articulation.md) |
 
 _Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` is holding the `target` and if not, why.
 
@@ -481,7 +534,7 @@ _Returns:_  An `ActionStatus` indicating if the arm reset and if not, why.
 
 ### Camera
 
-_These commands rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by exactly 1 frame._
+These commands rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by exactly 1 frame.
 
 #### rotate_camera
 
@@ -505,7 +558,7 @@ See `self.camera_rpy` for the current (roll, pitch, yaw) angles of the camera.
 from magnebot import Magnebot
 
 m = Magnebot()
-m.init_scene(scene="2a", layout=1)
+m.init_floorplan_scene(scene="2a", layout=1)
 status = m.rotate_camera(roll=-10, pitch=-90, yaw=45)
 print(status) # ActionStatus.clamped_camera_rotation
 print(m.camera_rpy) # [-10 -70 45]
@@ -535,7 +588,7 @@ Reset the rotation of the Magnebot's camera to its default angles.
 from magnebot import Magnebot
 
 m = Magnebot()
-m.init_scene(scene="2a", layout=1)
+m.init_floorplan_scene(scene="2a", layout=1)
 m.rotate_camera(roll=-10, pitch=-90, yaw=45)
 m.reset_camera()
 print(m.camera_rpy) # [0 0 0]
@@ -578,7 +631,7 @@ _Returns:_  An `ActionStatus` (always `success`).
 
 ### Misc.
 
-_These are utility functions that won't advance the simulation by any frames._
+These are utility functions that won't advance the simulation by any frames.
 
 #### get_occupancy_position
 
@@ -586,11 +639,13 @@ _These are utility functions that won't advance the simulation by any frames._
 
 Converts the position `(i, j)` in the occupancy map to `(x, z)` worldspace coordinates.
 
+This only works if you've loaded an occupancy map via `self.init_floorplan_scene()`.
+
 ```python
 from magnebot import Magnebot
 
 m = Magnebot(launch_build=False)
-m.init_scene(scene="1a", layout=0)
+m.init_floorplan_scene(scene="1a", layout=0)
 x = 30
 y = 16
 print(m.occupancy_map[x][y]) # 0 (free and navigable position)
@@ -623,7 +678,7 @@ End the simulation. Terminate the build process.
 
 ### Low-level
 
-_These are low-level functions that you are unlikely to ever need to use._
+These are low-level functions that you are unlikely to ever need to use.
 
 #### communicate
 
