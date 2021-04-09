@@ -62,7 +62,7 @@ m.end()
 - **[Magnebot API](https://github.com/alters-mit/magnebot/blob/main/doc/api/magnebot_controller.md)**
 - [**APIs for other classes in the Magnebot module**](https://github.com/alters-mit/magnebot/tree/main/doc/api)
 - **[How to define custom APIs](https://github.com/alters-mit/magnebot/blob/main/doc/custom_apis.md)**
-  - [Scene setup](https://github.com/alters-mit/magnebot/blob/main/doc/scene_setup.md)
+  - [Scene setup](https://github.com/alters-mit/magnebot/blob/main/doc/scene.md)
   - [Arm articulation](https://github.com/alters-mit/magnebot/blob/main/doc/arm_articulation.md)
   - [Movement](https://github.com/alters-mit/magnebot/blob/main/doc/movement.md)
 - [Changelog](https://github.com/alters-mit/magnebot/blob/main/doc/changelog.md)
