@@ -7,7 +7,7 @@ import numpy as np
 from scipy.spatial import cKDTree
 from _tkinter import TclError
 from ikpy.chain import Chain
-from ikpy.link import OriginLink, URDFLink, Link
+from magnebot.ikpy.link import OriginLink, URDFLink, Link
 from ikpy.utils import geometry
 from overrides import final
 from tdw.controller import Controller

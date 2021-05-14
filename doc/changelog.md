@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1
+
+- **Fixed: `pip3 install magnebot` doesn't work.** This was due to `magnebot` requiring a fork of `ikpy` that isn't on PyPi. Now, `magnebot` requires the PyPi version and a modified version of the relevant script (`link.py`) is included in `magnebot/ikpy/link.py`.
+
 ## 1.2.0
 
 **This release introduces significant changes. Please read this changelog carefully.** Below is a brief summary:
