@@ -6,7 +6,7 @@ import numpy as np
 from tdw.floorplan_controller import FloorplanController
 from tdw.output_data import OutputData, Raycast, Images, ScreenPosition
 from tdw.tdw_utils import TDWUtils
-from magnebot.scene_environment import SceneEnvironment
+from tdw.scene.scene_bounds import SceneBounds
 from magnebot.constants import OCCUPANCY_CELL_SIZE
 from magnebot.paths import OCCUPANCY_MAPS_DIRECTORY, ROOM_MAPS_DIRECTORY, SPAWN_POSITIONS_PATH
 from magnebot.util import get_data
@@ -74,7 +74,7 @@ class OccupancyMapper(FloorplanController):
         return island
 
     @staticmethod
-    def get_occupancy_position(scene_env: SceneEnvironment, ix: int, iy: int) -> Tuple[float, float]:
+    def get_occupancy_position(scene_env: SceneBounds, ix: int, iy: int) -> Tuple[float, float]:
         """
         Convert an occupancy map position to a worldspace position.
 
@@ -156,7 +156,7 @@ class OccupancyMapper(FloorplanController):
 
                 spawn_positions[scene_key][layout] = dict()
 
-                scene_env = SceneEnvironment(resp=resp)
+                scene_env = SceneBounds(resp=resp)
                 # Spherecast to each point.
                 x = scene_env.x_min
                 while x < scene_env.x_max:
