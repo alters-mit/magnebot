@@ -19,6 +19,7 @@ from tdw.object_init_data import AudioInitData
 from tdw.py_impact import PyImpact, ObjectInfo
 from tdw.collisions import Collisions
 from tdw.release.pypi import PyPi
+from tdw.scene.scene_bounds import SceneBounds
 from magnebot.util import get_data, check_version
 from magnebot.object_static import ObjectStatic
 from magnebot.magnebot_static import MagnebotStatic
@@ -36,7 +37,6 @@ from magnebot.ik.orientation_mode import OrientationMode
 from magnebot.ik.orientation import Orientation, ORIENTATIONS
 from magnebot.collision_action import CollisionAction
 from magnebot.collision_detection import CollisionDetection
-from magnebot.scene_environment import SceneEnvironment
 
 
 class Magnebot(Controller):
@@ -329,7 +329,7 @@ class Magnebot(Controller):
         self.occupancy_map: Optional[np.array] = None
 
         # The scene bounds. This is used along with the occupancy map to get (x, z) worldspace positions.
-        self._scene_bounds: Dict[str,  float] = dict()
+        self._scene_bounds: Optional[SceneBounds] = None
 
         # Commands that will be sent on the next frame.
         self._next_frame_commands: List[dict] = list()
@@ -1338,8 +1338,8 @@ class Magnebot(Controller):
         :return: Tuple: (x coordinate; z coordinate) of the corresponding worldspace position.
         """
 
-        x = self._scene_bounds["x_min"] + (i * OCCUPANCY_CELL_SIZE)
-        z = self._scene_bounds["z_min"] + (j * OCCUPANCY_CELL_SIZE)
+        x = self._scene_bounds.x_min + (i * OCCUPANCY_CELL_SIZE)
+        z = self._scene_bounds.z_min + (j * OCCUPANCY_CELL_SIZE)
         return x, z
 
     def get_visible_objects(self) -> List[int]:
@@ -2037,7 +2037,7 @@ class Magnebot(Controller):
         SceneState.FRAME_COUNT = 0
 
         # Get the scene bounds.
-        self._scene_bounds = SceneEnvironment(resp=resp).get_bounds()
+        self._scene_bounds = SceneBounds(resp=resp)
 
         # Get segmentation color data.
         segmentation_colors = get_data(resp=resp, d_type=SegmentationColors)

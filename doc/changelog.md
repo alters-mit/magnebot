@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2
+
+- (Backend): Removed `SceneEnvironment` (the Magnebot API now uses TDW's `SceneBounds` instead)
+
 ## 1.2.1
 
 - **Fixed: `pip3 install magnebot` doesn't work.** This was due to `magnebot` requiring a fork of `ikpy` that isn't on PyPi. Now, `magnebot` requires the PyPi version and a modified version of the relevant script (`link.py`) is included in `magnebot/ikpy/link.py`.
