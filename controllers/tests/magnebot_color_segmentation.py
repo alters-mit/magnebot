@@ -30,4 +30,3 @@ if __name__ == "__main__":
     m.add_camera(position={"x": -1.73, "y": 1.94, "z": 1.87}, look_at=True)
     m.get_id_pass()
     m.end()
-

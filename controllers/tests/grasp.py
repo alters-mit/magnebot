@@ -22,7 +22,7 @@ class Grasp(Magnebot):
 if __name__ == "__main__":
     m = Grasp()
     m.init_scene()
-    m.turn_by(-177)
+    m.turn_to(m.target_id)
     status = m.grasp(m.target_id, arm=Arm.right,
                      target_orientation=TargetOrientation.up, orientation_mode=OrientationMode.y)
     assert status == ActionStatus.success, status
