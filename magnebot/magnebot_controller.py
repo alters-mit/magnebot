@@ -146,6 +146,8 @@ class Magnebot(Controller):
     _BRAKE_ANGLE: float = 0.5
     # The wheel friction coefficient when braking during a move action.
     _BRAKE_FRICTION: float = 0.9
+    # The distance at which to start braking while moving.
+    _BRAKE_DISTANCE: float = 0.1
     # The default wheel friction coefficient.
     _DEFAULT_WHEEL_FRICTION: float = 0.05
 
@@ -721,7 +723,7 @@ class Magnebot(Controller):
         return self.turn_by(angle=angle, aligned_at=aligned_at, stop_on_collision=stop_on_collision,
                             target_position=target_dict)
 
-    def move_by(self, distance: float, arrived_at: float = 0.3, stop_on_collision: Union[bool, CollisionDetection] = True) -> ActionStatus:
+    def move_by(self, distance: float, arrived_at: float = 0.1, stop_on_collision: Union[bool, CollisionDetection] = True) -> ActionStatus:
         """
         Move the Magnebot forward or backward by a given distance.
 
@@ -774,7 +776,10 @@ class Magnebot(Controller):
 
         # The initial position of the robot.
         p0 = self.state.magnebot_transform.position
+        p0_v3 = TDWUtils.array_to_vector3(p0)
         target_position = self.state.magnebot_transform.position + (self.state.magnebot_transform.forward * distance)
+        target_position_v3 = TDWUtils.array_to_vector3(target_position)
+        minimum_friction = Magnebot._DEFAULT_WHEEL_FRICTION
         d = np.linalg.norm(target_position - p0)
         d_0 = d
         # We're already here.
@@ -812,7 +817,16 @@ class Magnebot(Controller):
             move_done = False
             move_frames = 0
             while not move_done and move_frames < 2000:
-                resp = self.communicate([])
+                # If the `arrived_at` threshold is very small, using this easing command to slow the Magnebot down.
+                if arrived_at < 0.2:
+                    resp = self.communicate([{"$type": "set_magnebot_wheels_during_move",
+                                              "position": target_position_v3,
+                                              "origin": p0_v3,
+                                              "arrived_at": arrived_at,
+                                              "brake_distance": Magnebot._BRAKE_DISTANCE,
+                                              "minimum_friction": minimum_friction}])
+                else:
+                    resp = self.communicate([])
                 move_state_1 = SceneState(resp=resp)
                 # If we're about to tip over, immediately stop and try to correct the tip.
                 # End the action and record it as a collision to prevent the Magnebot from trying the same action again.
@@ -857,6 +871,9 @@ class Magnebot(Controller):
                 __set_collision_action(False)
                 return ActionStatus.success
             # Go until we've traversed the distance.
+            if d < 0.5:
+                self._set_brake_wheel_drives()
+                minimum_friction = Magnebot._BRAKE_FRICTION
             # 0.5 is a magic number.
             spin = (d / Magnebot._WHEEL_CIRCUMFERENCE) * 360 * 0.5 * (1 if distance > 0 else -1)
             d_total = np.linalg.norm(p1 - p0)
@@ -879,8 +896,8 @@ class Magnebot(Controller):
             __set_collision_action(True)
             return ActionStatus.failed_to_move
 
-    def move_to(self, target: Union[int, Dict[str, float]], arrived_at: float = 0.3,
-                aligned_at: float = 3, stop_on_collision: Union[bool, CollisionDetection] = True) -> ActionStatus:
+    def move_to(self, target: Union[int, Dict[str, float]], arrived_at: float = 0.1,
+                aligned_at: float = 1, stop_on_collision: Union[bool, CollisionDetection] = True) -> ActionStatus:
         """
         Move the Magnebot to a target object or position.
 
