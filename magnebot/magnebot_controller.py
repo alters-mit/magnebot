@@ -12,7 +12,7 @@ from ikpy.utils import geometry
 from overrides import final
 from tdw.controller import Controller
 from tdw.output_data import OutputData, Version, StaticRobot, SegmentationColors, Bounds, Rigidbodies, LogMessage,\
-    Robot, TriggerCollision, Raycast
+    Robot, TriggerCollision, Raycast, MagnebotWheels
 from tdw.output_data import Magnebot as Mag
 from tdw.tdw_utils import TDWUtils, QuaternionUtils
 from tdw.object_init_data import AudioInitData
@@ -650,6 +650,19 @@ class Magnebot(Controller):
                     return ActionStatus.collision
                 if not self._wheels_are_turning(state_0=state_0, state_1=state_1):
                     turn_done = True
+                # If the build announced that the turn is done, stop here.
+                for i in range(len(resp) - 1):
+                    r_id = OutputData.get_data_type_id(resp[i])
+                    if r_id == "mwhe":
+                        mwhe = MagnebotWheels(resp[i])
+                        if mwhe.get_success():
+                            self._stop_wheels(state=wheel_state)
+                            self._end_action(previous_action_was_move=True)
+                            __set_collision_action(False)
+                            return ActionStatus.success
+                        # Overshot the target.
+                        else:
+                            turn_done = True
                 turn_frames += 1
                 state_0 = state_1
             wheel_state = state_0
@@ -839,6 +852,9 @@ class Magnebot(Controller):
                 dt = np.linalg.norm(move_state_1.magnebot_transform.position - move_state_0.magnebot_transform.position)
                 if dt < 0.001:
                     move_done = True
+                for i in range(len(resp) - 1):
+                    if OutputData.get_data_type_id(resp[i]) == "mwhe":
+                        move_done = True
                 move_frames += 1
                 move_state_0 = move_state_1
 
