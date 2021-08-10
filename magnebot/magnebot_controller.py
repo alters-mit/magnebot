@@ -145,7 +145,7 @@ class Magnebot(Controller):
     # The angle at which to start braking at while turning.
     _BRAKE_ANGLE: float = 0.5
     # The wheel friction coefficient when braking during a move action.
-    _BRAKE_FRICTION: float = 0.9
+    _BRAKE_FRICTION: float = 0.95
     # The distance at which to start braking while moving.
     _BRAKE_DISTANCE: float = 0.1
     # The default wheel friction coefficient.
@@ -2450,6 +2450,6 @@ class Magnebot(Controller):
             drive = self.magnebot_static.joints[wheel_id].drives["x"]
             self._next_frame_commands.append({"$type": "set_robot_joint_drive",
                                               "joint_id": wheel_id,
-                                              "force_limit": drive.force_limit * 0.8,
+                                              "force_limit": drive.force_limit * 0.9,
                                               "stiffness": drive.stiffness,
                                               "damping": drive.damping})
