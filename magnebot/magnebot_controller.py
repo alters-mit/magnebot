@@ -142,6 +142,12 @@ class Magnebot(Controller):
     _TORSO_MAX_Y: float = 1.07721
     # The default torso position.
     _DEFAULT_TORSO_Y: float = 0.737074
+    # The angle at which to start braking at while turning.
+    _BRAKE_ANGLE: float = 0.5
+    # The wheel friction coefficient when braking during a move action.
+    _BRAKE_FRICTION: float = 0.9
+    # The default wheel friction coefficient.
+    _DEFAULT_WHEEL_FRICTION: float = 0.05
 
     # The order in which joint angles will be set.
     _JOINT_ORDER: Dict[Arm, List[ArmJoint]] = {Arm.left: [ArmJoint.column,
@@ -481,7 +487,8 @@ class Magnebot(Controller):
                                 post_processing=self._get_post_processing_commands(),
                                 magnebot_position=magnebot_position)
 
-    def turn_by(self, angle: float, aligned_at: float = 3, stop_on_collision: Union[bool, CollisionDetection] = True) -> ActionStatus:
+    def turn_by(self, angle: float, aligned_at: float = 1, stop_on_collision: Union[bool, CollisionDetection] = True,
+                target_position: Dict[str, float] = None) -> ActionStatus:
         """
         Turn the Magnebot by an angle.
 
@@ -497,6 +504,7 @@ class Magnebot(Controller):
         :param angle: The target angle in degrees. Positive value = clockwise turn.
         :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
         :param stop_on_collision: If True, if the Magnebot will stop when it detects certain collisions. If False, ignore collisions. This can also be a [`CollisionDetection`](collision_detection.md) object. [Read this](../movement.md) for more information.
+        :param target_position:  This parameter is used internally by the `turn_to()` action. Do not set this parameter to anything other than None (the default).
 
         :return: An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
         """
@@ -553,7 +561,12 @@ class Magnebot(Controller):
         wheel_state = self.state
         delta_angle = angle
         previous_delta_angle = angle
+        for_0 = TDWUtils.array_to_vector3(self.state.magnebot_transform.forward)
+        minimum_friction = Magnebot._DEFAULT_WHEEL_FRICTION
         while attempts < num_attempts:
+            if delta_angle < 9.25:
+                self._set_brake_wheel_drives()
+                minimum_friction = Magnebot._BRAKE_FRICTION
             # Get the nearest turn constants.
             da = int(np.abs(delta_angle))
             if da >= 179:
@@ -597,7 +610,26 @@ class Magnebot(Controller):
             turn_done = False
             turn_frames = 0
             while not turn_done and turn_frames < 2000:
-                resp = self.communicate([])
+                if aligned_at <= 1:
+                    # Turn by an angle.
+                    if target_position is None:
+                        resp = self.communicate([{"$type": "set_magnebot_wheels_during_turn_by",
+                                                  "angle": angle,
+                                                  "origin": for_0,
+                                                  "arrived_at": aligned_at,
+                                                  "minimum_friction": minimum_friction,
+                                                  "brake_angle": Magnebot._BRAKE_ANGLE}])
+                    # Check the alignment to the target position.
+                    else:
+                        resp = self.communicate([{"$type": "set_magnebot_wheels_during_turn_to",
+                                                  "angle": angle,
+                                                  "origin": for_0,
+                                                  "arrived_at": aligned_at,
+                                                  "position": target_position,
+                                                  "minimum_friction": minimum_friction,
+                                                  "brake_angle": Magnebot._BRAKE_ANGLE}])
+                else:
+                    resp = self.communicate([])
                 state_1 = SceneState(resp=resp)
                 # If the Magnebot is about to tip over, stop the action and try to correct the tip.
                 # Mark this is as a collision so the Magnebot can't do the same action again.
@@ -655,7 +687,7 @@ class Magnebot(Controller):
         __set_collision_action(True)
         return ActionStatus.failed_to_turn
 
-    def turn_to(self, target: Union[int, Dict[str, float]], aligned_at: float = 3, stop_on_collision: Union[bool, CollisionDetection] = True) -> ActionStatus:
+    def turn_to(self, target: Union[int, Dict[str, float]], aligned_at: float = 1, stop_on_collision: Union[bool, CollisionDetection] = True) -> ActionStatus:
         """
         Turn the Magnebot to face a target object or position.
 
@@ -676,15 +708,18 @@ class Magnebot(Controller):
         """
 
         if isinstance(target, int):
-            target = self.state.object_transforms[target].position
+            target_arr = self.state.object_transforms[target].position
+            target_dict = TDWUtils.array_to_vector3(target_arr)
         elif isinstance(target, dict):
-            target = TDWUtils.vector3_to_array(target)
+            target_arr = TDWUtils.vector3_to_array(target)
+            target_dict = target
         else:
             raise Exception(f"Invalid target: {target}")
 
         angle = TDWUtils.get_angle_between(v1=self.state.magnebot_transform.forward,
-                                           v2=target - self.state.magnebot_transform.position)
-        return self.turn_by(angle=angle, aligned_at=aligned_at, stop_on_collision=stop_on_collision)
+                                           v2=target_arr - self.state.magnebot_transform.position)
+        return self.turn_by(angle=angle, aligned_at=aligned_at, stop_on_collision=stop_on_collision,
+                            target_position=target_dict)
 
     def move_by(self, distance: float, arrived_at: float = 0.3, stop_on_collision: Union[bool, CollisionDetection] = True) -> ActionStatus:
         """
@@ -1580,6 +1615,14 @@ class Magnebot(Controller):
                                           {"$type": "set_revolute_target",
                                            "joint_id": self.magnebot_static.arm_joints[ArmJoint.column],
                                            "target": 0}])
+        # Reset the wheel drives.
+        for wheel_id in self.magnebot_static.wheels.values():
+            drive = self.magnebot_static.joints[wheel_id].drives["x"]
+            self._next_frame_commands.append({"$type": "set_robot_joint_drive",
+                                              "joint_id": wheel_id,
+                                              "force_limit": drive.force_limit,
+                                              "stiffness": drive.stiffness,
+                                              "damping": drive.damping})
         # Wait until these two joints stop moving.
         self._do_arm_motion(joint_ids=[self.magnebot_static.arm_joints[ArmJoint.torso],
                                        self.magnebot_static.arm_joints[ArmJoint.column]], non_moving=0.01)
@@ -2380,3 +2423,16 @@ class Magnebot(Controller):
                  "intensity": 0.175},
                 {"$type": "set_ambient_occlusion_thickness_modifier",
                  "thickness": 3.5}]
+
+    def _set_brake_wheel_drives(self) -> None:
+        """
+        Set the wheel drives while braking.
+        """
+
+        for wheel_id in self.magnebot_static.wheels.values():
+            drive = self.magnebot_static.joints[wheel_id].drives["x"]
+            self._next_frame_commands.append({"$type": "set_robot_joint_drive",
+                                              "joint_id": wheel_id,
+                                              "force_limit": drive.force_limit * 0.8,
+                                              "stiffness": drive.stiffness,
+                                              "damping": drive.damping})
