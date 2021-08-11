@@ -854,7 +854,16 @@ class Magnebot(Controller):
                     move_done = True
                 for i in range(len(resp) - 1):
                     if OutputData.get_data_type_id(resp[i]) == "mwhe":
-                        move_done = True
+                        mwhe = MagnebotWheels(resp[i])
+                        if mwhe.get_success():
+                            self._end_action(previous_action_was_move=True)
+                            if self._debug:
+                                print("Move complete!",
+                                      TDWUtils.array_to_vector3(self.state.magnebot_transform.position), d)
+                            __set_collision_action(False)
+                            return ActionStatus.success
+                        else:
+                            move_done = True
                 move_frames += 1
                 move_state_0 = move_state_1
 
