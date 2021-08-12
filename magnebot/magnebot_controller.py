@@ -30,7 +30,7 @@ from magnebot.paths import SPAWN_POSITIONS_PATH, OCCUPANCY_MAPS_DIRECTORY, TURN_
 from magnebot.arm import Arm
 from magnebot.joint_type import JointType
 from magnebot.arm_joint import ArmJoint
-from magnebot.constants import MAGNEBOT_RADIUS, OCCUPANCY_CELL_SIZE
+from magnebot.constants import MAGNEBOT_RADIUS, OCCUPANCY_CELL_SIZE, TDW_VERSION
 from magnebot.turn_constants import TurnConstants
 from magnebot.ik.target_orientation import TargetOrientation
 from magnebot.ik.orientation_mode import OrientationMode
@@ -368,7 +368,7 @@ class Magnebot(Controller):
         # Key = The trigger collider object.
         # Value = A list of trigger events that started and have continued (enter with an exit).
         self._trigger_events: Dict[int, List[int]] = dict()
-        super().__init__(port=port, launch_build=launch_build, check_version=check_pypi_version)
+        super().__init__(port=port, launch_build=launch_build, check_version=False)
         # Set image encoding to .png (default) or .jpg
         # Set the highest render quality.
         # Set global physics values.
@@ -382,15 +382,9 @@ class Magnebot(Controller):
                                   "width": screen_width,
                                   "height": screen_height},
                                  {"$type": "send_version"}])
-
-        # Make sure that the build is the correct version.
-        if not launch_build:
-            version = get_data(resp=resp, d_type=Version)
-            build_version = version.get_tdw_version()
-            python_version = PyPi.get_installed_tdw_version(truncate=True)
-            if build_version != python_version:
-                print(f"Your installed version of tdw ({python_version}) doesn't match the version of the build "
-                      f"{build_version}. This might cause errors!")
+        version_data = get_data(resp=resp, d_type=Version)
+        build_version = version_data.get_tdw_version()
+        PyPi.required_tdw_version_is_installed(required_version=TDW_VERSION, build_version=build_version)
         # Make sure that the Magnebot API is up to date.
         if check_pypi_version:
             check_version()

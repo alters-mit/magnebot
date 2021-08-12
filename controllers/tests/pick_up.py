@@ -19,7 +19,7 @@ class PickUp(Magnebot):
         self.target_object_0 = self._add_object("jug05", position={"x": -0.408, "y": 0, "z": 0.428},)
         self.target_object_1 = self._add_object("jug05", position={"x": -1.76, "y": 0, "z": -1.08})
         self.box = self._add_object("basket_18inx18inx12iin", position={"x": 0.03, "y": 0, "z": -2.38},
-                                    scale={"x": 1, "y": 0.5, "z": 1})
+                                    scale={"x": 1, "y": 0.7, "z": 1})
         return super().init_scene()
 
 
