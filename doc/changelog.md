@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.3.0
+
+**This release introduces significant changes. Please read this changelog carefully.**
+
+- **Major improvements to the precision and determinism of the Magnebot's move and turn actions.** 
+  - The Magnebot uses special TDW commands to check its move or turn status during skipped frames (for example, whether it has reached a target distance over the course of a skipped frame). As the Magnebot approaches a turn distance or angle, its wheels will start to brake. This behavior only occurs in turn actions if `aligned_at <= 1` and in move actions if `arrived_at < 0.2`. The friction and force limits of the wheels will be reset the next time the Magnebot moves or turns.
+  - **The overall possible precision of a Magnebot action is much lower**. The Magnebot can turn within approximately 0.2 degrees of a target angle (previously, the minimum was approximately 3 degrees). The Magnebot can move within approximately 0.01 meters of a target distance previously, the minimum was approximately 0.3 meters).
+  - Because the Magnebot can check its position and rotation more frequently, **the overall physics determinism of the simulation is much better**. There is still some variance either between machines or operating systems--we're still not sure what the pattern is and why it occurs.
+- Set the default value of `arrived_at` in the `move_by()` and `move_to()` actions to 0.1 (was 0.3).
+- Set the default value of `aligned_at` in the `turn_by()`, `turn_to()`, and `move_to()` actions to 1 (was 3).
+- Added optional parameter `target_position` to the `turn_by()` action. This is used internally and shouldn't be set by the user.
+- `Magnebot` now checks whether the expected version of TDW is installed.
+- Added benchmark controller: `precision.py` Test how precision in move and turn actions (`arrived_at` and `aligned_at` parameters) affects the speed of the action.
+- Added benchmark controller: `movement_variance.py` Test how varied the movements of the Magnebot are between one machine and a "canonical" set of positions.
+
 ## 1.2.2
 
 - (Backend): Removed `SceneEnvironment` (the Magnebot API now uses TDW's `SceneBounds` instead)

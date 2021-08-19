@@ -6,3 +6,6 @@ controllers/tests/data
 controllers/examples/images/
 dist/
 magnebot/ik/__pycache__/
+magnebot/ikpy/__pycache__/
+*.pyc
+TODO.md

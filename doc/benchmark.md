@@ -48,3 +48,27 @@ The "Default" test uses the default values in the Magnebot API. The other tests 
 | Without reflection probes                          | 0.2659665584564209  |
 | Without post-process                               | 0.3082748770713806  |
 | Without post-process and without reflection probes | 0.26149789094924925 |
+
+## `precision.py`
+
+This benchmark tests how the precision of the Magnebot's moving and turning affects its speed. Moving and turning actions have a threshold at which the Magnebot has "arrived" at the target. For example, if the action is `m.move_by(distance=2, arrived_at=0.3)`, the Magnebot will stop moving when it is within 0.3 meters of the target distance of 2 meters.
+
+To run the benchmark:
+
+1. `cd controllers/tests/benchmark`
+2. `python3 precision.py`
+3. Launch the build.
+
+| `aligned_at` | Average time elapsed |
+| --- | --- |
+| 3 | 0.4061622619628906 |
+| 1 | 0.4184655547142029 |
+| 0.5 | 0.4579646229743958 |
+| 0.2 | 0.4478271842002869 |
+
+| `arrived_at` | Average time elapsed |
+| --- | --- |
+| 0.3 | 0.24104493856430054 |
+| 0.1 | 0.25363496541976926 |
+| 0.02 | 0.3441448092460632 |
+| 0.01 | 0.37472277879714966 |
