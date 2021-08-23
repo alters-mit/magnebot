@@ -1,4 +1,5 @@
 from typing import List, Optional, Dict
+from copy import deepcopy
 from tdw.add_ons.agents.robot_base import RobotBase
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
@@ -17,11 +18,13 @@ class MagnebotAgent(RobotBase):
 
         super().__init__(robot_id=robot_id, position=position, rotation=rotation)
         self.action: Optional[Action] = None
+        self._previous_action: Optional[Action] = None
 
     def reset(self) -> None:
         super().reset()
         MagnebotDynamic.FRAME_COUNT = 0
         self.action = None
+        self._previous_action = None
 
     def get_initialization_commands(self) -> List[dict]:
         commands = super().get_initialization_commands()
@@ -47,7 +50,8 @@ class MagnebotAgent(RobotBase):
                                "avatar_id": self.static.avatar_id}])
 
     def _set_dynamic_data(self, resp: List[bytes]) -> None:
-        dynamic = MagnebotDynamic(resp=resp, robot_id=self.robot_id, previous=self.dynamic)
+        dynamic = MagnebotDynamic(resp=resp, robot_id=self.robot_id, body_parts=self.static.body_parts,
+                                  previous=self.dynamic)
         self.dynamic = self._set_joints_moving(dynamic)
 
     def _get_add_robot_command(self) -> dict:
@@ -61,12 +65,14 @@ class MagnebotAgent(RobotBase):
             return []
         else:
             commands = []
-            if not self.action.initialized and self.action.status == ActionStatus.ongoing:
-                self.action.initialized = True
-                initialization_commands = self.action.get_initialization_commands(resp=resp)
-                # This is an ongoing action.
+            if not self.action.initialized:
+                # Some actions can fail immediately.
                 if self.action.status == ActionStatus.ongoing:
-                    commands.extend(initialization_commands)
+                    self.action.initialized = True
+                    initialization_commands = self.action.get_initialization_commands(resp=resp)
+                    # This is an ongoing action.
+                    if self.action.status == ActionStatus.ongoing:
+                        commands.extend(initialization_commands)
             else:
                 action_commands = self.action.get_ongoing_commands(resp=resp)
                 # This is an ongoing action.
@@ -75,4 +81,7 @@ class MagnebotAgent(RobotBase):
                 # This action is done.
                 else:
                     commands.extend(self.action.get_end_commands(resp=resp))
+            if self.action.status != ActionStatus.ongoing:
+                # Remember the previous action.
+                self._previous_action = deepcopy(self.action)
             return commands

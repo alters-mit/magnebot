@@ -84,11 +84,6 @@ class Action(ABC):
                               "frequency": "once"},
                              {"$type": "send_camera_matrices",
                               "frequency": "once"}])
-        # Let the Magnebot move.
-        if self.static.immovable:
-            commands.append({"$type": "set_immovable",
-                             "immovable": False,
-                             "avatar_id": self.static.avatar_id})
         return commands
 
     @final

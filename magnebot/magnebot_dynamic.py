@@ -12,8 +12,8 @@ from magnebot.arm import Arm
 class MagnebotDynamic(RobotDynamic):
     FRAME_COUNT: int = 0
 
-    def __init__(self, robot_id: int, resp: List[bytes], previous=None):
-        super().__init__(robot_id=robot_id, resp=resp, previous=previous)
+    def __init__(self, robot_id: int, resp: List[bytes], body_parts: List[int], previous=None):
+        super().__init__(robot_id=robot_id, resp=resp, body_parts=body_parts, previous=previous)
 
         """:field
         A dictionary of object IDs currently held by the Magnebot. Key = The arm. Value = a numpy array of object IDs.

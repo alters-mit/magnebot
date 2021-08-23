@@ -1,3 +1,6 @@
+import numpy as np
+
+
 # The radius of the Magnebot as defined by its longer axis.
 MAGNEBOT_RADIUS: float = 0.22
 # The cell size on the occupancy map. This is slightly bigger than diameter of the Magnebot.
@@ -10,3 +13,11 @@ COLUMN_Y: float = 0.159
 TORSO_MIN_Y: float = 0.2244872
 # The maximum y value of the torso, offset from the column (see `COLUMN_Y`).
 TORSO_MAX_Y: float = 1.07721
+# The default wheel friction coefficient.
+DEFAULT_WHEEL_FRICTION: float = 0.05
+# The circumference of the Magnebot.
+MAGNEBOT_CIRCUMFERENCE: float = np.pi * 2 * MAGNEBOT_RADIUS
+# The radius of the Magnebot wheel.
+WHEEL_RADIUS: float = 0.1
+# The circumference of the Magnebot wheel.
+WHEEL_CIRCUMFERENCE: float = 2 * np.pi * WHEEL_RADIUS

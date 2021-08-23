@@ -90,23 +90,6 @@ class Motion(Action, ABC):
         return commands
 
     @final
-    def _stop_wheels(self) -> List[dict]:
-        """
-        Stop wheel movement.
-
-        :return: A list of commands to stop the wheels.
-        """
-
-        commands = []
-        for wheel in self.static.wheels:
-            # Set the target of each wheel to its current position.
-            commands.append({"$type": "set_revolute_target",
-                             "id": self.static.robot_id,
-                             "target": float(self.dynamic.joints[self.static.wheels[wheel]].angles[0]),
-                             "joint_id": self.static.wheels[wheel]})
-        return commands
-
-    @final
     def _is_tipping(self) -> Tuple[bool, bool]:
         """
         :return: Tuple: True if the Magnebot has tipped over; True if the Magnebot is tipping.
