@@ -21,3 +21,5 @@ MAGNEBOT_CIRCUMFERENCE: float = np.pi * 2 * MAGNEBOT_RADIUS
 WHEEL_RADIUS: float = 0.1
 # The circumference of the Magnebot wheel.
 WHEEL_CIRCUMFERENCE: float = 2 * np.pi * WHEEL_RADIUS
+# The wheel friction coefficient when braking during a move action.
+BRAKE_FRICTION: float = 0.95

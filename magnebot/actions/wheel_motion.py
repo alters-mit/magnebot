@@ -7,6 +7,7 @@ from magnebot.actions.action import Action
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.collision_detection import CollisionDetection
+from magnebot.constants import DEFAULT_WHEEL_FRICTION
 
 
 class WheelMotion(Motion, ABC):
@@ -24,8 +25,6 @@ class WheelMotion(Motion, ABC):
         """
 
         super().__init__(static=static, dynamic=dynamic)
-        # True if the previous action was a move or a turn.
-        self._previous_was_wheel_motion: bool = previous is not None and isinstance(previous, WheelMotion)
         # My collision detection rules.
         self._collision_detection: CollisionDetection = collision_detection
         # Immediately end the action if we're currently tipping.
@@ -33,7 +32,9 @@ class WheelMotion(Motion, ABC):
         if has_tipped:
             self.status = ActionStatus.tipping
         # Immediately end the action if the previous action was the same motion and it ended with a collision or with tipping.
-        elif self._collision_detection.previous_was_same and previous is not None and self._previous_was_same(previous=previous):
+        elif self._collision_detection.previous_was_same and previous is not None and \
+                previous.status != ActionStatus.success and previous.status != ActionStatus.ongoing and \
+                self._previous_was_same(previous=previous):
             if previous.status == ActionStatus.collision:
                 self.status = ActionStatus.collision
             elif previous.status == ActionStatus.tipping:
@@ -41,18 +42,32 @@ class WheelMotion(Motion, ABC):
 
     def get_initialization_commands(self, resp: List[bytes]) -> List[dict]:
         commands: List[dict] = list()
+        # Make the robot moveable.
+        if self.dynamic.immovable:
+            commands.append({"$type": "set_immovable",
+                             "id": self.static.robot_id,
+                             "immovable": False})
         # Reset the drive values.
         for wheel_id in self.static.wheels.values():
             drive = self.static.joints[wheel_id].drives["x"]
-            commands.append({"$type": "set_robot_joint_drive",
-                             "joint_id": wheel_id,
-                             "force_limit": drive.force_limit,
-                             "stiffness": drive.stiffness,
-                             "damping": drive.damping})
+            commands.extend([{"$type": "set_robot_joint_drive",
+                              "joint_id": wheel_id,
+                              "force_limit": drive.force_limit,
+                              "stiffness": drive.stiffness,
+                              "damping": drive.damping,
+                              "id": self.static.robot_id},
+                             {"$type": "set_robot_joint_friction",
+                              "joint_id": wheel_id,
+                              "friction": DEFAULT_WHEEL_FRICTION,
+                              "id": self.static.robot_id}])
         return commands
 
     @final
     def _is_valid_ongoing(self) -> bool:
+        """
+        :return: True if the Magnebot isn't tipping over and didn't collide with something that should make it stop.
+        """
+
         # Stop if the Magnebot is tipping.
         has_tipped, is_tipping = self._is_tipping()
         if has_tipped or is_tipping:
@@ -125,6 +140,29 @@ class WheelMotion(Motion, ABC):
                              "joint_id": self.static.wheels[wheel]})
         return commands
 
+    @final
+    def _set_brake_wheel_drives(self) -> List[dict]:
+        """
+        :return: A list of commands to set the wheel drives while braking.
+        """
+
+        commands = []
+        for wheel_id in self.static.wheels.values():
+            drive = self.static.joints[wheel_id].drives["x"]
+            commands.append({"$type": "set_robot_joint_drive",
+                             "joint_id": wheel_id,
+                             "force_limit": drive.force_limit * 0.9,
+                             "stiffness": drive.stiffness,
+                             "damping": drive.damping,
+                             "id": self.static.robot_id})
+        return commands
+
     @abstractmethod
     def _previous_was_same(self, previous: Action) -> bool:
+        """
+        :param previous: The previous action.
+
+        :return: True if the previous action was the "same" as this action for the purposes of collision detection.
+        """
+
         raise Exception()

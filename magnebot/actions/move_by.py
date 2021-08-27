@@ -7,7 +7,7 @@ from magnebot.actions.wheel_motion import WheelMotion
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.collision_detection import CollisionDetection
-from magnebot.constants import DEFAULT_WHEEL_FRICTION, WHEEL_CIRCUMFERENCE
+from magnebot.constants import DEFAULT_WHEEL_FRICTION, WHEEL_CIRCUMFERENCE, BRAKE_FRICTION
 from magnebot.action_status import ActionStatus
 
 
@@ -47,16 +47,25 @@ class MoveBy(WheelMotion):
         d = np.linalg.norm(self._target_position_arr - p1)
         if d < self._arrived_at:
             self.status = ActionStatus.success
+            return []
         elif self._is_valid_ongoing():
+            next_attempt: bool = False
+            # We are still moving.
             if self._move_frames < 2000:
+                # If the output data indicates the action was done, decide if it was a success.
                 for i in range(len(resp) - 1):
                     if OutputData.get_data_type_id(resp[i]) == "mwhe":
                         mwhe = MagnebotWheels(resp[i])
+                        # Arrived at the destination.
                         if mwhe.get_success():
                             self.status = ActionStatus.success
+                            return []
+                        # Overshot the target. Try another attempt.
                         else:
-                            self.status = ActionStatus.failed_to_move
-                if self.status == ActionStatus.ongoing:
+                            next_attempt = True
+                # Check the position of the Magnebot between frames and adjust the wheels accordingly.
+                if not next_attempt:
+                    self._move_frames += 1
                     if self._arrived_at < 0.2:
                         return[{"$type": "set_magnebot_wheels_during_move",
                                 "position": self._target_position_v3,
@@ -64,23 +73,36 @@ class MoveBy(WheelMotion):
                                 "arrived_at": self._arrived_at,
                                 "brake_distance": MoveBy._BRAKE_DISTANCE,
                                 "minimum_friction": self._minimum_friction}]
-                    else:
-                        self._move_frames += 1
-                        return []
-            # Make another attempt.
             else:
+                next_attempt = True
+            # Try another attempt.
+            if next_attempt:
                 self._move_frames = 0
                 self._attempts += 1
                 # We made too many attempts.
                 if self._attempts >= self._max_attempts:
                     self.status = ActionStatus.failed_to_move
+                    return []
                 # Start spinning the wheels again.
                 else:
+                    commands = []
+                    # Start to brake.
+                    if d < 0.5:
+                        commands.extend(self._set_brake_wheel_drives())
+                        self._minimum_friction = BRAKE_FRICTION
                     self._spin = (d / WHEEL_CIRCUMFERENCE) * 360 * 0.5 * (1 if self._distance > 0 else -1)
                     d_total = np.linalg.norm(p1 - self._initial_position_arr)
                     if d_total > self._initial_distance:
                         self._spin *= -1
-                    return self._get_wheel_commands()
+                    commands.extend(self._get_wheel_commands())
+                    return commands
+            else:
+                return []
+
+    def get_end_commands(self, resp: List[bytes]) -> List[dict]:
+        commands = self._stop_wheels()
+        commands.extend(super().get_end_commands(resp=resp))
+        return commands
 
     def _previous_was_same(self, previous: Action) -> bool:
         if isinstance(previous, MoveBy):
