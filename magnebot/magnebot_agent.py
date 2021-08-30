@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict
 from copy import deepcopy
-from tdw.add_ons.agents.robot_base import RobotBase
+from tdw.add_ons.robot_base import RobotBase
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.arm_joint import ArmJoint
