@@ -5,7 +5,7 @@ import numpy as np
 from PIL.Image import Image
 from tdw.tdw_utils import TDWUtils
 from tdw.output_data import OutputData, Magnebot, Images, CameraMatrices
-from tdw.add_ons.agents.robot_data.robot_dynamic import RobotDynamic
+from tdw.robot_data.robot_dynamic import RobotDynamic
 from magnebot.arm import Arm
 
 

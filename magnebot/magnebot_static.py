@@ -1,5 +1,5 @@
 from typing import Dict, List
-from tdw.add_ons.agents.robot_data.robot_static import RobotStatic
+from tdw.robot_data.robot_static import RobotStatic
 from magnebot.arm import Arm
 from magnebot.wheel import Wheel
 from magnebot.arm_joint import ArmJoint
@@ -37,8 +37,8 @@ class MagnebotStatic(RobotStatic):
         """
         self.avatar_id: str = str(robot_id)
 
-        for joint_name in self.joint_names:
-            joint_id = self.joint_names[joint_name]
+        for joint_name in self.joint_ids_by_name:
+            joint_id = self.joint_ids_by_name[joint_name]
             if "wheel" in joint_name:
                 self.wheels[Wheel[joint_name]] = joint_id
             elif "magnet" in joint_name:
