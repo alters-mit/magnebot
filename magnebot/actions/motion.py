@@ -4,6 +4,7 @@ from overrides import final
 import numpy as np
 from tdw.tdw_utils import TDWUtils
 from magnebot.actions.action import Action
+from magnebot.actions.image_frequency import ImageFrequency
 from magnebot.action_status import ActionStatus
 from magnebot.arm_joint import ArmJoint
 from magnebot.joint_type import JointType
@@ -27,13 +28,14 @@ class Motion(Action, ABC):
                                                ArmJoint.elbow_right: JointType.revolute,
                                                ArmJoint.wrist_right: JointType.spherical}
 
-    def __init__(self, static: MagnebotStatic, dynamic: MagnebotDynamic):
+    def __init__(self, static: MagnebotStatic, dynamic: MagnebotDynamic, image_frequency: ImageFrequency):
         """
         :param static: [The static Magnebot data.](magnebot_static.md)
         :param dynamic: [The dynamic Magnebot data.](magnebot_dynamic.md)
+        :param image_frequency: [How image data will be captured during the image.](image_frequency.md)
         """
 
-        super().__init__(static=static, dynamic=dynamic)
+        super().__init__(static=static, dynamic=dynamic, image_frequency=image_frequency)
         # The number of times we've attempted a joint motion.
         self.__num_motion_attempts: int = 0
 

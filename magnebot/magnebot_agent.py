@@ -1,5 +1,6 @@
 from typing import List, Optional, Dict
 from copy import deepcopy
+import numpy as np
 from tdw.add_ons.robot_base import RobotBase
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
@@ -19,18 +20,52 @@ class MagnebotAgent(RobotBase):
         super().__init__(robot_id=robot_id, position=position, rotation=rotation)
         self.action: Optional[Action] = None
         self._previous_action: Optional[Action] = None
+        """:field
+        The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees as a numpy array. This is handled outside of `self.state` because it isn't calculated using output data from the build. See: `Magnebot.CAMERA_RPY_CONSTRAINTS` and `self.rotate_camera()`
+        """
+        self.camera_rpy: np.array = np.array([0, 0, 0])
 
     def reset(self) -> None:
         super().reset()
         MagnebotDynamic.FRAME_COUNT = 0
         self.action = None
         self._previous_action = None
+        self.camera_rpy: np.array = np.array([0, 0, 0])
 
     def get_initialization_commands(self) -> List[dict]:
         commands = super().get_initialization_commands()
         commands.append({"$type": "send_magnebot",
                          "frequency": "always"})
         return commands
+
+    def on_send(self, resp: List[bytes]) -> None:
+        super().on_send(resp=resp)
+        if self.action is None:
+            return
+        else:
+            if not self.action.initialized:
+                # Some actions can fail immediately.
+                if self.action.status == ActionStatus.ongoing:
+                    self.action.initialized = True
+                    initialization_commands = self.action.get_initialization_commands(resp=resp)
+                    # This is an ongoing action.
+                    if self.action.status == ActionStatus.ongoing:
+                        self.commands.extend(initialization_commands)
+                        # Set the status after initialization.
+                        # This is required from one-frame actions such as RotateCamera.
+                        self.action.set_status_after_initialization()
+            else:
+                action_commands = self.action.get_ongoing_commands(resp=resp)
+                # This is an ongoing action. Append ongoing commands.
+                if self.action.status == ActionStatus.ongoing:
+                    self.commands.extend(action_commands)
+                # This action is done. Append end commands.
+                else:
+                    self.commands.extend(self.action.get_end_commands(resp=resp))
+            # This action ended. Remember it as the previous action.
+            if self.action.status != ActionStatus.ongoing:
+                # Remember the previous action.
+                self._previous_action = deepcopy(self.action)
 
     def _cache_static_data(self, resp: List[bytes]) -> None:
         self.static = MagnebotStatic(robot_id=self.robot_id, resp=resp)
@@ -59,29 +94,3 @@ class MagnebotAgent(RobotBase):
                 "position": self.initial_position,
                 "rotation": self.initial_rotation,
                 "id": self.robot_id}
-
-    def _get_commands(self, resp: List[bytes]) -> List[dict]:
-        if self.action is None:
-            return []
-        else:
-            commands = []
-            if not self.action.initialized:
-                # Some actions can fail immediately.
-                if self.action.status == ActionStatus.ongoing:
-                    self.action.initialized = True
-                    initialization_commands = self.action.get_initialization_commands(resp=resp)
-                    # This is an ongoing action.
-                    if self.action.status == ActionStatus.ongoing:
-                        commands.extend(initialization_commands)
-            else:
-                action_commands = self.action.get_ongoing_commands(resp=resp)
-                # This is an ongoing action.
-                if self.action.status == ActionStatus.ongoing:
-                    commands.extend(action_commands)
-                # This action is done.
-                else:
-                    commands.extend(self.action.get_end_commands(resp=resp))
-            if self.action.status != ActionStatus.ongoing:
-                # Remember the previous action.
-                self._previous_action = deepcopy(self.action)
-            return commands

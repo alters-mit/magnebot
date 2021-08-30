@@ -4,6 +4,7 @@ from tdw.tdw_utils import TDWUtils
 from tdw.output_data import OutputData, MagnebotWheels
 from magnebot.actions.action import Action
 from magnebot.actions.wheel_motion import WheelMotion
+from magnebot.actions.image_frequency import ImageFrequency
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.collision_detection import CollisionDetection
@@ -16,10 +17,12 @@ class MoveBy(WheelMotion):
     _BRAKE_DISTANCE: float = 0.1
 
     def __init__(self, distance: float, static: MagnebotStatic, dynamic: MagnebotDynamic,
-                 collision_detection: CollisionDetection, arrived_at: float = 0.1, previous: Action = None):
+                 image_frequency: ImageFrequency, collision_detection: CollisionDetection, arrived_at: float = 0.1,
+                 previous: Action = None):
         self._distance: float = distance
         self._arrived_at: float = arrived_at
-        super().__init__(static=static, dynamic=dynamic, collision_detection=collision_detection, previous=previous)
+        super().__init__(static=static, dynamic=dynamic, collision_detection=collision_detection, previous=previous,
+                         image_frequency=image_frequency)
         # Get the initial state.
         self._initial_position_arr: np.array = np.array(self.dynamic.transform.position[:])
         self._initial_position_v3: Dict[str, float] = TDWUtils.array_to_vector3(self._initial_position_arr)

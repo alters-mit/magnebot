@@ -7,6 +7,7 @@ from magnebot.action_status import ActionStatus
 from magnebot.arm import Arm
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
+from magnebot.actions.image_frequency import ImageFrequency
 
 
 class Action(ABC):
@@ -19,11 +20,11 @@ class Action(ABC):
     2. `end()` will return a list of commands to end the action.
     """
 
-    def __init__(self, static: MagnebotStatic, dynamic: MagnebotDynamic, images: str = "once"):
+    def __init__(self, static: MagnebotStatic, dynamic: MagnebotDynamic, image_frequency: ImageFrequency):
         """
         :param static: [The static Magnebot data.](magnebot_static.md)
         :param dynamic: [The dynamic Magnebot data.](magnebot_dynamic.md)
-        :param images: How image data will be captured during the image. Options: "once" (at the end of the action), "always" (per frame), "never" (no image capture).
+        :param image_frequency: [How image data will be captured during the image.](image_frequency.md)
         """
 
         """:field
@@ -34,17 +35,19 @@ class Action(ABC):
         [The dynamic Magnebot data.](magnebot_dynamic.md)
         """
         self.dynamic: MagnebotDynamic = dynamic
-        # How image data will be captured during the image. Options: "once" (at the end of the action), "always" (per frame), "never" (no image capture).
-        self._images: str = images
+        """:field
+        [How image data will be captured during the image.](image_frequency.md)
+        """
+        self.image_frequency: ImageFrequency = image_frequency
         self.status: ActionStatus = ActionStatus.ongoing
         self.initialized: bool = False
 
     def get_initialization_commands(self, resp: List[bytes]) -> List[dict]:
-        if self._images == "once" or self._images == "never":
+        if self.image_frequency == ImageFrequency.once or self.image_frequency == ImageFrequency.never:
             commands = [{"$type": "enable_image_sensor",
                          "enable": False,
                          "avatar_id": self.static.avatar_id}]
-        elif self._images == "always":
+        elif self.image_frequency == ImageFrequency.always:
             commands = [{"$type": "enable_image_sensor",
                          "enable": True,
                          "avatar_id": self.static.avatar_id},
@@ -53,8 +56,16 @@ class Action(ABC):
                         {"$type": "send_camera_matrices",
                          "frequency": "always"}]
         else:
-            raise Exception(f"Invalid image capture option: {self._images}")
+            raise Exception(f"Invalid image capture option: {self.image_frequency}")
         return commands
+
+    def set_status_after_initialization(self) -> None:
+        """
+        In some cases (such as camera actions) that finish on one frame, we want to set the status after sending initialization commands.
+        To do so, override this method.
+        """
+
+        pass
 
     @abstractmethod
     def get_ongoing_commands(self, resp: List[bytes]) -> List[dict]:
@@ -76,7 +87,7 @@ class Action(ABC):
         """
 
         commands: List[dict] = list()
-        if self._images == "once":
+        if self.image_frequency == ImageFrequency.once:
             commands.extend([{"$type": "enable_image_sensor",
                               "enable": True,
                               "avatar_id": self.static.avatar_id},
