@@ -25,14 +25,11 @@ class MagnebotAgent(RobotBase):
         """
         self.camera_rpy: np.array = np.array([0, 0, 0])
 
-    def reset(self) -> None:
-        super().reset()
+    def get_initialization_commands(self) -> List[dict]:
         MagnebotDynamic.FRAME_COUNT = 0
         self.action = None
         self._previous_action = None
         self.camera_rpy: np.array = np.array([0, 0, 0])
-
-    def get_initialization_commands(self) -> List[dict]:
         commands = super().get_initialization_commands()
         commands.append({"$type": "send_magnebot",
                          "frequency": "always"})
