@@ -384,7 +384,7 @@ class Magnebot(Controller):
                                  {"$type": "send_version"}])
         version_data = get_data(resp=resp, d_type=Version)
         build_version = version_data.get_tdw_version()
-        PyPi.required_tdw_version_is_installed(required_version=TDW_VERSION, build_version=build_version)
+        PyPi.required_tdw_version_is_installed(required_version=TDW_VERSION, build_version=build_version, comparison=">=")
         # Make sure that the Magnebot API is up to date.
         if check_pypi_version:
             check_version()

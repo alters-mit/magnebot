@@ -5,8 +5,6 @@ import numpy as np
 MAGNEBOT_RADIUS: float = 0.22
 # The cell size on the occupancy map. This is slightly bigger than diameter of the Magnebot.
 OCCUPANCY_CELL_SIZE: float = (MAGNEBOT_RADIUS * 2) + 0.05
-# The required version of TDW.
-TDW_VERSION: str = "1.8.24"
 # The y value of the column's position assuming a level floor and angle.
 COLUMN_Y: float = 0.159
 # The minimum y value of the torso, offset from the column (see `COLUMN_Y`).
@@ -23,3 +21,5 @@ WHEEL_RADIUS: float = 0.1
 WHEEL_CIRCUMFERENCE: float = 2 * np.pi * WHEEL_RADIUS
 # The wheel friction coefficient when braking during a move action.
 BRAKE_FRICTION: float = 0.95
+# The required TDW version.
+TDW_VERSION: str = "1.8.25"

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1
+
+- Fixed: `AttributeError` when calling `init_scene()` because the wrong version of `ikpy` is installed. Now, `magnebot` will always install `ikpy` 3.1.
+- Set required version of `tdw` to `>=1.8.25`
+
 ## 1.3.0
 
 **This release introduces significant changes. Please read this changelog carefully.**
