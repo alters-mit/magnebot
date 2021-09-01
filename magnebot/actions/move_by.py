@@ -1,7 +1,6 @@
 from typing import Dict, List
 import numpy as np
 from tdw.tdw_utils import TDWUtils
-from tdw.output_data import OutputData, MagnebotWheels
 from magnebot.actions.action import Action
 from magnebot.actions.wheel_motion import WheelMotion
 from magnebot.actions.image_frequency import ImageFrequency
@@ -19,6 +18,16 @@ class MoveBy(WheelMotion):
     def __init__(self, distance: float, static: MagnebotStatic, dynamic: MagnebotDynamic,
                  image_frequency: ImageFrequency, collision_detection: CollisionDetection, arrived_at: float = 0.1,
                  previous: Action = None):
+        """
+        :param distance: The target distance.
+        :param arrived_at: If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
+        :param static: [The static Magnebot data.](magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](magnebot_dynamic.md)
+        :param image_frequency: [How image data will be captured during the image.](image_frequency.md)
+        :param collision_detection: [The collision detection rules.](collision_detection.md)
+        :param previous: The previous action, if any.
+        """
+
         self._distance: float = distance
         self._arrived_at: float = arrived_at
         super().__init__(static=static, dynamic=dynamic, collision_detection=collision_detection, previous=previous,
@@ -51,21 +60,17 @@ class MoveBy(WheelMotion):
         if d < self._arrived_at:
             self.status = ActionStatus.success
             return []
-        elif self._is_valid_ongoing():
+        elif not self._is_valid_ongoing():
+            return []
+        else:
             next_attempt: bool = False
             # We are still moving.
-            if self._move_frames < 2000:
-                # If the output data indicates the action was done, decide if it was a success.
-                for i in range(len(resp) - 1):
-                    if OutputData.get_data_type_id(resp[i]) == "mwhe":
-                        mwhe = MagnebotWheels(resp[i])
-                        # Arrived at the destination.
-                        if mwhe.get_success():
-                            self.status = ActionStatus.success
-                            return []
-                        # Overshot the target. Try another attempt.
-                        else:
-                            next_attempt = True
+            if self._move_frames < 2000 and self._wheels_are_turning():
+                if self._wheel_motion_complete(resp=resp):
+                    if self.status == ActionStatus.success:
+                        return []
+                    else:
+                        next_attempt = True
                 # Check the position of the Magnebot between frames and adjust the wheels accordingly.
                 if not next_attempt:
                     self._move_frames += 1
@@ -101,11 +106,6 @@ class MoveBy(WheelMotion):
                     return commands
             else:
                 return []
-
-    def get_end_commands(self, resp: List[bytes]) -> List[dict]:
-        commands = self._stop_wheels()
-        commands.extend(super().get_end_commands(resp=resp))
-        return commands
 
     def _previous_was_same(self, previous: Action) -> bool:
         if isinstance(previous, MoveBy):

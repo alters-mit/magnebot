@@ -1,6 +1,7 @@
 from typing import List, Tuple
 from abc import ABC, abstractmethod
 from overrides import final
+from tdw.output_data import OutputData, MagnebotWheels
 from magnebot.action_status import ActionStatus
 from magnebot.actions.motion import Motion
 from magnebot.actions.action import Action
@@ -65,6 +66,18 @@ class WheelMotion(Motion, ABC):
         return commands
 
     @final
+    def get_end_commands(self, resp: List[bytes]) -> List[dict]:
+        commands = []
+        for wheel in self.static.wheels:
+            # Set the target of each wheel to its current position.
+            commands.append({"$type": "set_revolute_target",
+                             "id": self.static.robot_id,
+                             "target": float(self.dynamic.joints[self.static.wheels[wheel]].angles[0]),
+                             "joint_id": self.static.wheels[wheel]})
+        commands.extend(super().get_end_commands(resp=resp))
+        return commands
+
+    @final
     def _is_valid_ongoing(self) -> bool:
         """
         :return: True if the Magnebot isn't tipping over and didn't collide with something that should make it stop.
@@ -126,23 +139,6 @@ class WheelMotion(Motion, ABC):
         return False
 
     @final
-    def _stop_wheels(self) -> List[dict]:
-        """
-        Stop wheel movement.
-
-        :return: A list of commands to stop the wheels.
-        """
-
-        commands = []
-        for wheel in self.static.wheels:
-            # Set the target of each wheel to its current position.
-            commands.append({"$type": "set_revolute_target",
-                             "id": self.static.robot_id,
-                             "target": float(self.dynamic.joints[self.static.wheels[wheel]].angles[0]),
-                             "joint_id": self.static.wheels[wheel]})
-        return commands
-
-    @final
     def _set_brake_wheel_drives(self) -> List[dict]:
         """
         :return: A list of commands to set the wheel drives while braking.
@@ -158,6 +154,35 @@ class WheelMotion(Motion, ABC):
                              "damping": drive.damping,
                              "id": self.static.robot_id})
         return commands
+
+    @final
+    def _wheel_motion_complete(self, resp: List[bytes]) -> bool:
+        """
+        :param resp: The response from the build.
+
+        :return: True if we received MagnebotWheels output data for this Magnebot.
+        """
+
+        # If the output data indicates the action was done, decide if it was a success.
+        for i in range(len(resp) - 1):
+            if OutputData.get_data_type_id(resp[i]) == "mwhe":
+                mwhe = MagnebotWheels(resp[i])
+                # Arrived at the destination.
+                if mwhe.get_success():
+                    self.status = ActionStatus.success
+                return True
+        return False
+
+    @final
+    def _wheels_are_turning(self) -> bool:
+        """
+        :return: True if any of the wheels are turning.
+        """
+
+        for wheel in self.static.wheels:
+            if self.dynamic.joints[self.static.wheels[wheel]].moving:
+                return True
+        return False
 
     @abstractmethod
     def _previous_was_same(self, previous: Action) -> bool:

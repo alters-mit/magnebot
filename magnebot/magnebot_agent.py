@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Union
 from copy import deepcopy
 import numpy as np
 from tdw.add_ons.robot_base import RobotBase
@@ -7,10 +7,17 @@ from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.arm_joint import ArmJoint
 from magnebot.actions.action import Action
 from magnebot.action_status import ActionStatus
+from magnebot.actions.image_frequency import ImageFrequency
+from magnebot.collision_detection import CollisionDetection
+from magnebot.actions.turn_by import TurnBy
+from magnebot.actions.turn_to import TurnTo
+from magnebot.actions.move_by import MoveBy
+from magnebot.actions.move_to import MoveTo
 
 
 class MagnebotAgent(RobotBase):
-    def __init__(self, robot_id: int = 0, position: Dict[str, float] = None, rotation: Dict[str, float] = None):
+    def __init__(self, robot_id: int = 0, position: Dict[str, float] = None, rotation: Dict[str, float] = None,
+                 image_frequency: ImageFrequency = ImageFrequency.once):
         """
         :param robot_id: The ID of the robot.
         :param position: The position of the robot. If None, defaults to `{"x": 0, "y": 0, "z": 0}`.
@@ -18,7 +25,10 @@ class MagnebotAgent(RobotBase):
         """
 
         super().__init__(robot_id=robot_id, position=position, rotation=rotation)
+        self.dynamic: Optional[MagnebotDynamic] = None
         self.action: Optional[Action] = None
+        self.image_frequency: ImageFrequency = image_frequency
+        self.collision_detection: CollisionDetection = CollisionDetection()
         self._previous_action: Optional[Action] = None
         """:field
         The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees as a numpy array. This is handled outside of `self.state` because it isn't calculated using output data from the build. See: `Magnebot.CAMERA_RPY_CONSTRAINTS` and `self.rotate_camera()`
@@ -63,6 +73,59 @@ class MagnebotAgent(RobotBase):
             if self.action.status != ActionStatus.ongoing:
                 # Remember the previous action.
                 self._previous_action = deepcopy(self.action)
+
+    def turn_by(self, angle: float, aligned_at: float = 1) -> None:
+        """
+        Turn the Magnebot by an angle.
+
+        While turning, the left wheels will turn one way and the right wheels in the opposite way, allowing the Magnebot to turn in place.
+
+        :param angle: The target angle in degrees. Positive value = clockwise turn.
+        :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
+        """
+
+        self.action = TurnBy(angle=angle, aligned_at=aligned_at, collision_detection=self.collision_detection,
+                             previous=self._previous_action, static=self.static, dynamic=self.dynamic,
+                             image_frequency=self.image_frequency)
+
+    def turn_to(self, target: Union[int, Dict[str, float], np.ndarray], aligned_at: float = 1) -> None:
+        """
+        Turn the Magnebot to face a target object or position.
+
+        While turning, the left wheels will turn one way and the right wheels in the opposite way, allowing the Magnebot to turn in place.
+
+        :param target: The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array.
+        :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
+        """
+
+        self.action = TurnTo(target=target, aligned_at=aligned_at, collision_detection=self.collision_detection,
+                             previous=self._previous_action, static=self.static, dynamic=self.dynamic,
+                             image_frequency=self.image_frequency)
+
+    def move_by(self, distance: float, arrived_at: float = 0.1) -> None:
+        """
+        Move the Magnebot forward or backward by a given distance.
+
+        :param distance: The target distance. If less than zero, the Magnebot will move backwards.
+        :param arrived_at: If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
+        """
+
+        self.action = MoveBy(distance=distance, arrived_at=arrived_at, collision_detection=self.collision_detection,
+                             previous=self._previous_action, static=self.static, dynamic=self.dynamic,
+                             image_frequency=self.image_frequency)
+
+    def move_to(self, target: Union[int, Dict[str, float], np.ndarray], arrived_at: float = 0.1, aligned_at: float = 1) -> None:
+        """
+        Move to a target object or position. This combines turn_to() followed by move_by().
+
+        :param target: The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array.
+        :param arrived_at: If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
+        :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
+        """
+
+        self.action = MoveTo(target=target, static=self.static, dynamic=self.dynamic,
+                             image_frequency=self.image_frequency, collision_detection=self.collision_detection,
+                             arrived_at=arrived_at, aligned_at=aligned_at, previous=self._previous_action)
 
     def _cache_static_data(self, resp: List[bytes]) -> None:
         self.static = MagnebotStatic(robot_id=self.robot_id, resp=resp)
