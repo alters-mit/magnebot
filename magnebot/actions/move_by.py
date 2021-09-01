@@ -80,7 +80,8 @@ class MoveBy(WheelMotion):
                                 "origin": self._initial_position_v3,
                                 "arrived_at": self._arrived_at,
                                 "brake_distance": MoveBy._BRAKE_DISTANCE,
-                                "minimum_friction": self._minimum_friction}]
+                                "minimum_friction": self._minimum_friction,
+                                "id": self.static.robot_id}]
             else:
                 next_attempt = True
             # Try another attempt.

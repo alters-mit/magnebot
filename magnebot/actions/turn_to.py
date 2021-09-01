@@ -61,4 +61,5 @@ class TurnTo(Turn):
                 "arrived_at": self._aligned_at,
                 "position": self.target_dict,
                 "minimum_friction": self._minimum_friction,
-                "brake_angle": Turn._BRAKE_ANGLE}
+                "brake_angle": Turn._BRAKE_ANGLE,
+                "id": self.static.robot_id}

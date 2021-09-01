@@ -22,4 +22,5 @@ class TurnBy(Turn):
                 "origin": self._initial_forward_vector,
                 "arrived_at": self._aligned_at,
                 "minimum_friction": self._minimum_friction,
-                "brake_angle": Turn._BRAKE_ANGLE}
+                "brake_angle": Turn._BRAKE_ANGLE,
+                "id": self.static.robot_id}

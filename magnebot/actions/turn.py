@@ -41,7 +41,6 @@ class Turn(WheelMotion, ABC):
         :param previous: The previous action, if any.
         """
 
-        self._stop_wheels_on_end: bool = stop_wheels
         self._angle = self._get_angle()
         # Clamp the angle.
         if np.abs(self._angle) > 180:
@@ -159,7 +158,8 @@ class Turn(WheelMotion, ABC):
 
             commands.append({"$type": "set_revolute_target",
                              "target": target,
-                             "joint_id": self.static.wheels[wheel]})
+                             "joint_id": self.static.wheels[wheel],
+                             "id": self.static.robot_id})
         self._attempts += 1
         self._turn_frames = 0
         return commands

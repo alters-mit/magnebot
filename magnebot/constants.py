@@ -11,6 +11,8 @@ COLUMN_Y: float = 0.159
 TORSO_MIN_Y: float = 0.2244872
 # The maximum y value of the torso, offset from the column (see `COLUMN_Y`).
 TORSO_MAX_Y: float = 1.07721
+# The default torso position.
+DEFAULT_TORSO_Y: float = 0.737074
 # The default wheel friction coefficient.
 DEFAULT_WHEEL_FRICTION: float = 0.05
 # The circumference of the Magnebot.

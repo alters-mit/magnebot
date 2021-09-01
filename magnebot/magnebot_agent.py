@@ -2,6 +2,7 @@ from typing import List, Optional, Dict, Union
 from copy import deepcopy
 import numpy as np
 from tdw.add_ons.robot_base import RobotBase
+from magnebot.arm import Arm
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.arm_joint import ArmJoint
@@ -13,6 +14,9 @@ from magnebot.actions.turn_by import TurnBy
 from magnebot.actions.turn_to import TurnTo
 from magnebot.actions.move_by import MoveBy
 from magnebot.actions.move_to import MoveTo
+from magnebot.actions.reset_arm import ResetArm
+from magnebot.actions.rotate_camera import RotateCamera
+from magnebot.actions.reset_camera import ResetCamera
 
 
 class MagnebotAgent(RobotBase):
@@ -26,6 +30,7 @@ class MagnebotAgent(RobotBase):
 
         super().__init__(robot_id=robot_id, position=position, rotation=rotation)
         self.dynamic: Optional[MagnebotDynamic] = None
+        self.static: Optional[MagnebotStatic] = None
         self.action: Optional[Action] = None
         self.image_frequency: ImageFrequency = image_frequency
         self.collision_detection: CollisionDetection = CollisionDetection()
@@ -126,6 +131,43 @@ class MagnebotAgent(RobotBase):
         self.action = MoveTo(target=target, static=self.static, dynamic=self.dynamic,
                              image_frequency=self.image_frequency, collision_detection=self.collision_detection,
                              arrived_at=arrived_at, aligned_at=aligned_at, previous=self._previous_action)
+
+    def reset_arm(self, arm: Arm) -> None:
+        """
+        Reset an arm to its neutral position.
+
+        :param arm: The arm to reset.
+        """
+        
+        self.action = ResetArm(arm=arm, static=self.static, dynamic=self.dynamic, image_frequency=self.image_frequency)
+
+    def rotate_camera(self, roll: float, pitch: float, yaw: float) -> None:
+        """
+        Rotate the Magnebot's camera by the (roll, pitch, yaw) axes.
+
+        Each axis of rotation is constrained by the following limits:
+
+        | Axis | Minimum | Maximum |
+        | --- | --- | --- |
+        | roll | -55 | 55 |
+        | pitch | -70 | 70 |
+        | yaw | -85 | 85 |
+
+        :param roll: The roll angle in degrees.
+        :param pitch: The pitch angle in degrees.
+        :param yaw: The yaw angle in degrees.
+        """
+
+        self.action = RotateCamera(roll=roll, pitch=pitch, yaw=yaw, camera_rpy=self.camera_rpy, static=self.static,
+                                   dynamic=self.dynamic, image_frequency=self.image_frequency)
+
+    def reset_camera(self) -> None:
+        """
+        Reset the rotation of the Magnebot's camera to its default angles.
+        """
+
+        self.action = ResetCamera(camera_rpy=self.camera_rpy, static=self.static, dynamic=self.dynamic,
+                                  image_frequency=self.image_frequency)
 
     def _cache_static_data(self, resp: List[bytes]) -> None:
         self.static = MagnebotStatic(robot_id=self.robot_id, resp=resp)

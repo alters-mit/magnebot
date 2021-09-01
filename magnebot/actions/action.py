@@ -4,7 +4,6 @@ from overrides import final
 import numpy as np
 from tdw.tdw_utils import QuaternionUtils
 from magnebot.action_status import ActionStatus
-from magnebot.arm import Arm
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.actions.image_frequency import ImageFrequency
@@ -96,17 +95,6 @@ class Action(ABC):
                              {"$type": "send_camera_matrices",
                               "frequency": "once"}])
         return commands
-
-    @final
-    def _is_grasping(self, target: int, arm: Arm) -> bool:
-        """
-        :param target: The object ID.
-        :param arm: The arm.
-
-        :return: True if the arm is holding the object in this scene state.
-        """
-
-        return target in self.dynamic.held[arm]
 
     @final
     def _absolute_to_relative(self, position: np.array) -> np.array:
