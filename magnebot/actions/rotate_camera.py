@@ -4,7 +4,7 @@ from magnebot.action_status import ActionStatus
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.actions.camera_action import CameraAction
-from magnebot.actions.image_frequency import ImageFrequency
+from magnebot.image_frequency import ImageFrequency
 
 
 class RotateCamera(CameraAction):

@@ -5,7 +5,7 @@ from tdw.output_data import OutputData, MagnebotWheels
 from magnebot.action_status import ActionStatus
 from magnebot.actions.motion import Motion
 from magnebot.actions.action import Action
-from magnebot.actions.image_frequency import ImageFrequency
+from magnebot.image_frequency import ImageFrequency
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.collision_detection import CollisionDetection

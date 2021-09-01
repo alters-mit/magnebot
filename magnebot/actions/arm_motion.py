@@ -9,7 +9,7 @@ from magnebot.arm_joint import ArmJoint
 from magnebot.actions.action import Action
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
-from magnebot.actions.image_frequency import ImageFrequency
+from magnebot.image_frequency import ImageFrequency
 
 
 class ArmMotion(Action, ABC):

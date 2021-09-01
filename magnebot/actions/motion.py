@@ -5,7 +5,7 @@ import numpy as np
 from tdw.tdw_utils import TDWUtils
 from tdw.robot_data.joint_type import JointType
 from magnebot.actions.action import Action
-from magnebot.actions.image_frequency import ImageFrequency
+from magnebot.image_frequency import ImageFrequency
 from magnebot.action_status import ActionStatus
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic

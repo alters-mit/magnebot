@@ -6,16 +6,15 @@ from magnebot.util import get_data
 from magnebot.arm import Arm
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
-from magnebot.actions.image_frequency import ImageFrequency
+from magnebot.image_frequency import ImageFrequency
 from magnebot.actions.arm_motion import ArmMotion
 
 
 class Drop(ArmMotion):
     def __init__(self, target: int, arm: Arm, wait_for_object: bool, static: MagnebotStatic, dynamic: MagnebotDynamic,
                  image_frequency: ImageFrequency):
-        super().__init__(static=static, dynamic=dynamic, image_frequency=image_frequency)
+        super().__init__(static=static, dynamic=dynamic, image_frequency=image_frequency, arm=arm)
         self._target: int = int(target)
-        self._arm: Arm = arm
         self._wait_for_object: bool = wait_for_object
         self._object_position: np.array = np.array([0, 0, 0])
         # Wait a few frames before checking on the object.

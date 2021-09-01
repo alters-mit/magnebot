@@ -3,7 +3,7 @@ import numpy as np
 from tdw.tdw_utils import TDWUtils
 from magnebot.actions.action import Action
 from magnebot.actions.wheel_motion import WheelMotion
-from magnebot.actions.image_frequency import ImageFrequency
+from magnebot.image_frequency import ImageFrequency
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.collision_detection import CollisionDetection
@@ -56,7 +56,7 @@ class MoveBy(WheelMotion):
 
     def get_ongoing_commands(self, resp: List[bytes]) -> List[dict]:
         p1 = self.dynamic.transform.position
-        d = np.linalg.norm(self._target_position_arr - p1)
+        d = np.linalg.norm(p1 - self._target_position_arr)
         if d < self._arrived_at:
             self.status = ActionStatus.success
             return []
