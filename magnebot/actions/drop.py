@@ -19,7 +19,7 @@ class Drop(ArmMotion):
                  image_frequency: ImageFrequency):
         """
         :param target: The ID of the object currently held by the magnet.
-        :param arm: The arm of the magnet holding the object.
+        :param arm: [The arm used for this action.](../arm.md)
         :param wait_for_object: If True, the action will continue until the object has finished falling. If False, the action advances the simulation by exactly 1 frame.
         :param static: [The static Magnebot data.](../magnebot_static.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
