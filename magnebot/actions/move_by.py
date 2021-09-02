@@ -12,6 +12,10 @@ from magnebot.action_status import ActionStatus
 
 
 class MoveBy(WheelMotion):
+    """
+    Move the Magnebot forward or backward by a given distance.
+    """
+
     # The distance at which to start braking while moving.
     _BRAKE_DISTANCE: float = 0.1
 
@@ -21,10 +25,10 @@ class MoveBy(WheelMotion):
         """
         :param distance: The target distance.
         :param arrived_at: If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
-        :param static: [The static Magnebot data.](magnebot_static.md)
-        :param dynamic: [The dynamic Magnebot data.](magnebot_dynamic.md)
-        :param image_frequency: [How image data will be captured during the image.](image_frequency.md)
-        :param collision_detection: [The collision detection rules.](collision_detection.md)
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+        :param image_frequency: [How image data will be captured during the image.](../image_frequency.md)
+        :param collision_detection: [The collision detection rules.](../collision_detection.md)
         :param previous: The previous action, if any.
         """
 
@@ -57,6 +61,7 @@ class MoveBy(WheelMotion):
     def get_ongoing_commands(self, resp: List[bytes]) -> List[dict]:
         p1 = self.dynamic.transform.position
         d = np.linalg.norm(p1 - self._target_position_arr)
+        # We've arrived at the target.
         if d < self._arrived_at:
             self.status = ActionStatus.success
             return []
@@ -115,6 +120,10 @@ class MoveBy(WheelMotion):
             return False
 
     def _get_wheel_commands(self) -> List[dict]:
+        """
+        :return: A list of commands to start spinning the wheels.
+        """
+
         commands = []
         for wheel in self.static.wheels:
             # Get the target from the current joint angles. Add or subtract the speed.

@@ -12,9 +12,24 @@ from magnebot.collision_detection import CollisionDetection
 
 
 class TurnTo(Turn):
+    """
+    Turn to a target position or object.
+    """
+
     def __init__(self, target: Union[int, Dict[str, float], np.array], static: MagnebotStatic, dynamic: MagnebotDynamic,
                  image_frequency: ImageFrequency, collision_detection: CollisionDetection, aligned_at: float = 1,
                  previous: Action = None):
+        """
+        :param target: The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array.
+        :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+        :param image_frequency: [How image data will be captured during the image.](../image_frequency.md)
+        :param collision_detection: [The collision detection rules.](../collision_detection.md)
+        :param previous: The previous action, if any.
+        """
+
+        # This will be handled in get_initialization_commands().
         self.__target: Union[int, Dict[str, float]] = target
         """:field
         The target position as a numpy array.

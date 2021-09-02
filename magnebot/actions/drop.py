@@ -11,8 +11,21 @@ from magnebot.actions.arm_motion import ArmMotion
 
 
 class Drop(ArmMotion):
+    """
+    Drop an object held by a magnet.
+    """
+
     def __init__(self, target: int, arm: Arm, wait_for_object: bool, static: MagnebotStatic, dynamic: MagnebotDynamic,
                  image_frequency: ImageFrequency):
+        """
+        :param target: The ID of the object currently held by the magnet.
+        :param arm: The arm of the magnet holding the object.
+        :param wait_for_object: If True, the action will continue until the object has finished falling. If False, the action advances the simulation by exactly 1 frame.
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+        :param image_frequency: [How image data will be captured during the image.](../image_frequency.md)
+        """
+
         super().__init__(static=static, dynamic=dynamic, image_frequency=image_frequency, arm=arm)
         self._target: int = int(target)
         self._wait_for_object: bool = wait_for_object

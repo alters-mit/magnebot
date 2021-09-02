@@ -26,7 +26,6 @@ from magnebot.constants import TDW_VERSION
 
 
 class MagnebotAgent(RobotBase):
-
     # If True, we've already checked the version.
     _CHECKED_VERSION: bool = False
 
@@ -41,14 +40,31 @@ class MagnebotAgent(RobotBase):
         """
 
         super().__init__(robot_id=robot_id, position=position, rotation=rotation)
+        """:field
+        [Cached static data for the Magnebot.](magnebot_static.md)
+        """
+        self.static: Optional[MagnebotStatic] = None
+        """:field
+        [Per-frame dynamic data for the Magnebot (including images).](magnebot_dynamic.md)
+        """
+        self.dynamic: Optional[MagnebotDynamic] = None
+        """:field
+        The Magnebot's current [action](actions/action.md). Can be None (no ongoing action).
+        """
         self.action: Optional[Action] = None
+        """:field
+        This sets [how often images are captured](image_frequency.md).
+        """
         self.image_frequency: ImageFrequency = image_frequency
+        """:field
+        [The collision detection rules.](collision_detection.md) This determines whether the Magnebot will immediately stop moving or turning when it collides with something.
+        """
         self.collision_detection: CollisionDetection = CollisionDetection()
-        self._previous_action: Optional[Action] = None
         """:field
         The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees as a numpy array. This is handled outside of `self.state` because it isn't calculated using output data from the build. See: `Magnebot.CAMERA_RPY_CONSTRAINTS` and `self.rotate_camera()`
         """
         self.camera_rpy: np.array = np.array([0, 0, 0])
+        self._previous_action: Optional[Action] = None
         if check_pypi_version:
             check_version()
 
@@ -110,7 +126,6 @@ class MagnebotAgent(RobotBase):
         :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
         """
 
-        self.dynamic: MagnebotDynamic
         self.action = TurnBy(angle=angle, aligned_at=aligned_at, collision_detection=self.collision_detection,
                              previous=self._previous_action, static=self.static, dynamic=self.dynamic,
                              image_frequency=self.image_frequency)
@@ -125,7 +140,6 @@ class MagnebotAgent(RobotBase):
         :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
         """
 
-        self.dynamic: MagnebotDynamic
         self.action = TurnTo(target=target, aligned_at=aligned_at, collision_detection=self.collision_detection,
                              previous=self._previous_action, static=self.static, dynamic=self.dynamic,
                              image_frequency=self.image_frequency)
@@ -138,7 +152,6 @@ class MagnebotAgent(RobotBase):
         :param arrived_at: If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
         """
 
-        self.dynamic: MagnebotDynamic
         self.action = MoveBy(distance=distance, arrived_at=arrived_at, collision_detection=self.collision_detection,
                              previous=self._previous_action, static=self.static, dynamic=self.dynamic,
                              image_frequency=self.image_frequency)
@@ -152,7 +165,6 @@ class MagnebotAgent(RobotBase):
         :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
         """
 
-        self.dynamic: MagnebotDynamic
         self.action = MoveTo(target=target, static=self.static, dynamic=self.dynamic,
                              image_frequency=self.image_frequency, collision_detection=self.collision_detection,
                              arrived_at=arrived_at, aligned_at=aligned_at, previous=self._previous_action)
@@ -166,7 +178,6 @@ class MagnebotAgent(RobotBase):
         :param wait_for_object: If True, the action will continue until the object has finished falling. If False, the action advances the simulation by exactly 1 frame.
         """
 
-        self.dynamic: MagnebotDynamic
         self.action = Drop(arm=arm, target=target, wait_for_object=wait_for_object,
                            static=self.static, dynamic=self.dynamic, image_frequency=self.image_frequency)
 
@@ -177,7 +188,6 @@ class MagnebotAgent(RobotBase):
         :param arm: The arm to reset.
         """
 
-        self.dynamic: MagnebotDynamic
         self.action = ResetArm(arm=arm, static=self.static, dynamic=self.dynamic, image_frequency=self.image_frequency)
 
     def rotate_camera(self, roll: float, pitch: float, yaw: float) -> None:
@@ -197,7 +207,6 @@ class MagnebotAgent(RobotBase):
         :param yaw: The yaw angle in degrees.
         """
 
-        self.dynamic: MagnebotDynamic
         self.action = RotateCamera(roll=roll, pitch=pitch, yaw=yaw, camera_rpy=self.camera_rpy, static=self.static,
                                    dynamic=self.dynamic, image_frequency=self.image_frequency)
 
@@ -206,7 +215,6 @@ class MagnebotAgent(RobotBase):
         Reset the rotation of the Magnebot's camera to its default angles.
         """
 
-        self.dynamic: MagnebotDynamic
         self.action = ResetCamera(camera_rpy=self.camera_rpy, static=self.static, dynamic=self.dynamic,
                                   image_frequency=self.image_frequency)
 

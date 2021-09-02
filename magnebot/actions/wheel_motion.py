@@ -3,7 +3,6 @@ from abc import ABC, abstractmethod
 from overrides import final
 from tdw.output_data import OutputData, MagnebotWheels
 from magnebot.action_status import ActionStatus
-from magnebot.actions.motion import Motion
 from magnebot.actions.action import Action
 from magnebot.image_frequency import ImageFrequency
 from magnebot.magnebot_static import MagnebotStatic
@@ -12,18 +11,18 @@ from magnebot.collision_detection import CollisionDetection
 from magnebot.constants import DEFAULT_WHEEL_FRICTION
 
 
-class WheelMotion(Motion, ABC):
+class WheelMotion(Action, ABC):
     """
-    A motion action involving the Magnebot's wheels.
+    Abstract base class for a motion action involving the Magnebot's wheels.
     """
 
     def __init__(self, static: MagnebotStatic, dynamic: MagnebotDynamic, image_frequency: ImageFrequency,
                  collision_detection: CollisionDetection, previous: Action = None):
         """
-        :param static: [The static Magnebot data.](magnebot_static.md)
-        :param dynamic: [The dynamic Magnebot data.](magnebot_dynamic.md)
-        :param image_frequency: [How image data will be captured during the image.](image_frequency.md)
-        :param collision_detection: [The collision detection rules.](collision_detection.md)
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+        :param image_frequency: [How image data will be captured during the image.](../image_frequency.md)
+        :param collision_detection: [The collision detection rules.](../collision_detection.md)
         :param previous: The previous action, if any.
         """
 

@@ -30,6 +30,12 @@ class ArmMotion(Action, ABC):
                                                            ArmJoint.wrist_right]}
 
     def __init__(self, arm: Arm, static: MagnebotStatic, dynamic: MagnebotDynamic, image_frequency: ImageFrequency):
+        """
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+        :param image_frequency: [How image data will be captured during the image.](../image_frequency.md)
+        """
+
         super().__init__(static=static, dynamic=dynamic, image_frequency=image_frequency)
         # The arm used for the action.
         self._arm: Arm = arm

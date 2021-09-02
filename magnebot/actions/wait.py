@@ -5,7 +5,7 @@ from magnebot.actions.action import Action
 
 class Wait(Action):
     """
-    Make the Magnebot's base immovable and wait for its arms to stop moving.
+    Make the Magnebot's base immovable and wait for its arms to stop moving. The Magnebot has this action when it is first initialized.
     """
 
     def get_initialization_commands(self, resp: List[bytes]) -> List[dict]:
