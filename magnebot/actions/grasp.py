@@ -3,7 +3,7 @@ from json import loads
 from typing import List, Dict
 import numpy as np
 from tdw.tdw_utils import TDWUtils
-from tdw.output_data import OutputData, Bounds, Raycast, SegmentationColors
+from tdw.output_data import OutputData, Bounds, Raycast, SegmentationColors, Magnebot
 from magnebot.arm import Arm
 from magnebot.util import get_data
 from magnebot.ik.orientation_mode import OrientationMode
@@ -24,6 +24,11 @@ class _GraspStatus(Enum):
 
 
 class Grasp(IKMotion):
+    """
+    Try to grasp a target object.
+    The action ends when either the Magnebot grasps the object, can't grasp it, or fails arm articulation.
+    """
+
     # A list of indices of convex sides per object. See: `_BOUNDS_SIDES`.
     _CONVEX_SIDES: Dict[str, List[int]] = loads(CONVEX_SIDES_PATH.read_text(encoding="utf-8"))
     # The order of bounds sides. The values in `_CONVEX_SIDES` correspond to indices in this list.
@@ -51,9 +56,19 @@ class Grasp(IKMotion):
         self._target_position: np.array = np.array([0, 0, 0])
 
     def get_initialization_commands(self, resp: List[bytes]) -> List[dict]:
-        if self._target in self.dynamic.held[self._arm]:
+        # This Magnebot is already holding the object.
+        if self._target in self.dynamic.held[Arm.left] or self._target in self.dynamic.held[Arm.right]:
             self.status = ActionStatus.success
             return []
+        # Check if another Magnebot is holding the object.
+        for i in range(len(resp) - 1):
+            r_id = OutputData.get_data_type_id(resp[i])
+            if r_id == "magn":
+                magnebot = Magnebot(resp[i])
+                if magnebot.get_id() != self.static.robot_id:
+                    if self._target in magnebot.get_held_left() or self._target in magnebot.get_held_right():
+                        self.status = ActionStatus.held_by_other
+                        return []
         commands = super().get_initialization_commands(resp=resp)
         commands.extend([{"$type": "set_magnet_targets",
                           "arm": self._arm.name,

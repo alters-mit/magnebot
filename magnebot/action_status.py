@@ -35,4 +35,5 @@ class ActionStatus(Enum):
     failed_to_bend = 10  # Tried to bend its arm but failed to bend it all the way.
     collision = 11  # Tried to move or turn but failed because it collided with the environment (such as a wall) or a large object (mass > 30).
     tipping = 12  # Tried to move or turn but failed because it started to tip over.
+    held_by_other = 13  # Didn't try to grasp a target object because another Magnebot is already holding it.
 

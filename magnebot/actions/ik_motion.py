@@ -22,6 +22,10 @@ from magnebot.constants import TORSO_MAX_Y, TORSO_MIN_Y, COLUMN_Y, DEFAULT_TORSO
 
 
 class IKMotion(ArmMotion, ABC):
+    """
+    Abstract base class for arm motions that utilize IK.
+    """
+
     # The orientations in the cloud of IK targets. Each orientation corresponds to a position in self._ik_positions.
     _CACHED_IK_ORIENTATIONS: Dict[Arm, np.array] = dict()
     for arm, ik_path in zip([Arm.left, Arm.right], [IK_ORIENTATIONS_LEFT_PATH, IK_ORIENTATIONS_RIGHT_PATH]):
