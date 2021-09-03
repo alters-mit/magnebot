@@ -23,6 +23,7 @@ from magnebot.actions.reach_for import ReachFor
 from magnebot.actions.grasp import Grasp
 from magnebot.actions.drop import Drop
 from magnebot.actions.reset_arm import ResetArm
+from magnebot.actions.reset_position import ResetPosition
 from magnebot.actions.rotate_camera import RotateCamera
 from magnebot.actions.reset_camera import ResetCamera
 from magnebot.actions.wait import Wait
@@ -243,6 +244,18 @@ class MagnebotAgent(RobotBase):
         """
 
         self.action = ResetArm(arm=arm, static=self.static, dynamic=self.dynamic, image_frequency=self.image_frequency)
+
+    def reset_position(self) -> None:
+        """
+        Reset the Magnebot so that it isn't tipping over.
+        This will rotate the Magnebot to the default rotation (so that it isn't tipped over) and move the Magnebot to the nearest empty space on the floor.
+        It will also drop any held objects.
+
+        This will be interpreted by the physics engine as a _very_ sudden and fast movement.
+        This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
+        """
+
+        self.action = ResetPosition(static=self.static, dynamic=self.dynamic, image_frequency=self.image_frequency)
 
     def rotate_camera(self, roll: float, pitch: float, yaw: float) -> None:
         """

@@ -32,6 +32,7 @@ class Drop(ArmMotion):
         self._object_position: np.array = np.array([0, 0, 0])
         # Wait a few frames before checking on the object.
         self._initial_frames: int = 0
+        self._drop_frames: int = 0
         if self._target not in self.dynamic.held[self._arm]:
             self.status = ActionStatus.not_holding
 
@@ -66,6 +67,10 @@ class Drop(ArmMotion):
 
         :return: True if the object is moving.
         """
+
+        if self._drop_frames >= 200:
+            return False
+        self._drop_frames += 1
 
         # Get the initial position of the object.
         transforms = get_data(resp=resp, d_type=Transforms)

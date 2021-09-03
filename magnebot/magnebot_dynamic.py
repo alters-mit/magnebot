@@ -116,7 +116,7 @@ class MagnebotDynamic(RobotDynamic):
                 with p.open("wb") as f:
                     f.write(self.images[pass_name])
 
-    def get_pil_images(self) -> dict:
+    def get_pil_images(self) -> Dict[str, Image.Image]:
         """
         Convert each image pass from the robot camera to PIL images.
 

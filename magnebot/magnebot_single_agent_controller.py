@@ -1,3 +1,4 @@
+from collections import Counter
 from pathlib import Path
 from pkg_resources import resource_filename
 from json import loads
@@ -211,6 +212,58 @@ class MagnebotSingleAgentController(Controller):
 
         self.magnebot.drop(target=target, arm=arm, wait_for_object=wait_for_object)
         return self._do_action()
+
+    def reset_position(self) -> ActionStatus:
+        """
+        Reset the Magnebot so that it isn't tipping over.
+        This will rotate the Magnebot to the default rotation (so that it isn't tipped over) and move the Magnebot to the nearest empty space on the floor.
+        It will also drop any held objects.
+
+        This will be interpreted by the physics engine as a _very_ sudden and fast movement.
+        This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
+        """
+
+        self.magnebot.reset_position()
+        return self._do_action()
+
+    def rotate_camera(self, roll: float, pitch: float, yaw: float) -> ActionStatus:
+        """
+        Rotate the Magnebot's camera by the (roll, pitch, yaw) axes.
+
+        Each axis of rotation is constrained by the following limits:
+
+        | Axis | Minimum | Maximum |
+        | --- | --- | --- |
+        | roll | -55 | 55 |
+        | pitch | -70 | 70 |
+        | yaw | -85 | 85 |
+
+        :param roll: The roll angle in degrees.
+        :param pitch: The pitch angle in degrees.
+        :param yaw: The yaw angle in degrees.
+        """
+
+        self.magnebot.rotate_camera(roll=roll, pitch=pitch, yaw=yaw)
+        return self._do_action()
+
+    def reset_camera(self) -> ActionStatus:
+        """
+        Reset the rotation of the Magnebot's camera to its default angles.
+        """
+
+        self.magnebot.reset_camera()
+        return self._do_action()
+
+    def get_visible_objects(self) -> List[int]:
+        """
+        Get all objects visible to the Magnebot.
+
+        :return: A list of IDs of visible objects.
+        """
+
+        # Source: https://stackoverflow.com/a/59709420
+        colors = set(Counter(self.magnebot.dynamic.get_pil_images()["id"].getdata()))
+        return [o for o in self.objects.objects_static if self.objects.objects_static[o].segmentation_color in colors]
 
     def end(self) -> None:
         """
