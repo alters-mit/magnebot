@@ -12,6 +12,8 @@ from tdw.add_ons.collision_manager import CollisionManager
 from tdw.object_init_data import AudioInitData
 from magnebot.action_status import ActionStatus
 from magnebot.arm import Arm
+from magnebot.ik.orientation_mode import OrientationMode
+from magnebot.ik.target_orientation import TargetOrientation
 from magnebot.image_frequency import ImageFrequency
 from magnebot.magnebot_agent import MagnebotAgent
 from magnebot.skip_frames import SkipFrames
@@ -161,6 +163,41 @@ class MagnebotSingleAgentController(Controller):
 
     def move_to(self, target: Union[int, Dict[str, float], np.ndarray], arrived_at: float = 0.1, aligned_at: float = 1) -> ActionStatus:
         self.magnebot.move_to(target=target, arrived_at=arrived_at, aligned_at=aligned_at)
+        return self._do_action()
+
+    def reach_for(self, target: Dict[str, float], arm: Arm, absolute: bool = True,
+                  orientation_mode: OrientationMode = OrientationMode.auto,
+                  target_orientation: TargetOrientation = TargetOrientation.auto, arrived_at: float = 0.125) -> ActionStatus:
+        """
+        Reach for a target position. The action ends when the magnet is at or near the target position, or if it fails to reach the target.
+        The Magnebot may try to reach for the target multiple times, trying different IK orientations each time, or no times, if it knows the action will fail.
+
+        :param target: The target position.
+        :param arm: The arm that will reach for the target.
+        :param absolute: If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot.
+        :param arrived_at: If the magnet is this distance or less from `target`, then the action is successful.
+        :param orientation_mode: [The orientation mode.](../arm_articulation.md)
+        :param target_orientation: [The target orientation.](../arm_articulation.md)
+        """
+
+        self.magnebot.reach_for(target=target, arm=arm, absolute=absolute, orientation_mode=orientation_mode,
+                                target_orientation=target_orientation, arrived_at=arrived_at)
+        return self._do_action()
+
+    def grasp(self, target: int, arm: Arm, orientation_mode: OrientationMode = OrientationMode.auto,
+              target_orientation: TargetOrientation = TargetOrientation.auto) -> ActionStatus:
+        """
+        Try to grasp a target object.
+        The action ends when either the Magnebot grasps the object, can't grasp it, or fails arm articulation.
+
+        :param target: The ID of the target object.
+        :param arm: [The arm used for this action.](../arm.md)
+        :param orientation_mode: [The orientation mode.](../arm_articulation.md)
+        :param target_orientation: [The target orientation.](../arm_articulation.md)
+        """
+
+        self.magnebot.grasp(target=target, arm=arm, orientation_mode=orientation_mode,
+                            target_orientation=target_orientation)
         return self._do_action()
 
     def drop(self, target: int, arm: Arm, wait_for_object: bool) -> ActionStatus:

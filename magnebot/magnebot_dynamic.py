@@ -10,9 +10,7 @@ from magnebot.arm import Arm
 
 
 class MagnebotDynamic(RobotDynamic):
-    FRAME_COUNT: int = 0
-
-    def __init__(self, robot_id: int, resp: List[bytes], body_parts: List[int], previous=None):
+    def __init__(self, robot_id: int, resp: List[bytes], body_parts: List[int], frame_count: int, previous=None):
         super().__init__(robot_id=robot_id, resp=resp, body_parts=body_parts, previous=previous)
 
         """:field
@@ -44,7 +42,10 @@ class MagnebotDynamic(RobotDynamic):
         The [camera matrix](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/output_data.md#cameramatrices) of the Magnebot's camera as a numpy array.
         """
         self.camera_matrix: Optional[np.array] = None
-
+        """:field
+        The current frame count. This is used for image filenames.
+        """
+        self.frame_count: int = frame_count
         # File extensions per pass.
         self.__image_extensions: Dict[str, str] = dict()
 
@@ -84,7 +85,7 @@ class MagnebotDynamic(RobotDynamic):
                     self.top = np.array(magnebot.get_top())
         # Update the frame count.
         if got_magnebot_images:
-            MagnebotDynamic.FRAME_COUNT += 1
+            self.frame_count += 1
 
     def save_images(self, output_directory: Union[str, Path]) -> None:
         """
@@ -102,7 +103,7 @@ class MagnebotDynamic(RobotDynamic):
         if not output_directory.exists():
             output_directory.mkdir(parents=True)
         # The prefix is a zero-padded integer to ensure sequential images.
-        prefix = TDWUtils.zero_padding(MagnebotDynamic.FRAME_COUNT, 8)
+        prefix = TDWUtils.zero_padding(self.frame_count, 8)
         # Save each image.
         for pass_name in self.images:
             if self.images[pass_name] is None:
@@ -154,4 +155,3 @@ class MagnebotDynamic(RobotDynamic):
                                             camera_matrix=self.camera_matrix, far_plane=100, near_plane=1)
         else:
             return None
-

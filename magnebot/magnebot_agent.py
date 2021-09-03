@@ -6,6 +6,8 @@ from tdw.output_data import Version
 from tdw.release.pypi import PyPi
 from magnebot.util import get_data, check_version
 from magnebot.arm import Arm
+from magnebot.ik.orientation_mode import OrientationMode
+from magnebot.ik.target_orientation import TargetOrientation
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.arm_joint import ArmJoint
@@ -17,6 +19,8 @@ from magnebot.actions.turn_by import TurnBy
 from magnebot.actions.turn_to import TurnTo
 from magnebot.actions.move_by import MoveBy
 from magnebot.actions.move_to import MoveTo
+from magnebot.actions.reach_for import ReachFor
+from magnebot.actions.grasp import Grasp
 from magnebot.actions.drop import Drop
 from magnebot.actions.reset_arm import ResetArm
 from magnebot.actions.rotate_camera import RotateCamera
@@ -69,6 +73,12 @@ class MagnebotAgent(RobotBase):
             check_version()
 
     def get_initialization_commands(self) -> List[dict]:
+        """
+        This function gets called exactly once per add-on. To re-initialize, set `self.initialized = False`.
+
+        :return: A list of commands that will initialize this add-on.
+        """
+
         MagnebotDynamic.FRAME_COUNT = 0
         self.action = None
         self._previous_action = None
@@ -88,6 +98,15 @@ class MagnebotAgent(RobotBase):
         return commands
 
     def on_send(self, resp: List[bytes]) -> None:
+        """
+        This is called after commands are sent to the build and a response is received.
+
+        Use this function to send commands to the build on the next frame, given the `resp` response.
+        Any commands in the `self.commands` list will be sent on the next frame.
+
+        :param resp: The response from the build.
+        """
+
         super().on_send(resp=resp)
         if self.action is None:
             return
@@ -169,6 +188,41 @@ class MagnebotAgent(RobotBase):
                              image_frequency=self.image_frequency, collision_detection=self.collision_detection,
                              arrived_at=arrived_at, aligned_at=aligned_at, previous=self._previous_action)
 
+    def reach_for(self, target: Dict[str, float], arm: Arm, absolute: bool = True,
+                  orientation_mode: OrientationMode = OrientationMode.auto,
+                  target_orientation: TargetOrientation = TargetOrientation.auto, arrived_at: float = 0.125) -> None:
+        """
+        Reach for a target position. The action ends when the magnet is at or near the target position, or if it fails to reach the target.
+        The Magnebot may try to reach for the target multiple times, trying different IK orientations each time, or no times, if it knows the action will fail.
+
+        :param target: The target position.
+        :param arm: The arm that will reach for the target.
+        :param absolute: If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot.
+        :param arrived_at: If the magnet is this distance or less from `target`, then the action is successful.
+        :param orientation_mode: [The orientation mode.](../arm_articulation.md)
+        :param target_orientation: [The target orientation.](../arm_articulation.md)
+        """
+
+        self.action = ReachFor(target=target, arm=arm, absolute=absolute, orientation_mode=orientation_mode,
+                               target_orientation=target_orientation, arrived_at=arrived_at, static=self.static,
+                               dynamic=self.dynamic, image_frequency=self.image_frequency)
+
+    def grasp(self, target: int, arm: Arm, orientation_mode: OrientationMode = OrientationMode.auto,
+              target_orientation: TargetOrientation = TargetOrientation.auto) -> None:
+        """
+        Try to grasp a target object.
+        The action ends when either the Magnebot grasps the object, can't grasp it, or fails arm articulation.
+
+        :param target: The ID of the target object.
+        :param arm: [The arm used for this action.](../arm.md)
+        :param orientation_mode: [The orientation mode.](../arm_articulation.md)
+        :param target_orientation: [The target orientation.](../arm_articulation.md)
+        """
+
+        self.action = Grasp(target=target, arm=arm, orientation_mode=orientation_mode,
+                            target_orientation=target_orientation, static=self.static, dynamic=self.dynamic,
+                            image_frequency=self.image_frequency)
+
     def drop(self, target: int, arm: Arm, wait_for_object: bool) -> None:
         """
         Drop an object held by a magnet.
@@ -228,7 +282,10 @@ class MagnebotAgent(RobotBase):
         self.static = MagnebotStatic(robot_id=self.robot_id, resp=resp)
         # Wait for the joints to finish moving.
         self.action = Wait(static=self.static,
-                           dynamic=MagnebotDynamic(robot_id=self.robot_id, resp=resp, body_parts=self.static.body_parts),
+                           dynamic=MagnebotDynamic(robot_id=self.robot_id,
+                                                   resp=resp,
+                                                   body_parts=self.static.body_parts,
+                                                   frame_count=0),
                            image_frequency=self.image_frequency)
         # Add an avatar and set up its camera.
         self.commands.extend([{"$type": "create_avatar",
@@ -250,8 +307,13 @@ class MagnebotAgent(RobotBase):
                                "avatar_id": self.static.avatar_id}])
 
     def _set_dynamic_data(self, resp: List[bytes]) -> None:
+        if self.dynamic is None:
+            frame_count = 0
+        else:
+            self.dynamic: MagnebotDynamic
+            frame_count = self.dynamic.frame_count
         dynamic = MagnebotDynamic(resp=resp, robot_id=self.robot_id, body_parts=self.static.body_parts,
-                                  previous=self.dynamic)
+                                  previous=self.dynamic, frame_count=frame_count)
         self.dynamic = self._set_joints_moving(dynamic)
         if self.action is not None:
             self.action.dynamic = dynamic

@@ -40,8 +40,8 @@ class Grasp(IKMotion):
         """
         :param target: The ID of the target object.
         :param arm: [The arm used for this action.](../arm.md)
-        :param orientation_mode: [The orientation mode.](../orientation_mode.md)
-        :param target_orientation: [The target orientation.](../orientation_mode.md)
+        :param orientation_mode: [The orientation mode.](../../arm_articulation.md)
+        :param target_orientation: [The target orientation.](../../arm_articulation.md)
         :param static: [The static Magnebot data.](../magnebot_static.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
         :param image_frequency: [How image data will be captured during the image.](../image_frequency.md)
