@@ -15,34 +15,33 @@ class Drop(ArmMotion):
     Drop an object held by a magnet.
     """
 
-    def __init__(self, target: int, arm: Arm, wait_for_object: bool, static: MagnebotStatic, dynamic: MagnebotDynamic,
-                 image_frequency: ImageFrequency):
+    def __init__(self, target: int, arm: Arm, wait_for_object: bool, dynamic: MagnebotDynamic):
         """
         :param target: The ID of the object currently held by the magnet.
         :param arm: [The arm used for this action.](../arm.md)
         :param wait_for_object: If True, the action will continue until the object has finished falling. If False, the action advances the simulation by exactly 1 frame.
-        :param static: [The static Magnebot data.](../magnebot_static.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
-        :param image_frequency: [How image data will be captured during the image.](../image_frequency.md)
         """
 
-        super().__init__(static=static, dynamic=dynamic, image_frequency=image_frequency, arm=arm)
+        super().__init__(arm=arm)
         self._target: int = int(target)
         self._wait_for_object: bool = wait_for_object
         self._object_position: np.array = np.array([0, 0, 0])
         # Wait a few frames before checking on the object.
         self._initial_frames: int = 0
         self._drop_frames: int = 0
-        if self._target not in self.dynamic.held[self._arm]:
+        if self._target not in dynamic.held[self._arm]:
             self.status = ActionStatus.not_holding
 
-    def get_initialization_commands(self, resp: List[bytes]) -> List[dict]:
+    def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
+                                    image_frequency: ImageFrequency) -> List[dict]:
         self._object_is_moving(resp=resp)
-        commands = super().get_initialization_commands(resp=resp)
+        commands = super().get_initialization_commands(resp=resp, static=static, dynamic=dynamic,
+                                                       image_frequency=image_frequency)
         commands.append({"$type": "detach_from_magnet",
                          "arm": self._arm.name,
                          "object_id": self._target,
-                         "id": self.static.robot_id})
+                         "id": static.robot_id})
         return commands
 
     def set_status_after_initialization(self) -> None:
@@ -50,7 +49,7 @@ class Drop(ArmMotion):
         if not self._wait_for_object:
             self.status = ActionStatus.success
 
-    def get_ongoing_commands(self, resp: List[bytes]) -> List[dict]:
+    def get_ongoing_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
         # Wait a few frames before checking.
         if self._initial_frames < 5:
             self._initial_frames += 1
@@ -78,7 +77,7 @@ class Drop(ArmMotion):
             if transforms.get_id(i) == self._target:
                 object_position = np.array(transforms.get_position(i))
                 d = np.linalg.norm(self._object_position - object_position)
-                self._object_position = np.array([object_position[0] ,object_position[1], object_position[2]])
+                self._object_position = np.array([object_position[0], object_position[1], object_position[2]])
                 # Stop if the object somehow fell below the floor or if the object isn't moving.
                 if object_position[1] < -1 or d < 0.01:
                     return False

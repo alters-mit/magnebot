@@ -34,30 +34,28 @@ class Grasp(IKMotion):
     # The order of bounds sides. The values in `_CONVEX_SIDES` correspond to indices in this list.
     _BOUNDS_SIDES: List[str] = ["left", "right", "front", "back", "top", "bottom"]
 
-    def __init__(self, target: int, arm: Arm, orientation_mode: OrientationMode,
-                 target_orientation: TargetOrientation, static: MagnebotStatic, dynamic: MagnebotDynamic,
-                 image_frequency: ImageFrequency):
+    def __init__(self, target: int, arm: Arm, orientation_mode: OrientationMode, target_orientation: TargetOrientation,
+                 dynamic: MagnebotDynamic):
         """
         :param target: The ID of the target object.
         :param arm: [The arm used for this action.](../arm.md)
         :param orientation_mode: [The orientation mode.](../../arm_articulation.md)
         :param target_orientation: [The target orientation.](../../arm_articulation.md)
-        :param static: [The static Magnebot data.](../magnebot_static.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
-        :param image_frequency: [How image data will be captured during the image.](../image_frequency.md)
         """
 
         super().__init__(arm=arm, orientation_mode=orientation_mode, target_orientation=target_orientation,
-                         static=static, dynamic=dynamic, image_frequency=image_frequency)
+                         dynamic=dynamic)
         self._target: int = target
         self._grasp_status: _GraspStatus = _GraspStatus.getting_bounds
         self._target_bounds: Dict[str, np.array] = dict()
         self._target_name: str = ""
         self._target_position: np.array = np.array([0, 0, 0])
 
-    def get_initialization_commands(self, resp: List[bytes]) -> List[dict]:
+    def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
+                                    image_frequency: ImageFrequency) -> List[dict]:
         # This Magnebot is already holding the object.
-        if self._target in self.dynamic.held[Arm.left] or self._target in self.dynamic.held[Arm.right]:
+        if self._target in dynamic.held[Arm.left] or self._target in dynamic.held[Arm.right]:
             self.status = ActionStatus.success
             return []
         # Check if another Magnebot is holding the object.
@@ -65,35 +63,37 @@ class Grasp(IKMotion):
             r_id = OutputData.get_data_type_id(resp[i])
             if r_id == "magn":
                 magnebot = Magnebot(resp[i])
-                if magnebot.get_id() != self.static.robot_id:
+                if magnebot.get_id() != static.robot_id:
                     if self._target in magnebot.get_held_left() or self._target in magnebot.get_held_right():
                         self.status = ActionStatus.held_by_other
                         return []
-        commands = super().get_initialization_commands(resp=resp)
+        commands = super().get_initialization_commands(resp=resp, static=static, dynamic=dynamic,
+                                                       image_frequency=image_frequency)
         commands.extend([{"$type": "set_magnet_targets",
                           "arm": self._arm.name,
                           "targets": [self._target],
-                          "id": self.static.robot_id},
+                          "id": static.robot_id},
                          {"$type": "send_bounds",
                           "frequency": "once"},
                          {"$type": "send_segmentation_colors",
                           "frequency": "once"}])
         return commands
 
-    def get_end_commands(self, resp: List[bytes]) -> List[dict]:
-        commands = super().get_end_commands(resp=resp)
+    def get_end_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
+                         image_frequency: ImageFrequency) -> List[dict]:
+        commands = super().get_end_commands(resp=resp, static=static, dynamic=dynamic, image_frequency=image_frequency)
         commands.append({"$type": "set_magnet_targets",
                          "arm": self._arm.name,
                          "targets": [],
-                         "id": self.static.robot_id})
+                         "id": static.robot_id})
         return commands
 
-    def get_ongoing_commands(self, resp: List[bytes]) -> List[dict]:
-        if self._is_success(resp=resp):
+    def get_ongoing_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
+        if self._is_success(resp=resp, static=static, dynamic=dynamic):
             self.status = ActionStatus.success
             return []
         elif self._grasp_status == _GraspStatus.grasping:
-            return self._evaluate_arm_articulation(resp=resp)
+            return self._evaluate_arm_articulation(resp=resp, static=static, dynamic=dynamic)
         elif self._grasp_status == _GraspStatus.getting_bounds:
             # Get the segmentation color data and get the object name.
             segmentation_colors = get_data(resp=resp, d_type=SegmentationColors)
@@ -115,12 +115,12 @@ class Grasp(IKMotion):
                     self._grasp_status = _GraspStatus.spherecasting
                     return [{"$type": "send_spherecast",
                              "radius": 0.2,
-                             "origin": TDWUtils.array_to_vector3(self.dynamic.joints[self.static.magnets[self._arm]].position),
+                             "origin": TDWUtils.array_to_vector3(dynamic.joints[static.magnets[self._arm]].position),
                              "destination": TDWUtils.array_to_vector3(bounds.get_center(0)),
-                             "id": self.static.robot_id}]
+                             "id": static.robot_id}]
             raise Exception(f"No bounds data: {resp}")
         elif self._grasp_status == _GraspStatus.spherecasting:
-            magnet_position = self.dynamic.joints[self.static.magnets[self._arm]].position
+            magnet_position = dynamic.joints[static.magnets[self._arm]].position
             # Get the nearest spherecasted point.
             nearest_distance = np.inf
             nearest_position = np.array([0, 0, 0])
@@ -129,7 +129,7 @@ class Grasp(IKMotion):
                 r_id = OutputData.get_data_type_id(resp[i])
                 if r_id == "rayc":
                     raycast = Raycast(resp[i])
-                    if raycast.get_raycast_id() == self.static.robot_id:
+                    if raycast.get_raycast_id() == static.robot_id:
                         # Ignore raycasts that didn't hit the target.
                         if not raycast.get_hit() or not raycast.get_hit_object() or raycast.get_object_id() != self._target:
                             continue
@@ -141,10 +141,10 @@ class Grasp(IKMotion):
                             nearest_position = point
             # We found a good target!
             if got_raycast_point:
-                self._target_position = nearest_position
-                self._set_start_arm_articulation_commands()
+                self._target_position = self._absolute_to_relative(position=nearest_position, dynamic=dynamic)
+                self._set_start_arm_articulation_commands(static=static, dynamic=dynamic)
                 self._grasp_status = _GraspStatus.grasping
-                return self._evaluate_arm_articulation(resp=resp)
+                return self._evaluate_arm_articulation(resp=resp, static=static, dynamic=dynamic)
             # Try to get a target from cached bounds data.
             else:
                 # If we haven't cached the bounds for this object, just return all of the sides.
@@ -158,10 +158,11 @@ class Grasp(IKMotion):
                             sides.append(self._target_bounds[side])
                 # If there are no valid bounds sides, aim for the center and hope for the best.
                 if len(sides) == 0:
-                    self._target_position = self._target_bounds["center"]
-                    self._set_start_arm_articulation_commands()
+                    self._target_position = self._absolute_to_relative(position=self._target_bounds["center"],
+                                                                       dynamic=dynamic)
+                    self._set_start_arm_articulation_commands(static=static, dynamic=dynamic)
                     self._grasp_status = _GraspStatus.grasping
-                    return self._evaluate_arm_articulation(resp=resp)
+                    return self._evaluate_arm_articulation(resp=resp, static=static, dynamic=dynamic)
                 else:
                     # If the object is higher up than the magnet, remove the lowest side.
                     if self._target_bounds["center"][1] > magnet_position[1] and len(sides) > 1:
@@ -184,36 +185,39 @@ class Grasp(IKMotion):
                     return [{"$type": "send_raycast",
                              "origin": TDWUtils.array_to_vector3(nearest_side),
                              "destination": TDWUtils.array_to_vector3(self._target_bounds["center"]),
-                             "id": self.static.robot_id}]
+                             "id": static.robot_id}]
         elif self._grasp_status == _GraspStatus.raycasting:
             for i in range(len(resp) - 1):
                 r_id = OutputData.get_data_type_id(resp[i])
                 if r_id == "rayc":
                     raycast = Raycast(resp[i])
-                    if raycast.get_raycast_id() == self.static.robot_id:
+                    if raycast.get_raycast_id() == static.robot_id:
                         # If the raycast hit the object, aim for that point.
                         if raycast.get_hit() and raycast.get_hit_object() and raycast.get_object_id() == self._target:
-                            self._target_position = np.array(raycast.get_point())
-                            self._set_start_arm_articulation_commands()
+                            self._target_position = self._absolute_to_relative(dynamic=dynamic,
+                                                                               position=np.array(raycast.get_point()))
+                            self._set_start_arm_articulation_commands(static=static, dynamic=dynamic)
                             self._grasp_status = _GraspStatus.grasping
-                            return self._evaluate_arm_articulation(resp=resp)
+                            return self._evaluate_arm_articulation(resp=resp, static=static, dynamic=dynamic)
                         else:
-                            self._target_position = self._target_bounds["center"]
-                            self._set_start_arm_articulation_commands()
+                            self._target_position = self._absolute_to_relative(position=self._target_bounds["center"],
+                                                                               dynamic=dynamic)
+                            self._set_start_arm_articulation_commands(static=static, dynamic=dynamic)
                             self._grasp_status = _GraspStatus.grasping
-                            return self._evaluate_arm_articulation(resp=resp)
-            self._target_position = self._target_bounds["center"]
-            self._set_start_arm_articulation_commands()
+                            return self._evaluate_arm_articulation(resp=resp, static=static, dynamic=dynamic)
+            self._target_position = self._absolute_to_relative(position=self._target_bounds["center"],
+                                                               dynamic=dynamic)
+            self._set_start_arm_articulation_commands(static=static, dynamic=dynamic)
             self._grasp_status = _GraspStatus.grasping
-            return self._evaluate_arm_articulation(resp=resp)
+            return self._evaluate_arm_articulation(resp=resp, static=static, dynamic=dynamic)
         else:
             raise Exception(self._grasp_status)
 
     def _get_fail_status(self) -> ActionStatus:
         return ActionStatus.failed_to_grasp
 
-    def _is_success(self, resp: List[bytes]) -> bool:
-        return self._target in self.dynamic.held[self._arm]
+    def _is_success(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic) -> bool:
+        return self._target in dynamic.held[self._arm]
 
     def _get_ik_target_position(self) -> np.array:
         return self._target_position

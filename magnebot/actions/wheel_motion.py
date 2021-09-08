@@ -17,22 +17,19 @@ class WheelMotion(Action, ABC):
     Abstract base class for a motion action involving the Magnebot's wheels.
     """
 
-    def __init__(self, static: MagnebotStatic, dynamic: MagnebotDynamic, image_frequency: ImageFrequency,
-                 collision_detection: CollisionDetection, previous: Action = None):
+    def __init__(self, dynamic: MagnebotDynamic, collision_detection: CollisionDetection, previous: Action = None):
         """
-        :param static: [The static Magnebot data.](../magnebot_static.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
-        :param image_frequency: [How image data will be captured during the image.](../image_frequency.md)
         :param collision_detection: [The collision detection rules.](../collision_detection.md)
         :param previous: The previous action, if any.
         """
 
-        super().__init__(static=static, dynamic=dynamic, image_frequency=image_frequency)
+        super().__init__()
         # My collision detection rules.
         self._collision_detection: CollisionDetection = collision_detection
         self._resetting: bool = False
         # Immediately end the action if we're currently tipping.
-        has_tipped, is_tipping = self._is_tipping()
+        has_tipped, is_tipping = self._is_tipping(dynamic=dynamic)
         if has_tipped:
             self.status = ActionStatus.tipping
         # Immediately end the action if the previous action was the same motion and it ended with a collision or with tipping.
@@ -44,79 +41,87 @@ class WheelMotion(Action, ABC):
             elif previous.status == ActionStatus.tipping:
                 self.status = ActionStatus.tipping
 
-    def get_initialization_commands(self, resp: List[bytes]) -> List[dict]:
-        commands: List[dict] = list()
+    def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
+                                    image_frequency: ImageFrequency) -> List[dict]:
+        commands: List[dict] = super().get_initialization_commands(resp=resp, image_frequency=image_frequency,
+                                                                   static=static, dynamic=dynamic)
         # Make the robot moveable.
-        if self.dynamic.immovable:
+        if dynamic.immovable:
             self._resetting = True
             commands.extend([{"$type": "set_immovable",
-                              "id": self.static.robot_id,
+                              "id": static.robot_id,
                               "immovable": False},
                              {"$type": "set_prismatic_target",
-                              "joint_id": self.static.arm_joints[ArmJoint.torso],
+                              "joint_id": static.arm_joints[ArmJoint.torso],
                               "target": 1,
-                              "id": self.static.robot_id},
+                              "id": static.robot_id},
                              {"$type": "set_revolute_target",
-                              "joint_id": self.static.arm_joints[ArmJoint.column],
+                              "joint_id": static.arm_joints[ArmJoint.column],
                               "target": 0,
-                              "id": self.static.robot_id}])
+                              "id": static.robot_id}])
         # Reset the drive values.
-        for wheel_id in self.static.wheels.values():
-            drive = self.static.joints[wheel_id].drives["x"]
+        for wheel_id in static.wheels.values():
+            drive = static.joints[wheel_id].drives["x"]
             commands.extend([{"$type": "set_robot_joint_drive",
                               "joint_id": wheel_id,
                               "force_limit": drive.force_limit,
                               "stiffness": drive.stiffness,
                               "damping": drive.damping,
-                              "id": self.static.robot_id},
+                              "id": static.robot_id},
                              {"$type": "set_robot_joint_friction",
                               "joint_id": wheel_id,
                               "friction": DEFAULT_WHEEL_FRICTION,
-                              "id": self.static.robot_id}])
+                              "id": static.robot_id}])
         return commands
 
     @final
-    def get_ongoing_commands(self, resp: List[bytes]) -> List[dict]:
+    def get_ongoing_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
         if self._resetting:
-            self._resetting = self.dynamic.joints[self.static.arm_joints[ArmJoint.torso]].moving and \
-                              self.dynamic.joints[self.static.arm_joints[ArmJoint.column]].moving
+            self._resetting = dynamic.joints[static.arm_joints[ArmJoint.torso]].moving and \
+                              dynamic.joints[static.arm_joints[ArmJoint.column]].moving
             return []
         else:
-            return self._get_ongoing_commands(resp=resp)
+            return self._get_ongoing_commands(resp=resp, static=static, dynamic=dynamic)
 
     @final
-    def get_end_commands(self, resp: List[bytes]) -> List[dict]:
+    def get_end_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
+                         image_frequency: ImageFrequency) -> List[dict]:
         commands = []
-        for wheel in self.static.wheels:
+        for wheel in static.wheels:
             # Set the target of each wheel to its current position.
             commands.append({"$type": "set_revolute_target",
-                             "id": self.static.robot_id,
-                             "target": float(self.dynamic.joints[self.static.wheels[wheel]].angles[0]),
-                             "joint_id": self.static.wheels[wheel]})
-        commands.extend(super().get_end_commands(resp=resp))
+                             "id": static.robot_id,
+                             "target": float(dynamic.joints[static.wheels[wheel]].angles[0]),
+                             "joint_id": static.wheels[wheel]})
+        commands.extend(super().get_end_commands(resp=resp, static=static, dynamic=dynamic,
+                                                 image_frequency=image_frequency))
         return commands
 
     @final
-    def _is_valid_ongoing(self) -> bool:
+    def _is_valid_ongoing(self, dynamic: MagnebotDynamic) -> bool:
         """
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+
         :return: True if the Magnebot isn't tipping over and didn't collide with something that should make it stop.
         """
 
         # Stop if the Magnebot is tipping.
-        has_tipped, is_tipping = self._is_tipping()
+        has_tipped, is_tipping = self._is_tipping(dynamic=dynamic)
         if has_tipped or is_tipping:
             self.status = ActionStatus.tipping
             return False
         # Stop if the Magnebot is colliding with something.
-        elif self._is_collision():
+        elif self._is_collision(dynamic=dynamic):
             self.status = ActionStatus.collision
             return False
         else:
             return True
 
     @final
-    def _is_collision(self) -> bool:
+    def _is_collision(self, dynamic: MagnebotDynamic) -> bool:
         """
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+
         :return: True if there was a collision that according to the current detection rules means that the Magnebot needs to stop moving.
         """
 
@@ -124,8 +129,8 @@ class WheelMotion(Action, ABC):
         if self._collision_detection.floor or self._collision_detection.walls:
             enters: List[int] = list()
             exits: List[int] = list()
-            for object_id in self.dynamic.collisions_with_environment:
-                for collision in self.dynamic.collisions_with_environment[object_id]:
+            for object_id in dynamic.collisions_with_environment:
+                for collision in dynamic.collisions_with_environment[object_id]:
                     if (self._collision_detection.floor and collision.floor) or \
                             (self._collision_detection.walls and not collision.floor):
                         if collision.state == "enter":
@@ -140,8 +145,8 @@ class WheelMotion(Action, ABC):
         if self._collision_detection.objects or len(self._collision_detection.include_objects) > 0:
             enters: List[Tuple[int, int]] = list()
             exits: List[Tuple[int, int]] = list()
-            for object_ids in self.dynamic.collisions_with_objects:
-                for collision in self.dynamic.collisions_with_objects[object_ids]:
+            for object_ids in dynamic.collisions_with_objects:
+                for collision in dynamic.collisions_with_objects[object_ids]:
                     object_id = object_ids[1]
                     # Accept the collision if the object is in the includes list or if it's not in the excludes list.
                     if object_id in self._collision_detection.include_objects or \
@@ -158,20 +163,22 @@ class WheelMotion(Action, ABC):
         return False
 
     @final
-    def _set_brake_wheel_drives(self) -> List[dict]:
+    def _set_brake_wheel_drives(self, static: MagnebotStatic) -> List[dict]:
         """
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+
         :return: A list of commands to set the wheel drives while braking.
         """
 
         commands = []
-        for wheel_id in self.static.wheels.values():
-            drive = self.static.joints[wheel_id].drives["x"]
+        for wheel_id in static.wheels.values():
+            drive = static.joints[wheel_id].drives["x"]
             commands.append({"$type": "set_robot_joint_drive",
                              "joint_id": wheel_id,
                              "force_limit": drive.force_limit * 0.9,
                              "stiffness": drive.stiffness,
                              "damping": drive.damping,
-                             "id": self.static.robot_id})
+                             "id": static.robot_id})
         return commands
 
     @final
@@ -193,13 +200,16 @@ class WheelMotion(Action, ABC):
         return False
 
     @final
-    def _wheels_are_turning(self) -> bool:
+    def _wheels_are_turning(self, static: MagnebotStatic, dynamic: MagnebotDynamic) -> bool:
         """
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+
         :return: True if any of the wheels are turning.
         """
 
-        for wheel in self.static.wheels:
-            if self.dynamic.joints[self.static.wheels[wheel]].moving:
+        for wheel in static.wheels:
+            if dynamic.joints[static.wheels[wheel]].moving:
                 return True
         return False
 
@@ -214,11 +224,13 @@ class WheelMotion(Action, ABC):
         raise Exception()
 
     @abstractmethod
-    def _get_ongoing_commands(self, resp: List[bytes]) -> List[dict]:
+    def _get_ongoing_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
         """
         Get ongoing commands assuming that the body isn't being reset.
 
         :param resp: The response from the build.
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
 
         :return: A list of ongoing commands.
         """

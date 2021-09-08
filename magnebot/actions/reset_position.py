@@ -32,14 +32,12 @@ class ResetPosition(Action):
 
     _CELL_SIZE = OCCUPANCY_CELL_SIZE * 2
 
-    def __init__(self, static: MagnebotStatic, dynamic: MagnebotDynamic, image_frequency: ImageFrequency):
+    def __init__(self):
         """
-        :param static: [The static Magnebot data.](../magnebot_static.md)
-        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
-        :param image_frequency: [How image data will be captured during the image.](../image_frequency.md)
+        (no parameterS)
         """
 
-        super().__init__(static=static, dynamic=dynamic, image_frequency=image_frequency)
+        super().__init__()
 
         # Objects that were formerly held by the Magnebot. We need to wait for this to finish moving.
         # Key = Object ID. Value = Position.
@@ -51,31 +49,33 @@ class ResetPosition(Action):
         self._occupancy_map: OccupancyMap = OccupancyMap(cell_size=ResetPosition._CELL_SIZE)
         self._reset_position_status: _ResetPositionStatus = _ResetPositionStatus.waiting_for_objects
 
-    def get_initialization_commands(self, resp: List[bytes]) -> List[dict]:
-        has_tipped, tipping = self._is_tipping()
+    def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
+                                    image_frequency: ImageFrequency) -> List[dict]:
+        has_tipped, tipping = self._is_tipping(dynamic=dynamic)
         if not has_tipped:
             self.status = ActionStatus.cannot_reset_position
             return []
-        commands = super().get_initialization_commands(resp=resp)
+        commands = super().get_initialization_commands(resp=resp, static=static, dynamic=dynamic,
+                                                       image_frequency=image_frequency)
         # Drop all held objects.
         held_objects: List[int] = list()
-        for arm in self.dynamic.held:
-            for object_id in self.dynamic.held[arm]:
+        for arm in dynamic.held:
+            for object_id in dynamic.held[arm]:
                 o_id = int(object_id)
                 commands.append({"$type": "detach_from_magnet",
-                                 "id": self.static.robot_id,
+                                 "id": static.robot_id,
                                  "arm": arm.name,
                                  "object_id": o_id})
                 held_objects.append(o_id)
         # Stop the wheels.
-        for wheel in self.static.wheels:
+        for wheel in static.wheels:
             commands.append({"$type": "set_revolute_target",
-                             "id": self.static.robot_id,
-                             "target": float(self.dynamic.joints[self.static.wheels[wheel]].angles[0]),
-                             "joint_id": self.static.wheels[wheel]})
+                             "id": static.robot_id,
+                             "target": float(dynamic.joints[static.wheels[wheel]].angles[0]),
+                             "joint_id": static.wheels[wheel]})
         # Make the Magnebot movable.
         commands.append({"$type": "set_immovable",
-                         "id": self.static.robot_id,
+                         "id": static.robot_id,
                          "immovable": False})
         if len(held_objects) > 0:
             # Get the positions of each object.
@@ -88,7 +88,7 @@ class ResetPosition(Action):
             self._reset_position_status = _ResetPositionStatus.initializing_occupancy_map
         return commands
 
-    def get_ongoing_commands(self, resp: List[bytes]) -> List[dict]:
+    def get_ongoing_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
         if self._reset_position_status == _ResetPositionStatus.waiting_for_objects:
             # Wait a few frames.
             if self._initial_frames < 5:
@@ -129,7 +129,7 @@ class ResetPosition(Action):
             # This will set the scene bounds.
             self._occupancy_map.on_send(resp=resp)
             # Return commands to generate the occupancy map.
-            self._occupancy_map.generate(ignore_objects=self.static.body_parts)
+            self._occupancy_map.generate(ignore_objects=static.body_parts)
             self._reset_position_status = _ResetPositionStatus.getting_position
             return self._occupancy_map.commands
         # Get a position to reset to.
@@ -137,7 +137,7 @@ class ResetPosition(Action):
             # This will set the occupancy map.
             self._occupancy_map.on_send(resp=resp)
             # Get the nearest position.
-            position = self.dynamic.transform.position
+            position = dynamic.transform.position
             position[1] = 0
             closest = np.array([0, 0, 0])
             closest_distance = np.inf
@@ -156,10 +156,10 @@ class ResetPosition(Action):
             self.status = ActionStatus.success
             # Teleport the robot and make it immovable.
             return [{"$type": "teleport_robot",
-                     "id": self.static.robot_id,
+                     "id": static.robot_id,
                      "position": TDWUtils.array_to_vector3(closest)},
                     {"$type": "set_immovable",
-                     "id": self.static.robot_id,
+                     "id": static.robot_id,
                      "immovable": True}]
         else:
             raise Exception(f"Not defined: {self._reset_position_status}")

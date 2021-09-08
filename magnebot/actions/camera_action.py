@@ -2,6 +2,8 @@ from typing import List
 from abc import ABC
 from overrides import final
 from magnebot.actions.action import Action
+from magnebot.magnebot_static import MagnebotStatic
+from magnebot.magnebot_dynamic import MagnebotDynamic
 
 
 class CameraAction(Action, ABC):
@@ -9,11 +11,6 @@ class CameraAction(Action, ABC):
     Abstract class for actions that rotate the camera.
     """
 
-    """:class_var
-    The camera roll, pitch, yaw constraints in degrees.
-    """
-    CAMERA_RPY_CONSTRAINTS: List[float] = [55, 70, 85]
-
     @final
-    def get_ongoing_commands(self, resp: List[bytes]) -> List[dict]:
+    def get_ongoing_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
         return []

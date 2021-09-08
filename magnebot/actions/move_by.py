@@ -19,27 +19,23 @@ class MoveBy(WheelMotion):
     # The distance at which to start braking while moving.
     _BRAKE_DISTANCE: float = 0.1
 
-    def __init__(self, distance: float, static: MagnebotStatic, dynamic: MagnebotDynamic,
-                 image_frequency: ImageFrequency, collision_detection: CollisionDetection, arrived_at: float = 0.1,
-                 previous: Action = None):
+    def __init__(self, distance: float, dynamic: MagnebotDynamic, collision_detection: CollisionDetection,
+                 arrived_at: float = 0.1, previous: Action = None):
         """
         :param distance: The target distance.
         :param arrived_at: If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
-        :param static: [The static Magnebot data.](../magnebot_static.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
-        :param image_frequency: [How image data will be captured during the image.](../image_frequency.md)
         :param collision_detection: [The collision detection rules.](../collision_detection.md)
         :param previous: The previous action, if any.
         """
 
         self._distance: float = distance
         self._arrived_at: float = arrived_at
-        super().__init__(static=static, dynamic=dynamic, collision_detection=collision_detection, previous=previous,
-                         image_frequency=image_frequency)
+        super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous)
         # Get the initial state.
-        self._initial_position_arr: np.array = np.array(self.dynamic.transform.position[:])
+        self._initial_position_arr: np.array = np.array(dynamic.transform.position[:])
         self._initial_position_v3: Dict[str, float] = TDWUtils.array_to_vector3(self._initial_position_arr)
-        self._target_position_arr: np.array = self.dynamic.transform.position + (self.dynamic.transform.forward * distance)
+        self._target_position_arr: np.array = dynamic.transform.position + (dynamic.transform.forward * distance)
         self._target_position_v3: Dict[str, float] = TDWUtils.array_to_vector3(self._target_position_arr)
         self._minimum_friction: float = DEFAULT_WHEEL_FRICTION
         # Get the angle that we expect the wheels should turn to in order to move the Magnebot.
@@ -52,25 +48,27 @@ class MoveBy(WheelMotion):
         if self._initial_distance < arrived_at:
             self.status = ActionStatus.success
 
-    def get_initialization_commands(self, resp: List[bytes]) -> List[dict]:
+    def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
+                                    image_frequency: ImageFrequency) -> List[dict]:
         # Start spinning the wheels.
-        commands = super().get_initialization_commands(resp=resp)
-        commands.extend(self._get_wheel_commands())
+        commands = super().get_initialization_commands(resp=resp, static=static, dynamic=dynamic,
+                                                       image_frequency=image_frequency)
+        commands.extend(self._get_wheel_commands(static=static, dynamic=dynamic))
         return commands
 
-    def _get_ongoing_commands(self, resp: List[bytes]) -> List[dict]:
-        p1 = self.dynamic.transform.position
+    def _get_ongoing_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
+        p1 = dynamic.transform.position
         d = np.linalg.norm(p1 - self._target_position_arr)
         # We've arrived at the target.
         if d < self._arrived_at:
             self.status = ActionStatus.success
             return []
-        elif not self._is_valid_ongoing():
+        elif not self._is_valid_ongoing(dynamic=dynamic):
             return []
         else:
             next_attempt: bool = False
             # We are still moving.
-            if self._move_frames < 2000 and self._wheels_are_turning():
+            if self._move_frames < 2000 and self._wheels_are_turning(static=static, dynamic=dynamic):
                 if self._wheel_motion_complete(resp=resp):
                     if self.status == ActionStatus.success:
                         return []
@@ -86,7 +84,7 @@ class MoveBy(WheelMotion):
                                 "arrived_at": self._arrived_at,
                                 "brake_distance": MoveBy._BRAKE_DISTANCE,
                                 "minimum_friction": self._minimum_friction,
-                                "id": self.static.robot_id}]
+                                "id": static.robot_id}]
             else:
                 next_attempt = True
             # Try another attempt.
@@ -102,13 +100,13 @@ class MoveBy(WheelMotion):
                     commands = []
                     # Start to brake.
                     if d < 0.5:
-                        commands.extend(self._set_brake_wheel_drives())
+                        commands.extend(self._set_brake_wheel_drives(static=static))
                         self._minimum_friction = BRAKE_FRICTION
                     self._spin = (d / WHEEL_CIRCUMFERENCE) * 360 * 0.5 * (1 if self._distance > 0 else -1)
                     d_total = np.linalg.norm(p1 - self._initial_position_arr)
                     if d_total > self._initial_distance:
                         self._spin *= -1
-                    commands.extend(self._get_wheel_commands())
+                    commands.extend(self._get_wheel_commands(static=static, dynamic=dynamic))
                     return commands
             else:
                 return []
@@ -119,17 +117,20 @@ class MoveBy(WheelMotion):
         else:
             return False
 
-    def _get_wheel_commands(self) -> List[dict]:
+    def _get_wheel_commands(self, static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
         """
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+
         :return: A list of commands to start spinning the wheels.
         """
 
         commands = []
-        for wheel in self.static.wheels:
+        for wheel in static.wheels:
             # Get the target from the current joint angles. Add or subtract the speed.
-            target = self.dynamic.joints[self.static.wheels[wheel]].angles[0] + self._spin
+            target = dynamic.joints[static.wheels[wheel]].angles[0] + self._spin
             commands.append({"$type": "set_revolute_target",
                              "target": target,
-                             "joint_id": self.static.wheels[wheel],
-                             "id": self.static.robot_id})
+                             "joint_id": static.wheels[wheel],
+                             "id": static.robot_id})
         return commands

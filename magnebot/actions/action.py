@@ -16,25 +16,11 @@ class Action(ABC):
     An action also has a status indicating whether it's ongoing, succeeded, or failed; and if it failed, why.
     """
 
-    def __init__(self, static: MagnebotStatic, dynamic: MagnebotDynamic, image_frequency: ImageFrequency):
+    def __init__(self):
         """
-        :param static: [The static Magnebot data.](../magnebot_static.md)
-        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
-        :param image_frequency: [How image data will be captured during the image.](../image_frequency.md)
+        (no parameters)
         """
 
-        """:field
-        [The static Magnebot data.](../magnebot_static.md)
-        """
-        self.static: MagnebotStatic = static
-        """:field
-        [The dynamic Magnebot data.](../magnebot_dynamic.md)
-        """
-        self.dynamic: MagnebotDynamic = dynamic
-        """:field
-        [How image data will be captured during the image.](../image_frequency.md)
-        """
-        self.image_frequency: ImageFrequency = image_frequency
         """:field
         [The current status of the action.](../action_status.md) By default, this is `ongoing` (the action isn't done).
         """
@@ -44,29 +30,33 @@ class Action(ABC):
         """
         self.initialized: bool = False
 
-    def get_initialization_commands(self, resp: List[bytes]) -> List[dict]:
+    def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
+                                    image_frequency: ImageFrequency) -> List[dict]:
         """
         :param resp: The response from the build.
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+        :param image_frequency: [How image data will be captured during the image.](../image_frequency.md)
 
         :return: A list of commands to initialize this action.
         """
 
         # If we only want images at the start of the action or never, disable the camera now.
-        if self.image_frequency == ImageFrequency.once or self.image_frequency == ImageFrequency.never:
+        if image_frequency == ImageFrequency.once or image_frequency == ImageFrequency.never:
             commands = [{"$type": "enable_image_sensor",
                          "enable": False,
-                         "avatar_id": self.static.avatar_id}]
+                         "avatar_id": static.avatar_id}]
         # If we want images per frame, enable image capture now.
-        elif self.image_frequency == ImageFrequency.always:
+        elif image_frequency == ImageFrequency.always:
             commands = [{"$type": "enable_image_sensor",
                          "enable": True,
-                         "avatar_id": self.static.avatar_id},
+                         "avatar_id": static.avatar_id},
                         {"$type": "send_images",
                          "frequency": "always"},
                         {"$type": "send_camera_matrices",
                          "frequency": "always"}]
         else:
-            raise Exception(f"Invalid image capture option: {self.image_frequency}")
+            raise Exception(f"Invalid image capture option: {image_frequency}")
         return commands
 
     def set_status_after_initialization(self) -> None:
@@ -78,30 +68,36 @@ class Action(ABC):
         pass
 
     @abstractmethod
-    def get_ongoing_commands(self, resp: List[bytes]) -> List[dict]:
+    def get_ongoing_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
         """
         Evaluate an action per-frame to determine whether it's done.
 
         :param resp: The response from the build.
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
 
         :return: Tuple: An `ActionStatus` describing whether the action is ongoing, succeeded, or failed; A list of commands to send to the build if the action is ongoing.
         """
 
         raise Exception()
 
-    def get_end_commands(self, resp: List[bytes]) -> List[dict]:
+    def get_end_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
+                         image_frequency: ImageFrequency,) -> List[dict]:
         """
         :param resp: The response from the build.
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+        :param image_frequency: [How image data will be captured during the image.](../image_frequency.md)
 
         :return: A list of commands that must be sent to end any action.
         """
 
         commands: List[dict] = list()
         # Enable image capture on this frame only.
-        if self.image_frequency == ImageFrequency.once:
+        if image_frequency == ImageFrequency.once:
             commands.extend([{"$type": "enable_image_sensor",
                               "enable": True,
-                              "avatar_id": self.static.avatar_id},
+                              "avatar_id": static.avatar_id},
                              {"$type": "send_images",
                               "frequency": "once"},
                              {"$type": "send_camera_matrices",
@@ -109,26 +105,29 @@ class Action(ABC):
         return commands
 
     @final
-    def _absolute_to_relative(self, position: np.array) -> np.array:
+    def _absolute_to_relative(self, position: np.array, dynamic: MagnebotDynamic) -> np.array:
         """
         :param position: The position in absolute world coordinates.
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
 
         :return: The converted position relative to the Magnebot's position and rotation.
         """
 
         return QuaternionUtils.world_to_local_vector(position=position,
-                                                     origin=self.dynamic.transform.position,
-                                                     rotation=self.dynamic.transform.rotation)
+                                                     origin=dynamic.transform.position,
+                                                     rotation=dynamic.transform.rotation)
 
     @final
-    def _is_tipping(self) -> Tuple[bool, bool]:
+    def _is_tipping(self, dynamic: MagnebotDynamic) -> Tuple[bool, bool]:
         """
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+
         :return: Tuple: True if the Magnebot has tipped over; True if the Magnebot is tipping.
         """
 
-        bottom_top_distance = np.linalg.norm(np.array([self.dynamic.transform.position[0],
-                                                       self.dynamic.transform.position[2]]) -
-                                             np.array([self.dynamic.top[0], self.dynamic.top[2]]))
+        bottom_top_distance = np.linalg.norm(np.array([dynamic.transform.position[0],
+                                                       dynamic.transform.position[2]]) -
+                                             np.array([dynamic.top[0], dynamic.top[2]]))
         return bottom_top_distance > 1.7, bottom_top_distance > 0.4
 
     @staticmethod

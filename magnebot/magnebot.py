@@ -29,6 +29,7 @@ from magnebot.actions.rotate_camera import RotateCamera
 from magnebot.actions.reset_camera import ResetCamera
 from magnebot.actions.wait import Wait
 from magnebot.constants import TDW_VERSION
+from magnebot.wheel import Wheel
 
 
 class Magnebot(RobotBase):
@@ -284,7 +285,8 @@ class Magnebot(RobotBase):
                 # Some actions can fail immediately.
                 if self.action.status == ActionStatus.ongoing:
                     self.action.initialized = True
-                    initialization_commands = self.action.get_initialization_commands(resp=resp)
+                    initialization_commands = self.action.get_initialization_commands(resp=resp, static=self.static,
+                                                                                      dynamic=self.dynamic, image_frequency=self.image_frequency)
                     # This is an ongoing action.
                     if self.action.status == ActionStatus.ongoing:
                         self.commands.extend(initialization_commands)
@@ -292,14 +294,14 @@ class Magnebot(RobotBase):
                         # This is required from one-frame actions such as RotateCamera.
                         self.action.set_status_after_initialization()
             else:
-                print(self.dynamic, self.action.dynamic)
-                action_commands = self.action.get_ongoing_commands(resp=resp)
+                action_commands = self.action.get_ongoing_commands(resp=resp, static=self.static, dynamic=self.dynamic)
                 # This is an ongoing action. Append ongoing commands.
                 if self.action.status == ActionStatus.ongoing:
                     self.commands.extend(action_commands)
                 # This action is done. Append end commands.
                 else:
-                    self.commands.extend(self.action.get_end_commands(resp=resp))
+                    self.commands.extend(self.action.get_end_commands(resp=resp, static=self.static,
+                                                                      dynamic=self.dynamic, image_frequency=self.image_frequency))
             # This action ended. Remember it as the previous action.
             if self.action.status != ActionStatus.ongoing:
                 # Remember the previous action.
@@ -316,8 +318,7 @@ class Magnebot(RobotBase):
         """
 
         self.action = TurnBy(angle=angle, aligned_at=aligned_at, collision_detection=self.collision_detection,
-                             previous=self._previous_action, static=self.static, dynamic=self.dynamic,
-                             image_frequency=self.image_frequency)
+                             previous=self._previous_action, dynamic=self.dynamic)
 
     def turn_to(self, target: Union[int, Dict[str, float], np.ndarray], aligned_at: float = 1) -> None:
         """
@@ -330,8 +331,7 @@ class Magnebot(RobotBase):
         """
 
         self.action = TurnTo(target=target, aligned_at=aligned_at, collision_detection=self.collision_detection,
-                             previous=self._previous_action, static=self.static, dynamic=self.dynamic,
-                             image_frequency=self.image_frequency)
+                             previous=self._previous_action, dynamic=self.dynamic)
 
     def move_by(self, distance: float, arrived_at: float = 0.1) -> None:
         """
@@ -342,8 +342,7 @@ class Magnebot(RobotBase):
         """
 
         self.action = MoveBy(distance=distance, arrived_at=arrived_at, collision_detection=self.collision_detection,
-                             previous=self._previous_action, static=self.static, dynamic=self.dynamic,
-                             image_frequency=self.image_frequency)
+                             previous=self._previous_action, dynamic=self.dynamic)
 
     def move_to(self, target: Union[int, Dict[str, float], np.ndarray], arrived_at: float = 0.1, aligned_at: float = 1) -> None:
         """
@@ -354,8 +353,7 @@ class Magnebot(RobotBase):
         :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
         """
 
-        self.action = MoveTo(target=target, static=self.static, dynamic=self.dynamic,
-                             image_frequency=self.image_frequency, collision_detection=self.collision_detection,
+        self.action = MoveTo(target=target, dynamic=self.dynamic, collision_detection=self.collision_detection,
                              arrived_at=arrived_at, aligned_at=aligned_at, previous=self._previous_action)
 
     def reach_for(self, target: Union[Dict[str, float], np.ndarray], arm: Arm, absolute: bool = True,
@@ -377,8 +375,7 @@ class Magnebot(RobotBase):
             target = TDWUtils.vector3_to_array(target)
 
         self.action = ReachFor(target=target, arm=arm, absolute=absolute, orientation_mode=orientation_mode,
-                               target_orientation=target_orientation, arrived_at=arrived_at, static=self.static,
-                               dynamic=self.dynamic, image_frequency=self.image_frequency)
+                               target_orientation=target_orientation, arrived_at=arrived_at, dynamic=self.dynamic)
 
     def grasp(self, target: int, arm: Arm, orientation_mode: OrientationMode = OrientationMode.auto,
               target_orientation: TargetOrientation = TargetOrientation.auto) -> None:
@@ -393,8 +390,7 @@ class Magnebot(RobotBase):
         """
 
         self.action = Grasp(target=target, arm=arm, orientation_mode=orientation_mode,
-                            target_orientation=target_orientation, static=self.static, dynamic=self.dynamic,
-                            image_frequency=self.image_frequency)
+                            target_orientation=target_orientation, dynamic=self.dynamic)
 
     def drop(self, target: int, arm: Arm, wait_for_object: bool) -> None:
         """
@@ -405,8 +401,7 @@ class Magnebot(RobotBase):
         :param wait_for_object: If True, the action will continue until the object has finished falling. If False, the action advances the simulation by exactly 1 frame.
         """
 
-        self.action = Drop(arm=arm, target=target, wait_for_object=wait_for_object,
-                           static=self.static, dynamic=self.dynamic, image_frequency=self.image_frequency)
+        self.action = Drop(arm=arm, target=target, wait_for_object=wait_for_object, dynamic=self.dynamic)
 
     def reset_arm(self, arm: Arm) -> None:
         """
@@ -415,7 +410,7 @@ class Magnebot(RobotBase):
         :param arm: [The arm to reset.](arm.md)
         """
 
-        self.action = ResetArm(arm=arm, static=self.static, dynamic=self.dynamic, image_frequency=self.image_frequency)
+        self.action = ResetArm(arm=arm)
 
     def reset_position(self) -> None:
         """
@@ -427,7 +422,7 @@ class Magnebot(RobotBase):
         This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
         """
 
-        self.action = ResetPosition(static=self.static, dynamic=self.dynamic, image_frequency=self.image_frequency)
+        self.action = ResetPosition()
 
     def rotate_camera(self, roll: float, pitch: float, yaw: float) -> None:
         """
@@ -446,16 +441,18 @@ class Magnebot(RobotBase):
         :param yaw: The yaw angle in degrees.
         """
 
-        self.action = RotateCamera(roll=roll, pitch=pitch, yaw=yaw, camera_rpy=self.camera_rpy, static=self.static,
-                                   dynamic=self.dynamic, image_frequency=self.image_frequency)
+        self.action = RotateCamera(roll=roll, pitch=pitch, yaw=yaw, camera_rpy=self.camera_rpy)
+        # Update the camera RPY angles.
+        self.camera_rpy = np.array(self.action.camera_rpy[:])
 
     def reset_camera(self) -> None:
         """
         Reset the rotation of the Magnebot's camera to its default angles.
         """
 
-        self.action = ResetCamera(camera_rpy=self.camera_rpy, static=self.static, dynamic=self.dynamic,
-                                  image_frequency=self.image_frequency)
+        self.action = ResetCamera()
+        # Reset the camera RPY angles.
+        self.camera_rpy = np.array([0, 0, 0])
 
     def _cache_static_data(self, resp: List[bytes]) -> None:
         """
@@ -472,12 +469,7 @@ class Magnebot(RobotBase):
                                                    comparison=">=")
         self.static = MagnebotStatic(robot_id=self.robot_id, resp=resp)
         # Wait for the joints to finish moving.
-        self.action = Wait(static=self.static,
-                           dynamic=MagnebotDynamic(robot_id=self.robot_id,
-                                                   resp=resp,
-                                                   body_parts=self.static.body_parts,
-                                                   frame_count=0),
-                           image_frequency=self.image_frequency)
+        self.action = Wait()
         # Add an avatar and set up its camera.
         self.commands.extend([{"$type": "create_avatar",
                                "type": "A_Img_Caps_Kinematic",
@@ -513,10 +505,17 @@ class Magnebot(RobotBase):
             frame_count = self.dynamic.frame_count
         dynamic = MagnebotDynamic(resp=resp, robot_id=self.robot_id, body_parts=self.static.body_parts,
                                   previous=self.dynamic, frame_count=frame_count)
+        wheels_moving: Dict[Wheel, bool] = dict()
+        if self.dynamic is not None:
+            # Set whether the wheels are moving.
+            for wheel in self.static.wheels:
+                wheel_id = self.static.wheels[wheel]
+                wheels_moving[wheel] = np.linalg.norm(self.dynamic.joints[wheel_id].angles[0] -
+                                                      dynamic.joints[wheel_id].angles[0]) > 0.1
         self.dynamic = self._set_joints_moving(dynamic)
-        if self.action is not None:
-            self.action.dynamic = self.dynamic
-            print(self.dynamic.transform.rotation, self.action.dynamic.transform.rotation, "!!!")
+        # Set whether the wheels are moving.
+        for wheel in wheels_moving:
+            self.dynamic.joints[self.static.wheels[wheel]].moving = wheels_moving[wheel]
 
     def _get_add_robot_command(self) -> dict:
         """

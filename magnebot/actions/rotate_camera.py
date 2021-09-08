@@ -3,8 +3,8 @@ import numpy as np
 from magnebot.action_status import ActionStatus
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.magnebot_static import MagnebotStatic
-from magnebot.actions.camera_action import CameraAction
 from magnebot.image_frequency import ImageFrequency
+from magnebot.actions.camera_action import CameraAction
 
 
 class RotateCamera(CameraAction):
@@ -20,19 +20,20 @@ class RotateCamera(CameraAction):
     | yaw | -85 | 85 |
     """
 
-    def __init__(self, roll: float, pitch: float, yaw: float, camera_rpy: np.array,  static: MagnebotStatic, dynamic: MagnebotDynamic,
-                 image_frequency: ImageFrequency):
+    """:class_var
+    The camera roll, pitch, yaw constraints in degrees.
+    """
+    CAMERA_RPY_CONSTRAINTS: List[float] = [55, 70, 85]
+
+    def __init__(self, roll: float, pitch: float, yaw: float, camera_rpy: np.array):
         """
         :param roll: The roll angle in degrees.
         :param pitch: The pitch angle in degrees.
         :param yaw: The yaw angle in degrees.
         :param camera_rpy: The current camera angles.
-        :param static: [The static Magnebot data.](../magnebot_static.md)
-        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
-        :param image_frequency: [How image data will be captured during the image.](../image_frequency.md)
         """
 
-        super().__init__(static=static, dynamic=dynamic, image_frequency=image_frequency)
+        super().__init__()
         """:field
         Rotate the camera by these delta (roll, pitch, yaw). This will be clamped to the maximum RPY values.
         """
@@ -48,16 +49,22 @@ class RotateCamera(CameraAction):
                     self.deltas[i] = RotateCamera.CAMERA_RPY_CONSTRAINTS[i] - camera_rpy[i]
                 else:
                     self.deltas[i] = -RotateCamera.CAMERA_RPY_CONSTRAINTS[i] - camera_rpy[i]
+        """:field
+        The adjust camera roll, pitch, yaw angles.
+        """
+        self.camera_rpy: np.array = np.array(camera_rpy[:])
         for i in range(len(camera_rpy)):
-            camera_rpy[i] += self.deltas[i]
+            self.camera_rpy[i] += self.deltas[i]
 
-    def get_initialization_commands(self, resp: List[bytes]) -> List[dict]:
-        commands = []
+    def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
+                                    image_frequency: ImageFrequency) -> List[dict]:
+        commands = super().get_initialization_commands(resp=resp, static=static, dynamic=dynamic,
+                                                       image_frequency=image_frequency)
         for angle, axis in zip(self.deltas, ["roll", "pitch", "yaw"]):
             commands.append({"$type": "rotate_sensor_container_by",
                              "axis": axis,
                              "angle": float(angle),
-                             "avatar_id": self.static.avatar_id})
+                             "avatar_id": static.avatar_id})
         return commands
 
     def set_status_after_initialization(self) -> None:
@@ -65,5 +72,3 @@ class RotateCamera(CameraAction):
             self.status = ActionStatus.clamped_camera_rotation
         else:
             self.status = ActionStatus.success
-
-

@@ -37,14 +37,12 @@ class IKMotion(ArmMotion, ABC):
     _IK_CHAINS: Dict[Arm, Chain] = dict()
 
     def __init__(self, arm: Arm, orientation_mode: OrientationMode, target_orientation: TargetOrientation,
-                 static: MagnebotStatic, dynamic: MagnebotDynamic, image_frequency: ImageFrequency):
+                 dynamic: MagnebotDynamic):
         """
         :param arm: [The arm used for this action.](../arm.md)
         :param orientation_mode: [The orientation mode.](../../arm_articulation.md)
         :param target_orientation: [The target orientation.](../../arm_articulation.md)
-        :param static: [The static Magnebot data.](../magnebot_static.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
-        :param image_frequency: [How image data will be captured during the image.](../image_frequency.md)
         """
 
         # Cache the IK chains.
@@ -52,9 +50,9 @@ class IKMotion(ArmMotion, ABC):
             IKMotion._IK_CHAINS = {Arm.left: Chain(name=Arm.left.name, links=IKMotion._get_ik_links(Arm.left)),
                                    Arm.right: Chain(name=Arm.right.name, links=IKMotion._get_ik_links(Arm.right))}
 
-        super().__init__(arm=arm, static=static, dynamic=dynamic, image_frequency=image_frequency)
+        super().__init__(arm=arm)
         # The action immediately ends if the Magnebot is tipping.
-        has_tipped, is_tipping = self._is_tipping()
+        has_tipped, is_tipping = self._is_tipping(dynamic=dynamic)
         if has_tipped or is_tipping:
             self.status = ActionStatus.tipping
         self._arm_is_articulating: bool = False
@@ -70,12 +68,21 @@ class IKMotion(ArmMotion, ABC):
         self._arm_articulation_commands: List[List[dict]] = list()
         self._slide_torso: bool = False
 
-    def get_end_commands(self, resp: List[bytes]) -> List[dict]:
-        commands = super().get_end_commands(resp=resp)
-        commands.extend(self._get_stop_arm_commands())
+    def get_end_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
+                         image_frequency: ImageFrequency) -> List[dict]:
+        commands = super().get_end_commands(resp=resp, static=static, dynamic=dynamic, image_frequency=image_frequency)
+        commands.extend(self._get_stop_arm_commands(static=static, dynamic=dynamic))
         return commands
 
-    def _set_start_arm_articulation_commands(self, arrived_at: float = 0.125) -> None:
+    def _set_start_arm_articulation_commands(self, static: MagnebotStatic, dynamic: MagnebotDynamic, arrived_at: float = 0.125) -> None:
+        """
+        Set the lists of commands for arm articulation.
+
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+        :param arrived_at: If the magnet is this distance from the target, it has arrived.
+        """
+
         self._slide_torso = False
         self._arm_articulation_commands.clear()
         # Get the relative target position.
@@ -94,13 +101,13 @@ class IKMotion(ArmMotion, ABC):
             return
 
         # Get the initial angles of each joint. The first angle is always 0 (the origin link).
-        initial_angles = self._get_initial_angles(arm=self._arm)
+        initial_angles = self._get_initial_angles(arm=self._arm, dynamic=dynamic, static=static)
         orientation_mode = self._orientations[self._orientation_index].orientation_mode
         target_orientation = self._orientations[self._orientation_index].target_orientation
         # Get the IK solution.
         ik = IKMotion._IK_CHAINS[self._arm].inverse_kinematics(target_position=target,
                                                                initial_position=initial_angles,
-                                                               orientation_mode=str(orientation_mode) if isinstance(
+                                                               orientation_mode=orientation_mode.value if isinstance(
                                                                    orientation_mode.value, str) else None,
                                                                target_orientation=np.array(
                                                                    target_orientation.value) if isinstance(
@@ -137,18 +144,28 @@ class IKMotion(ArmMotion, ABC):
                 angles.append(float(np.rad2deg(angle)))
         # Slide the torso to the desired height.
         if target[1] > DEFAULT_TORSO_Y:
-            torso_id = self.static.arm_joints[ArmJoint.torso]
+            torso_id = static.arm_joints[ArmJoint.torso]
             self._arm_articulation_commands.append([{"$type": "set_prismatic_target",
                                                      "joint_id": torso_id,
                                                      "target": torso_prismatic,
-                                                     "id": self.static.robot_id}])
-            self._arm_articulation_commands.append(self._get_ik_commands(angles=angles, torso=False))
+                                                     "id": static.robot_id}])
+            self._arm_articulation_commands.append(self._get_ik_commands(angles=angles, static=static, torso=False))
             self._slide_torso = True
         # Move all joints at once (including the torso prismatic joint).
         else:
-            self._arm_articulation_commands.append(self._get_ik_commands(angles=angles, torso=True))
+            self._arm_articulation_commands.append(self._get_ik_commands(angles=angles, static=static, torso=True))
 
-    def _evaluate_arm_articulation(self, resp: List[bytes]) -> List[dict]:
+    def _evaluate_arm_articulation(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
+        """
+        Continue an arm articulation motion.
+
+        :param resp: The response from the build.
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+
+        :return: A list of commands to continue or stop the motion,
+        """
+
         if self.status != ActionStatus.ongoing:
             return []
         num_commands = len(self._arm_articulation_commands)
@@ -159,28 +176,30 @@ class IKMotion(ArmMotion, ABC):
             # Wait until the torso stops moving.
             if self._slide_torso:
                 # Start moving everything else.
-                if not self.dynamic.joints[self.static.arm_joints[ArmJoint.torso]].moving:
+                if not dynamic.joints[static.arm_joints[ArmJoint.torso]].moving:
                     commands = [{"$type": "set_prismatic_target",
-                                 "joint_id": self.static.arm_joints[ArmJoint.torso],
-                                 "target": float(np.radians(self.dynamic.joints[self.static.arm_joints[ArmJoint.torso]].angles[0])),
-                                 "id": self.static.robot_id}]
+                                 "joint_id": static.arm_joints[ArmJoint.torso],
+                                 "target": float(np.radians(dynamic.joints[static.arm_joints[ArmJoint.torso]].angles[0])),
+                                 "id": static.robot_id}]
                     commands.extend(self._arm_articulation_commands.pop(0))
                     return commands
+                else:
+                    return self._arm_articulation_commands.pop(0)
             # Star moving everything at once.
             else:
                 return self._arm_articulation_commands.pop(0)
         elif num_commands == 0:
             # Stop the arms.
-            if not self._joints_are_moving():
-                if self._is_success(resp=resp):
+            if not self._joints_are_moving(static=static, dynamic=dynamic):
+                if self._is_success(resp=resp, static=static, dynamic=dynamic):
                     self.status = ActionStatus.success
                 else:
                     # Try again. Possibly fail.
-                    self._set_start_arm_articulation_commands()
+                    self._set_start_arm_articulation_commands(static=static, dynamic=dynamic)
             # Continue the action.
             else:
                 # Succeed during the action.
-                if self._is_success(resp=resp):
+                if self._is_success(resp=resp, static=static, dynamic=dynamic):
                     self.status = ActionStatus.success
             return []
         else:
@@ -219,12 +238,13 @@ class IKMotion(ArmMotion, ABC):
         return [ORIENTATIONS[o] for o in orientations if o >= 0]
 
     @final
-    def _get_ik_commands(self, angles: np.array, torso: bool) -> List[dict]:
+    def _get_ik_commands(self, angles: np.array, torso: bool, static: MagnebotStatic) -> List[dict]:
         """
         Convert target angles to TDW commands and append them to `_next_frame_commands`.
 
         :param angles: The target angles in degrees.
         :param torso: If True, add torso commands.
+        :param static: [The static Magnebot data.](../magnebot_static.md)
         """
 
         # Convert the IK solution into TDW commands, using the expected joint and axis order.
@@ -233,21 +253,21 @@ class IKMotion(ArmMotion, ABC):
         joint_order_index = 0
         while i < len(angles):
             joint_name = ArmMotion._JOINT_ORDER[self._arm][joint_order_index]
-            joint_id = self.static.arm_joints[joint_name]
-            joint_type = self.static.joints[joint_id].joint_type
+            joint_id = static.arm_joints[joint_name]
+            joint_type = static.joints[joint_id].joint_type
             # If this is a revolute joint, the next command includes only the next angle.
             if joint_type == JointType.revolute:
                 commands.append({"$type": "set_revolute_target",
                                  "joint_id": joint_id,
                                  "target": angles[i],
-                                 "id": self.static.robot_id})
+                                 "id": static.robot_id})
                 i += 1
             # If this is a spherical joint, the next command includes the next 3 angles.
             elif joint_type == JointType.spherical:
                 commands.append({"$type": "set_spherical_target",
                                  "joint_id": joint_id,
                                  "target": {"x": angles[i], "y": angles[i + 1], "z": angles[i + 2]},
-                                 "id": self.static.robot_id})
+                                 "id": static.robot_id})
                 i += 3
             elif joint_type == JointType.prismatic:
                 # Sometimes, we want the torso at its current position.
@@ -255,7 +275,7 @@ class IKMotion(ArmMotion, ABC):
                     commands.append({"$type": "set_prismatic_target",
                                      "joint_id": joint_id,
                                      "target": angles[i],
-                                     "id": self.static.robot_id})
+                                     "id": static.robot_id})
                 i += 1
             else:
                 raise Exception(f"Joint type not defined: {joint_type} for {joint_name}.")
@@ -263,9 +283,12 @@ class IKMotion(ArmMotion, ABC):
             joint_order_index += 1
         return commands
 
-    def _get_initial_angles(self, arm: Arm) -> np.array:
+    @staticmethod
+    def _get_initial_angles(arm: Arm, static: MagnebotStatic, dynamic: MagnebotDynamic) -> np.array:
         """
         :param arm: The arm.
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
 
         :return: The angles of the arm in the current state.
         """
@@ -274,8 +297,8 @@ class IKMotion(ArmMotion, ABC):
         # The first angle is always 0 (the origin link).
         initial_angles = [0]
         for j in ArmMotion._JOINT_ORDER[arm]:
-            j_id = self.static.arm_joints[j]
-            initial_angles.extend(self.dynamic.joints[j_id].angles)
+            j_id = static.arm_joints[j]
+            initial_angles.extend(dynamic.joints[j_id].angles)
         # Add the magnet.
         initial_angles.append(0)
         return np.radians(initial_angles)
@@ -352,9 +375,11 @@ class IKMotion(ArmMotion, ABC):
         raise Exception()
 
     @abstractmethod
-    def _is_success(self, resp: List[bytes]) -> bool:
+    def _is_success(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic) -> bool:
         """
         :param resp: The response from the build.
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
 
         :return: True if the action was successful.
         """
