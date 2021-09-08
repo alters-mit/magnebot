@@ -52,7 +52,6 @@ class TurnTo(Turn):
                 if transforms.get_id(i) == self.__target:
                     object_position = np.array(transforms.get_position(i))
                     break
-
             self.target_arr: np.array = object_position
             self.target_dict: Dict[str, float] = TDWUtils.array_to_vector3(object_position)
         elif isinstance(self.__target, dict):
@@ -63,11 +62,19 @@ class TurnTo(Turn):
             self.target_dict: Dict[str, float] = TDWUtils.array_to_vector3(self.__target)
         else:
             raise Exception(f"Invalid target: {self.__target}")
+        self._angle = self._get_angle()
+        print(self._angle)
         return super().get_initialization_commands(resp=resp)
 
     def _get_angle(self) -> float:
-        return TDWUtils.get_angle_between(v1=self.dynamic.transform.forward,
-                                          v2=self.target_arr - self.dynamic.transform.position)
+        self._angle = TDWUtils.get_angle_between(v1=self.dynamic.transform.forward,
+                                                 v2=self.target_arr - self.dynamic.transform.position)
+        # Clamp the angle and set the delta angle and previous delta angle.
+        self._clamp_angle()
+        self._max_attempts: int = int((np.abs(self._angle) + 1) / 2)
+        self._delta_angle: float = self._angle
+        self._previous_delta_angle: float = self._angle
+        return self._angle
 
     def _get_turn_command(self) -> dict:
         return {"$type": "set_magnebot_wheels_during_turn_to",

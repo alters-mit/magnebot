@@ -45,16 +45,11 @@ class Turn(WheelMotion, ABC):
         :param previous: The previous action, if any.
         """
 
-        self._angle = self._get_angle()
-        # Clamp the angle.
-        if np.abs(self._angle) > 180:
-            if self._angle > 0:
-                self._angle -= 360
-            else:
-                self._angle += 360
-        self._aligned_at: float = aligned_at
         super().__init__(static=static, dynamic=dynamic, collision_detection=collision_detection, previous=previous,
                          image_frequency=image_frequency)
+        self._angle = self._get_angle()
+        self._clamp_angle()
+        self._aligned_at: float = aligned_at
         self._max_attempts: int = int((np.abs(self._angle) + 1) / 2)
         self._attempts: int = 0
         self._turn_frames: int = 0
@@ -64,16 +59,19 @@ class Turn(WheelMotion, ABC):
         self._previous_delta_angle: float = self._angle
         # The initial forward directional vector of the Magnebot.
         self._initial_forward_vector: np.array = TDWUtils.array_to_vector3(self.dynamic.transform.forward)
+        self._initial_rotation = self.dynamic.transform.rotation
         # The minimum friction for the wheels.
         self._minimum_friction: float = DEFAULT_WHEEL_FRICTION
         if self._max_attempts == 0:
             self.status = ActionStatus.success
 
     @final
-    def get_ongoing_commands(self, resp: List[bytes]) -> List[dict]:
+    def _get_ongoing_commands(self, resp: List[bytes]) -> List[dict]:
+        print(self.dynamic)
         # Get the change in angle from the initial rotation.
-        theta = QuaternionUtils.get_y_angle(self.dynamic.transform.rotation,
+        theta = QuaternionUtils.get_y_angle(self._initial_rotation,
                                             self.dynamic.transform.rotation)
+        print(self._angle, theta, np.abs(self._angle - theta), self._initial_rotation, self.dynamic.transform.rotation)
         if np.abs(self._angle - theta) < self._aligned_at:
             self.status = ActionStatus.success
             return []
@@ -97,6 +95,8 @@ class Turn(WheelMotion, ABC):
                 else:
                     return []
         if next_attempt:
+            if self._attempts == 0:
+                return self._get_wheel_commands()
             # Course-correct the angle.
             self._delta_angle = self._angle - theta
             # Handle cases where we flip over the axis.
@@ -114,6 +114,17 @@ class Turn(WheelMotion, ABC):
             return (previous._angle > 0 and self._angle > 0) or (previous._angle < 0 and self._angle < 0)
         else:
             return False
+
+    def _clamp_angle(self) -> None:
+        """
+        Clamp the target angle to be within 180 degrees.
+        """
+
+        if np.abs(self._angle) > 180:
+            if self._angle > 0:
+                self._angle -= 360
+            else:
+                self._angle += 360
 
     @final
     def _get_wheel_commands(self) -> List[dict]:

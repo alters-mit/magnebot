@@ -17,7 +17,7 @@ from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.image_frequency import ImageFrequency
 from magnebot.actions.arm_motion import ArmMotion
-from magnebot.paths import IK_ORIENTATIONS_LEFT_PATH, IK_ORIENTATIONS_RIGHT_PATH
+from magnebot.paths import IK_ORIENTATIONS_LEFT_PATH, IK_ORIENTATIONS_RIGHT_PATH, IK_POSITIONS_PATH
 from magnebot.constants import TORSO_MAX_Y, TORSO_MIN_Y, COLUMN_Y, DEFAULT_TORSO_Y
 
 
@@ -32,6 +32,7 @@ class IKMotion(ArmMotion, ABC):
         if not ik_path.exists():
             continue
         _CACHED_IK_ORIENTATIONS[arm] = np.load(str(ik_path.resolve()))
+    _CACHED_IK_POSITIONS: np.array = np.load(str(IK_POSITIONS_PATH.resolve()))
     # Cached IK chains.
     _IK_CHAINS: Dict[Arm, Chain] = dict()
 
@@ -48,8 +49,8 @@ class IKMotion(ArmMotion, ABC):
 
         # Cache the IK chains.
         if len(IKMotion._IK_CHAINS) == 0:
-            IKMotion._IK_CHAINS = {Arm.left, Chain(name=Arm.left.name, links=IKMotion._get_ik_links(Arm.left)),
-                                   Arm.right, Chain(name=Arm.right.name, links=IKMotion._get_ik_links(Arm.right))}
+            IKMotion._IK_CHAINS = {Arm.left: Chain(name=Arm.left.name, links=IKMotion._get_ik_links(Arm.left)),
+                                   Arm.right: Chain(name=Arm.right.name, links=IKMotion._get_ik_links(Arm.right))}
 
         super().__init__(arm=arm, static=static, dynamic=dynamic, image_frequency=image_frequency)
         # The action immediately ends if the Magnebot is tipping.
@@ -204,7 +205,7 @@ class IKMotion(ArmMotion, ABC):
         # Get the index of the nearest position using scipy, and use that index to get the corresponding orientation.
         # Source: https://stackoverflow.com/questions/52364222/find-closest-similar-valuevector-inside-a-matrix
         # noinspection PyArgumentList
-        orientations = [IKMotion._CACHED_IK_ORIENTATIONS[arm][cKDTree(IKMotion._CACHED_IK_ORIENTATIONS).query(target, k=1)[1]]]
+        orientations = [IKMotion._CACHED_IK_ORIENTATIONS[arm][cKDTree(IKMotion._CACHED_IK_POSITIONS).query(target, k=1)[1]]]
 
         # If we couldn't find a solution, assume that there isn't one and return an empty list.
         if orientations[0] < 0:
@@ -213,7 +214,7 @@ class IKMotion(ArmMotion, ABC):
         # Append other orientation options that are nearby.
         # noinspection PyArgumentList
         orientations.extend(list(set([IKMotion._CACHED_IK_ORIENTATIONS[arm][i] for i in
-                                      cKDTree(IKMotion._CACHED_IK_ORIENTATIONS).query(target, k=9)[1] if
+                                      cKDTree(IKMotion._CACHED_IK_POSITIONS).query(target, k=9)[1] if
                                       IKMotion._CACHED_IK_ORIENTATIONS[arm][i] not in orientations])))
         return [ORIENTATIONS[o] for o in orientations if o >= 0]
 
@@ -273,7 +274,7 @@ class IKMotion(ArmMotion, ABC):
         # The first angle is always 0 (the origin link).
         initial_angles = [0]
         for j in ArmMotion._JOINT_ORDER[arm]:
-            j_id = self.status.arm_joints[j]
+            j_id = self.static.arm_joints[j]
             initial_angles.extend(self.dynamic.joints[j_id].angles)
         # Add the magnet.
         initial_angles.append(0)

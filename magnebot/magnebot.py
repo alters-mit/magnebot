@@ -3,6 +3,7 @@ from copy import deepcopy
 import numpy as np
 from tdw.add_ons.robot_base import RobotBase
 from tdw.output_data import Version
+from tdw.tdw_utils import TDWUtils
 from tdw.release.pypi import PyPi
 from magnebot.util import get_data, check_version
 from magnebot.arm import Arm
@@ -30,7 +31,144 @@ from magnebot.actions.wait import Wait
 from magnebot.constants import TDW_VERSION
 
 
-class MagnebotAgent(RobotBase):
+class Magnebot(RobotBase):
+    """
+    The Magnebot agent is a high-level robotics-like API for [TDW](https://github.com/threedworld-mit/tdw) This high-level API supports:
+
+    - Creating a complex interior environment
+    - Directional movement
+    - Turning
+    - Arm articulation via inverse kinematics (IK)
+    - Grasping and dropping objects
+    - Image rendering
+    - Scene state metadata
+
+    The Magnebot has various [actions](../action.md). Each action has a start and end, and has a [status](action_status) that indicates if it is ongoing, if it succeeded, or if it failed (and if so, why).
+
+    ***
+
+    ## Basic usage
+
+    You can add a Magnebot to a regular TDW controller:
+
+    ```python
+    from tdw.controller import Controller
+    from tdw.tdw_utils import TDWUtils
+    from magnebot import Magnebot
+    from magnebot.action_status import ActionStatus
+
+    m = Magnebot(robot_id=0, position={"x": 0.5, "y": 0, "z": -1})
+    c = Controller()
+    c.start()
+    c.add_ons.append(m)
+    c.communicate(TDWUtils.create_empty_room(12, 12))
+    m.move_by(1)
+    while m.action.status == ActionStatus.ongoing:
+        c.communicate([])
+    c.communicate({"$type": "terminate"})
+    ```
+
+    It is possible to create a multi-agent Magnebot simulation simply by adding more Magnebot agents:
+
+    ```python
+    from tdw.controller import Controller
+    from tdw.tdw_utils import TDWUtils
+    from magnebot import Magnebot
+    from magnebot.action_status import ActionStatus
+
+    m0 = Magnebot(robot_id=0, position={"x": 0.5, "y": 0, "z": -1})
+    m1 = Magnebot(robot_id=1, position={"x": -0.5, "y": 0, "z": 1})
+    c = Controller()
+    c.start()
+    c.add_ons.extend([m0, m1])
+    c.communicate(TDWUtils.create_empty_room(12, 12))
+    m0.move_by(1)
+    m1.move_by(-2)
+    while m0.action.status == ActionStatus.ongoing:
+        c.communicate([])
+    c.communicate({"$type": "terminate"})
+    ```
+
+    For a simplified single-agent API, see [`MagnebotController`](magnebot_controller.md):
+
+    ```python
+    from magnebot import MagnebotController
+
+    m = MagnebotController()
+    m.init_scene()
+    m.move_by(2)
+    m.end()
+    ```
+
+    ***
+
+    ## Skipped frames
+
+    The `Magnebot` and `MagnebotController` were originally the same code--the controller was a hard-coded single-agent simulation.
+
+    The Magnebot has been designed so that a certain number of physics frames will be skipped per frame that actually returns data back to the controller. The `MagnebotController` does this automatically but you can easily add this to your simulation with a [`SkipFrames`](skip_frames.md) object:
+
+    ```python
+    from tdw.controller import Controller
+    from tdw.tdw_utils import TDWUtils
+    from magnebot.magnebot import Magnebot
+    from magnebot.skip_frames import SkipFrames
+
+    m = Magnebot()
+    s = SkipFrames(10)
+    c = Controller()
+    c.start()
+    c.add_ons.extend([m, s])
+    c.communicate(TDWUtils.create_empty_room(12, 12))
+    print(m.dynamic.transform.position)
+    c.communicate({"$type": "terminate"})
+    ```
+
+    ***
+
+    ## Parameter types
+
+    The types `Dict`, `Union`, and `List` are in the [`typing` module](https://docs.python.org/3/library/typing.html).
+
+    #### Dict[str, float]
+
+    Parameters of type `Dict[str, float]` are Vector3 dictionaries formatted like this:
+
+    ```json
+    {"x": -0.2, "y": 0.21, "z": 0.385}
+    ```
+
+    `y` is the up direction.
+
+    To convert from or to a numpy array:
+
+    ```python
+    from tdw.tdw_utils import TDWUtils
+
+    target = {"x": 1, "y": 0, "z": 0}
+    target = TDWUtils.vector3_to_array(target)
+    print(target) # [1 0 0]
+    target = TDWUtils.array_to_vector3(target)
+    print(target) # {'x': 1.0, 'y': 0.0, 'z': 0.0}
+    ```
+
+    #### Union[int, Dict[str, float], np.ndarray]
+
+    Parameters of type `Union[int, Dict[str, float], np.ndarray]` can be either a Vector3, an [x, y, z] numpy array, or an integer (an object ID).
+
+    #### Arm
+
+    All parameters of type `Arm` require you to import the [Arm enum class](arm.md):
+
+    ```python
+    from magnebot import Arm
+
+    print(Arm.left)
+    ```
+
+    ***
+    """
+
     # If True, we've already checked the version.
     _CHECKED_VERSION: bool = False
 
@@ -46,11 +184,42 @@ class MagnebotAgent(RobotBase):
 
         super().__init__(robot_id=robot_id, position=position, rotation=rotation)
         """:field
-        [Cached static data for the Magnebot.](magnebot_static.md)
+        [Cached static data for the Magnebot](magnebot_static.md) such as the IDs and segmentation colors of each joint:
+        
+        ```python
+        from tdw.controller import Controller
+        from tdw.tdw_utils import TDWUtils
+        from magnebot.magnebot import Magnebot
+    
+        m = Magnebot()
+        c = Controller()
+        c.start()
+        c.add_ons.append(m)
+        c.communicate(TDWUtils.create_empty_room(12, 12))
+        for arm_joint in m.static.arm_joints:
+            joint_id = m.static.arm_joints[arm_joint]
+            segmentation_color = m.static.joints[joint_id].segmentation_color
+            print(arm_joint, joint_id, segmentation_color)
+        c.communicate({"$type": "terminate"})
+        ```
         """
         self.static: Optional[MagnebotStatic] = None
         """:field
-        [Per-frame dynamic data for the Magnebot (including images).](magnebot_dynamic.md)
+        [Per-frame dynamic data for the Magnebot](magnebot_dynamic.md) such as its position and images:
+        
+        ```python
+        from tdw.controller import Controller
+        from tdw.tdw_utils import TDWUtils
+        from magnebot.magnebot import Magnebot
+    
+        m = Magnebot()
+        c = Controller()
+        c.start()
+        c.add_ons.append(m)
+        c.communicate(TDWUtils.create_empty_room(12, 12))
+        print(m.dynamic.transform.position)
+        c.communicate({"$type": "terminate"})
+        ```
         """
         self.dynamic: Optional[MagnebotDynamic] = None
         """:field
@@ -75,7 +244,7 @@ class MagnebotAgent(RobotBase):
 
     def get_initialization_commands(self) -> List[dict]:
         """
-        This function gets called exactly once per add-on. To re-initialize, set `self.initialized = False`.
+        This function gets called exactly once per add-on by the controller; don't call this function yourself!
 
         :return: A list of commands that will initialize this add-on.
         """
@@ -94,7 +263,7 @@ class MagnebotAgent(RobotBase):
                           "stay": False,
                           "exit": True,
                           "collision_types": ["obj", "env"]}])
-        if not MagnebotAgent._CHECKED_VERSION:
+        if not Magnebot._CHECKED_VERSION:
             commands.append({"$type": "send_version"})
         return commands
 
@@ -102,8 +271,7 @@ class MagnebotAgent(RobotBase):
         """
         This is called after commands are sent to the build and a response is received.
 
-        Use this function to send commands to the build on the next frame, given the `resp` response.
-        Any commands in the `self.commands` list will be sent on the next frame.
+        This function is called automatically by the controller; you don't need to call it yourself.
 
         :param resp: The response from the build.
         """
@@ -124,6 +292,7 @@ class MagnebotAgent(RobotBase):
                         # This is required from one-frame actions such as RotateCamera.
                         self.action.set_status_after_initialization()
             else:
+                print(self.dynamic, self.action.dynamic)
                 action_commands = self.action.get_ongoing_commands(resp=resp)
                 # This is an ongoing action. Append ongoing commands.
                 if self.action.status == ActionStatus.ongoing:
@@ -189,20 +358,23 @@ class MagnebotAgent(RobotBase):
                              image_frequency=self.image_frequency, collision_detection=self.collision_detection,
                              arrived_at=arrived_at, aligned_at=aligned_at, previous=self._previous_action)
 
-    def reach_for(self, target: Dict[str, float], arm: Arm, absolute: bool = True,
+    def reach_for(self, target: Union[Dict[str, float], np.ndarray], arm: Arm, absolute: bool = True,
                   orientation_mode: OrientationMode = OrientationMode.auto,
                   target_orientation: TargetOrientation = TargetOrientation.auto, arrived_at: float = 0.125) -> None:
         """
         Reach for a target position. The action ends when the magnet is at or near the target position, or if it fails to reach the target.
         The Magnebot may try to reach for the target multiple times, trying different IK orientations each time, or no times, if it knows the action will fail.
 
-        :param target: The target position.
-        :param arm: The arm that will reach for the target.
+        :param target: The target position. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array.
+        :param arm: [The arm that will reach for the target.](arm.md)
         :param absolute: If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot.
         :param arrived_at: If the magnet is this distance or less from `target`, then the action is successful.
         :param orientation_mode: [The orientation mode.](../arm_articulation.md)
         :param target_orientation: [The target orientation.](../arm_articulation.md)
         """
+
+        if isinstance(target, dict):
+            target = TDWUtils.vector3_to_array(target)
 
         self.action = ReachFor(target=target, arm=arm, absolute=absolute, orientation_mode=orientation_mode,
                                target_orientation=target_orientation, arrived_at=arrived_at, static=self.static,
@@ -215,7 +387,7 @@ class MagnebotAgent(RobotBase):
         The action ends when either the Magnebot grasps the object, can't grasp it, or fails arm articulation.
 
         :param target: The ID of the target object.
-        :param arm: [The arm used for this action.](../arm.md)
+        :param arm: [The arm that will reach for and grasp the target.](arm.md)
         :param orientation_mode: [The orientation mode.](../arm_articulation.md)
         :param target_orientation: [The target orientation.](../arm_articulation.md)
         """
@@ -229,7 +401,7 @@ class MagnebotAgent(RobotBase):
         Drop an object held by a magnet.
 
         :param target: The ID of the object currently held by the magnet.
-        :param arm: The arm of the magnet holding the object.
+        :param arm: [The arm of the magnet holding the object.](arm.md)
         :param wait_for_object: If True, the action will continue until the object has finished falling. If False, the action advances the simulation by exactly 1 frame.
         """
 
@@ -240,7 +412,7 @@ class MagnebotAgent(RobotBase):
         """
         Reset an arm to its neutral position.
 
-        :param arm: The arm to reset.
+        :param arm: [The arm to reset.](arm.md)
         """
 
         self.action = ResetArm(arm=arm, static=self.static, dynamic=self.dynamic, image_frequency=self.image_frequency)
@@ -286,8 +458,14 @@ class MagnebotAgent(RobotBase):
                                   image_frequency=self.image_frequency)
 
     def _cache_static_data(self, resp: List[bytes]) -> None:
-        if not MagnebotAgent._CHECKED_VERSION:
-            MagnebotAgent._CHECKED_VERSION = True
+        """
+        Cache static output data.
+
+        :param resp: The response from the build.
+        """
+
+        if not Magnebot._CHECKED_VERSION:
+            Magnebot._CHECKED_VERSION = True
             version_data = get_data(resp=resp, d_type=Version)
             build_version = version_data.get_tdw_version()
             PyPi.required_tdw_version_is_installed(required_version=TDW_VERSION, build_version=build_version,
@@ -317,9 +495,17 @@ class MagnebotAgent(RobotBase):
                                "avatar_id": self.static.avatar_id},
                               {"$type": "enable_image_sensor",
                                "enable": False,
-                               "avatar_id": self.static.avatar_id}])
+                               "avatar_id": self.static.avatar_id},
+                              {"$type": "set_img_pass_encoding",
+                               "value": False}])
 
     def _set_dynamic_data(self, resp: List[bytes]) -> None:
+        """
+        Set dynamic data.
+
+        :param resp: The response from the build.
+        """
+
         if self.dynamic is None:
             frame_count = 0
         else:
@@ -329,9 +515,14 @@ class MagnebotAgent(RobotBase):
                                   previous=self.dynamic, frame_count=frame_count)
         self.dynamic = self._set_joints_moving(dynamic)
         if self.action is not None:
-            self.action.dynamic = dynamic
+            self.action.dynamic = self.dynamic
+            print(self.dynamic.transform.rotation, self.action.dynamic.transform.rotation, "!!!")
 
     def _get_add_robot_command(self) -> dict:
+        """
+        :return: The command to add the Magnebot.
+        """
+
         return {"$type": "add_magnebot",
                 "position": self.initial_position,
                 "rotation": self.initial_rotation,

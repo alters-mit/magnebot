@@ -58,7 +58,7 @@ class MoveBy(WheelMotion):
         commands.extend(self._get_wheel_commands())
         return commands
 
-    def get_ongoing_commands(self, resp: List[bytes]) -> List[dict]:
+    def _get_ongoing_commands(self, resp: List[bytes]) -> List[dict]:
         p1 = self.dynamic.transform.position
         d = np.linalg.norm(p1 - self._target_position_arr)
         # We've arrived at the target.

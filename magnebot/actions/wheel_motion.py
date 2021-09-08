@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from overrides import final
 from tdw.output_data import OutputData, MagnebotWheels
 from magnebot.action_status import ActionStatus
+from magnebot.arm_joint import ArmJoint
 from magnebot.actions.action import Action
 from magnebot.image_frequency import ImageFrequency
 from magnebot.magnebot_static import MagnebotStatic
@@ -29,6 +30,7 @@ class WheelMotion(Action, ABC):
         super().__init__(static=static, dynamic=dynamic, image_frequency=image_frequency)
         # My collision detection rules.
         self._collision_detection: CollisionDetection = collision_detection
+        self._resetting: bool = False
         # Immediately end the action if we're currently tipping.
         has_tipped, is_tipping = self._is_tipping()
         if has_tipped:
@@ -46,9 +48,18 @@ class WheelMotion(Action, ABC):
         commands: List[dict] = list()
         # Make the robot moveable.
         if self.dynamic.immovable:
-            commands.append({"$type": "set_immovable",
-                             "id": self.static.robot_id,
-                             "immovable": False})
+            self._resetting = True
+            commands.extend([{"$type": "set_immovable",
+                              "id": self.static.robot_id,
+                              "immovable": False},
+                             {"$type": "set_prismatic_target",
+                              "joint_id": self.static.arm_joints[ArmJoint.torso],
+                              "target": 1,
+                              "id": self.static.robot_id},
+                             {"$type": "set_revolute_target",
+                              "joint_id": self.static.arm_joints[ArmJoint.column],
+                              "target": 0,
+                              "id": self.static.robot_id}])
         # Reset the drive values.
         for wheel_id in self.static.wheels.values():
             drive = self.static.joints[wheel_id].drives["x"]
@@ -63,6 +74,15 @@ class WheelMotion(Action, ABC):
                               "friction": DEFAULT_WHEEL_FRICTION,
                               "id": self.static.robot_id}])
         return commands
+
+    @final
+    def get_ongoing_commands(self, resp: List[bytes]) -> List[dict]:
+        if self._resetting:
+            self._resetting = self.dynamic.joints[self.static.arm_joints[ArmJoint.torso]].moving and \
+                              self.dynamic.joints[self.static.arm_joints[ArmJoint.column]].moving
+            return []
+        else:
+            return self._get_ongoing_commands(resp=resp)
 
     @final
     def get_end_commands(self, resp: List[bytes]) -> List[dict]:
@@ -189,6 +209,18 @@ class WheelMotion(Action, ABC):
         :param previous: The previous action.
 
         :return: True if the previous action was the "same" as this action for the purposes of collision detection.
+        """
+
+        raise Exception()
+
+    @abstractmethod
+    def _get_ongoing_commands(self, resp: List[bytes]) -> List[dict]:
+        """
+        Get ongoing commands assuming that the body isn't being reset.
+
+        :param resp: The response from the build.
+
+        :return: A list of ongoing commands.
         """
 
         raise Exception()

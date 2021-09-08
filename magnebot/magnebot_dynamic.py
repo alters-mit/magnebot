@@ -10,6 +10,37 @@ from magnebot.arm import Arm
 
 
 class MagnebotDynamic(RobotDynamic):
+    """
+    Dynamic data for the Magnebot.
+
+    With a [`Magnebot` agent](magnebot.md):
+
+    ```python
+    from tdw.controller import Controller
+    from tdw.tdw_utils import TDWUtils
+    from magnebot import Magnebot
+
+    m = Magnebot(robot_id=0, position={"x": 0.5, "y": 0, "z": -1})
+    c = Controller()
+    c.start()
+    c.add_ons.append(m)
+    c.communicate(TDWUtils.create_empty_room(12, 12))
+    print(m.dynamic.transform.position)
+    c.communicate({"$type": "terminate"})
+    ```
+
+    With a single-agent [`MagnebotController`](magnebot_controller.md):
+
+    ```python
+    from magnebot import MagnebotController
+
+    m = MagnebotController()
+    m.init_scene()
+    print(m.magnebot.dynamic.transform.position)
+    m.end()
+    ```
+    """
+
     def __init__(self, robot_id: int, resp: List[bytes], body_parts: List[int], frame_count: int, previous=None):
         super().__init__(robot_id=robot_id, resp=resp, body_parts=body_parts, previous=previous)
 
@@ -93,7 +124,7 @@ class MagnebotDynamic(RobotDynamic):
         Images will be named: `[frame_number]_[pass_name].[extension]`
         For example, the depth pass on the first frame will be named: `00000000_depth.png`
 
-        The `img` pass is either a .jpg or a .png file (see [the `img_is_png` parameter in the Magnebot constructor](magnebot_controller.md)). The `id` and `depth` passes are .png files.
+        The `img` pass is either a .jpg. The `id` and `depth` passes are .png files.
 
         :param output_directory: The directory that the images will be saved to.
         """
@@ -116,7 +147,7 @@ class MagnebotDynamic(RobotDynamic):
                 with p.open("wb") as f:
                     f.write(self.images[pass_name])
 
-    def get_pil_images(self) -> Dict[str, Image.Image]:
+    def get_pil_images(self) -> Dict[str, Image]:
         """
         Convert each image pass from the robot camera to PIL images.
 

@@ -17,7 +17,7 @@ class ReachFor(IKMotion):
     The Magnebot may try to reach for the target multiple times, trying different IK orientations each time, or no times, if it knows the action will fail.
     """
 
-    def __init__(self, target: Dict[str, float], absolute: bool, arm: Arm, orientation_mode: OrientationMode,
+    def __init__(self, target: np.array, absolute: bool, arm: Arm, orientation_mode: OrientationMode,
                  target_orientation: TargetOrientation, static: MagnebotStatic, dynamic: MagnebotDynamic,
                  image_frequency: ImageFrequency, arrived_at: float = 0.125):
         """
@@ -35,9 +35,8 @@ class ReachFor(IKMotion):
         super().__init__(arm=arm, orientation_mode=orientation_mode, target_orientation=target_orientation,
                          static=static, dynamic=dynamic, image_frequency=image_frequency)
         if absolute:
-            target = self._absolute_to_relative(position=TDWUtils.vector3_to_array(target))
-            target = TDWUtils.array_to_vector3(target)
-        self._target_arr: np.array = TDWUtils.vector3_to_array(target)
+            target = self._absolute_to_relative(position=target)
+        self._target_arr: np.array = target
         self._arrived_at: float = arrived_at
 
     def get_initialization_commands(self, resp: List[bytes]) -> List[dict]:
