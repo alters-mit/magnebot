@@ -43,6 +43,15 @@ class WheelMotion(Action, ABC):
 
     def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
                                     image_frequency: ImageFrequency) -> List[dict]:
+        """
+        :param resp: The response from the build.
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+        :param image_frequency: [How image data will be captured during the image.](../image_frequency.md)
+
+        :return: A list of commands to initialize this action.
+        """
+
         commands: List[dict] = super().get_initialization_commands(resp=resp, image_frequency=image_frequency,
                                                                    static=static, dynamic=dynamic)
         # Make the robot moveable.
@@ -76,6 +85,16 @@ class WheelMotion(Action, ABC):
 
     @final
     def get_ongoing_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
+        """
+        Evaluate an action per-frame to determine whether it's done.
+
+        :param resp: The response from the build.
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+
+        :return: Tuple: An `ActionStatus` describing whether the action is ongoing, succeeded, or failed; A list of commands to send to the build if the action is ongoing.
+        """
+
         if self._resetting:
             self._resetting = dynamic.joints[static.arm_joints[ArmJoint.torso]].moving and \
                               dynamic.joints[static.arm_joints[ArmJoint.column]].moving
@@ -86,6 +105,15 @@ class WheelMotion(Action, ABC):
     @final
     def get_end_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
                          image_frequency: ImageFrequency) -> List[dict]:
+        """
+        :param resp: The response from the build.
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+        :param image_frequency: [How image data will be captured during the image.](../image_frequency.md)
+
+        :return: A list of commands that must be sent to end any action.
+        """
+
         commands = []
         for wheel in static.wheels:
             # Set the target of each wheel to its current position.

@@ -15,7 +15,7 @@ class CollisionDetection:
         :param objects: If True, the Magnebot will stop when it collides collides with an object with a mass greater than the `mass` value unless the object is in the `exclude_objects`.
         :param include_objects: The Magnebot will stop if it collides with any object in this list, whether or not `objects == True`, or the mass of the object. Can be None.
         :param exclude_objects: The Magnebot will ignore a collision with any object in this list, *regardless* of whether or not `objects == True`. Can be None.
-        :param previous_was_same: If True, the Magnebot will stop if the previous action resulted in a collision and was the [same sort of action as the current one](collision_action.md).
+        :param previous_was_same: If True, the Magnebot will stop if the previous action resulted in a collision and was the same sort of action as the current one.
         """
 
         """:field
@@ -45,6 +45,6 @@ class CollisionDetection:
         else:
             self.exclude_objects: List[int] = exclude_objects
         """:field
-        If True, the Magnebot will stop if the previous action resulted in a collision and was the [same sort of action as the current one](collision_action.md).
+        If True, the Magnebot will stop if the previous action resulted in a collision and was the same sort of action as the current one.
         """
         self.previous_was_same: bool = previous_was_same

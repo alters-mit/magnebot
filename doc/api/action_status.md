@@ -6,21 +6,44 @@ The status of the Magnebot after doing an action.
 
 Usage:
 
-```python
-from magnebot import Magnebot
+With a [`Magnebot` agent](magnebot.md):
 
-m = Magnebot()
-m.init_floorplan_scene(scene="2a", layout=1)
-status = m.move_by(1)
-print(status) # ActionStatus.success
+```python
+from tdw.controller import Controller
+from tdw.tdw_utils import TDWUtils
+from magnebot import Magnebot, ActionStatus
+
+m = Magnebot(robot_id=0, position={"x": 0.5, "y": 0, "z": -1})
+c = Controller()
+c.add_ons.append(m)
+c.communicate(TDWUtils.create_empty_room(12, 12))
+m.move_by(1)
+print(m.action.status) # ActionStatus.ongoing
+while m.action.status == ActionStatus.ongoing:
+    c.communicate([])
+print(m.action.status) # ActionStatus.success
+c.communicate({"$type": "terminate"})
 ```
 
-If the Magnebot _tried to_ do something and failed, the Magnebot moved for _n_ frames before giving up.
+With a single-agent [`MagnebotController`](magnebot_controller.md):
 
-If the Magnebot _didn't try_ to do something, the action failed without advancing the simulation at all.
+```python
+from magnebot import MagnebotController
+
+m = MagnebotController()
+m.init_scene()
+status = m.move_by(1)
+print(status) # ActionStatus.success
+m.end()
+```
+
+If the status description states that the Magnebot _tried to_ do something and failed, it means that the Magnebot moved for _n_ frames before giving up.
+
+If the status description states that the Magnebot _didn't try_ to do something, it means that the action failed without advancing the simulation at all.
 
 | Value | Description |
 | --- | --- |
+| `ongoing` | The action is ongoing. |
 | `failure` | Generic failure code (useful for custom APIs). |
 | `success` | The action was successful. |
 | `failed_to_move` | Tried to move to a target position or object but failed. |
@@ -33,5 +56,5 @@ If the Magnebot _didn't try_ to do something, the action failed without advancin
 | `failed_to_bend` | Tried to bend its arm but failed to bend it all the way. |
 | `collision` | Tried to move or turn but failed because it collided with the environment (such as a wall) or a large object (mass > 30). |
 | `tipping` | Tried to move or turn but failed because it started to tip over. |
-| `not_in` | (Transport Challenge only) Tried and failed to put the object in the container. |
-| `still_in` | (Transport Challenge only) Tried and failed to pour all objects out of the container. |
+| `held_by_other` | Didn't try to grasp a target object because another Magnebot is already holding it. |
+| `cannot_reset_position` | Didn't try to reset the position because the Magnebot hasn't tipped over. |

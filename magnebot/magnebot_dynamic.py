@@ -22,7 +22,6 @@ class MagnebotDynamic(RobotDynamic):
 
     m = Magnebot(robot_id=0, position={"x": 0.5, "y": 0, "z": -1})
     c = Controller()
-    c.start()
     c.add_ons.append(m)
     c.communicate(TDWUtils.create_empty_room(12, 12))
     print(m.dynamic.transform.position)

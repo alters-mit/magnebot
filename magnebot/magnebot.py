@@ -44,7 +44,7 @@ class Magnebot(RobotBase):
     - Image rendering
     - Scene state metadata
 
-    The Magnebot has various [actions](../action.md). Each action has a start and end, and has a [status](action_status) that indicates if it is ongoing, if it succeeded, or if it failed (and if so, why).
+    The Magnebot has various [actions](actions/action.md). Each action has a start and end, and has a [status](action_status.md) that indicates if it is ongoing, if it succeeded, or if it failed (and if so, why).
 
     ***
 
@@ -60,7 +60,6 @@ class Magnebot(RobotBase):
 
     m = Magnebot(robot_id=0, position={"x": 0.5, "y": 0, "z": -1})
     c = Controller()
-    c.start()
     c.add_ons.append(m)
     c.communicate(TDWUtils.create_empty_room(12, 12))
     m.move_by(1)
@@ -80,7 +79,6 @@ class Magnebot(RobotBase):
     m0 = Magnebot(robot_id=0, position={"x": 0.5, "y": 0, "z": -1})
     m1 = Magnebot(robot_id=1, position={"x": -0.5, "y": 0, "z": 1})
     c = Controller()
-    c.start()
     c.add_ons.extend([m0, m1])
     c.communicate(TDWUtils.create_empty_room(12, 12))
     m0.move_by(1)
@@ -118,7 +116,6 @@ class Magnebot(RobotBase):
     m = Magnebot()
     s = SkipFrames(10)
     c = Controller()
-    c.start()
     c.add_ons.extend([m, s])
     c.communicate(TDWUtils.create_empty_room(12, 12))
     print(m.dynamic.transform.position)
@@ -194,7 +191,6 @@ class Magnebot(RobotBase):
     
         m = Magnebot()
         c = Controller()
-        c.start()
         c.add_ons.append(m)
         c.communicate(TDWUtils.create_empty_room(12, 12))
         for arm_joint in m.static.arm_joints:
@@ -215,7 +211,6 @@ class Magnebot(RobotBase):
     
         m = Magnebot()
         c = Controller()
-        c.start()
         c.add_ons.append(m)
         c.communicate(TDWUtils.create_empty_room(12, 12))
         print(m.dynamic.transform.position)
