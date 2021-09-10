@@ -59,7 +59,7 @@ Evaluate an action per-frame to determine whether it's done.
 | static |  MagnebotStatic |  | [The static Magnebot data.](../magnebot_static.md) |
 | dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |
 
-_Returns:_  Tuple: An `ActionStatus` describing whether the action is ongoing, succeeded, or failed; A list of commands to send to the build if the action is ongoing.
+_Returns:_  Tuple: A list of commands to send to the build to continue the action.
 
 #### get_end_commands
 

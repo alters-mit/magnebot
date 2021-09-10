@@ -14,3 +14,11 @@ Reset the Magnebot's camera to its initial rotation.
 
 **`self.set_status_after_initialization()`**
 
+## Functions
+
+##### get_ongoing_commands
+
+**`self.get_ongoing_commands()`**
+
+
+

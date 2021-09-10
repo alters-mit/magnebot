@@ -6,6 +6,16 @@ Abstract base class for arm motions that utilize IK.
 
 ***
 
+## Fields
+
+- `status` [The current status of the action.](../action_status.md) By default, this is `ongoing` (the action isn't done).
+
+- `initialized` If True, the action has initialized. If False, the action will try to send `get_initialization_commands(resp)` on this frame.
+
+***
+
+## Functions
+
 #### \_\_init\_\_
 
 **`IKMotion(arm, orientation_mode, target_orientation, dynamic)`**
@@ -17,15 +27,53 @@ Abstract base class for arm motions that utilize IK.
 | target_orientation |  TargetOrientation |  | [The target orientation.](../../arm_articulation.md) |
 | dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |
 
-#### get_end_commands
+##### get_end_commands
 
-**`self.get_end_commands(static, dynamic, arrived_at)`**
+**`self.get_end_commands(resp, static, dynamic, image_frequency)`**
 
-Set the lists of commands for arm articulation.
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
+| resp |  List[bytes] |  | The response from the build. |
 | static |  MagnebotStatic |  | [The static Magnebot data.](../magnebot_static.md) |
 | dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |
-| arrived_at |  |  | If the magnet is this distance from the target, it has arrived. |
+| image_frequency |  ImageFrequency |  | [How image data will be captured during the image.](../image_frequency.md) |
+
+_Returns:_  A list of commands that must be sent to end any action.
+
+#### get_initialization_commands
+
+**`self.get_initialization_commands(resp, static, dynamic, image_frequency)`**
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| resp |  List[bytes] |  | The response from the build. |
+| static |  MagnebotStatic |  | [The static Magnebot data.](../magnebot_static.md) |
+| dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |
+| image_frequency |  ImageFrequency |  | [How image data will be captured during the image.](../image_frequency.md) |
+
+_Returns:_  A list of commands to initialize this action.
+
+##### set_status_after_initialization
+
+**`self.set_status_after_initialization()`**
+
+In some cases (such as camera actions) that finish on one frame, we want to set the status after sending initialization commands.
+To do so, override this method.
+
+##### get_ongoing_commands
+
+**`self.get_ongoing_commands(resp, static, dynamic)`**
+
+Evaluate an action per-frame to determine whether it's done.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| resp |  List[bytes] |  | The response from the build. |
+| static |  MagnebotStatic |  | [The static Magnebot data.](../magnebot_static.md) |
+| dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |
+
+_Returns:_  Tuple: A list of commands to send to the build to continue the action.
 

@@ -137,7 +137,7 @@ class IKMotion(ArmMotion, ABC):
             # This is the torso.
             if i == 1:
                 # Convert the torso value to a percentage and then to a joint position.
-                torso_prismatic = ArmMotion._y_position_to_torso_position(y_position=angle)
+                torso_prismatic = IKMotion._y_position_to_torso_position(y_position=angle)
                 angles.append(torso_prismatic)
             # Append all other angles normally.
             else:
@@ -302,6 +302,18 @@ class IKMotion(ArmMotion, ABC):
         # Add the magnet.
         initial_angles.append(0)
         return np.radians(initial_angles)
+
+    @staticmethod
+    def _y_position_to_torso_position(y_position: float) -> float:
+        """
+        :param y_position: A y positional value in meters.
+
+        :return: A corresponding joint position value for the torso prismatic joint.
+        """
+
+        # Convert the torso value to a percentage and then to a joint position.
+        p = (y_position * (TORSO_MAX_Y - TORSO_MIN_Y)) + TORSO_MIN_Y
+        return float(p * 1.5)
 
     @staticmethod
     def _get_ik_links(arm: Arm) -> List[Link]:

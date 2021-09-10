@@ -6,6 +6,8 @@ Skip n frames per communciate() call.
 
 ***
 
+## Functions
+
 #### \_\_init\_\_
 
 **`SkipFrames(num_frames)`**

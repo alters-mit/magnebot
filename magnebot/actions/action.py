@@ -76,7 +76,7 @@ class Action(ABC):
         :param static: [The static Magnebot data.](../magnebot_static.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
 
-        :return: Tuple: An `ActionStatus` describing whether the action is ongoing, succeeded, or failed; A list of commands to send to the build if the action is ongoing.
+        :return: Tuple: A list of commands to send to the build to continue the action.
         """
 
         raise Exception()
@@ -130,14 +130,3 @@ class Action(ABC):
                                              np.array([dynamic.top[0], dynamic.top[2]]))
         return bottom_top_distance > 1.7, bottom_top_distance > 0.4
 
-    @staticmethod
-    def _y_position_to_torso_position(y_position: float) -> float:
-        """
-        :param y_position: A y positional value in meters.
-
-        :return: A corresponding joint position value for the torso prismatic joint.
-        """
-
-        # Convert the torso value to a percentage and then to a joint position.
-        p = (y_position * (TORSO_MAX_Y - TORSO_MIN_Y)) + TORSO_MIN_Y
-        return float(p * 1.5)

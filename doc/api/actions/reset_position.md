@@ -19,13 +19,15 @@ This action should only be called if the Magnebot is a position that will preven
 
 ***
 
+## Functions
+
 #### \_\_init\_\_
 
 **`ResetPosition()`**
 
 (no parameterS)
 
-#### get_initialization_commands
+##### get_initialization_commands
 
 **`self.get_initialization_commands(resp, static, dynamic, image_frequency)`**
 
@@ -41,6 +43,17 @@ _Returns:_  A list of commands to initialize this action.
 
 #### get_ongoing_commands
 
+**`self.get_ongoing_commands()`**
+
+##### set_status_after_initialization
+
+**`self.set_status_after_initialization()`**
+
+In some cases (such as camera actions) that finish on one frame, we want to set the status after sending initialization commands.
+To do so, override this method.
+
+##### get_ongoing_commands
+
 **`self.get_ongoing_commands(resp, static, dynamic)`**
 
 Evaluate an action per-frame to determine whether it's done.
@@ -52,18 +65,9 @@ Evaluate an action per-frame to determine whether it's done.
 | static |  MagnebotStatic |  | [The static Magnebot data.](../magnebot_static.md) |
 | dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |
 
-_Returns:_  Tuple: An `ActionStatus` describing whether the action is ongoing, succeeded, or failed; A list of commands to send to the build if the action is ongoing.
+_Returns:_  Tuple: A list of commands to send to the build to continue the action.
 
-## Functions
-
-#### set_status_after_initialization
-
-**`self.set_status_after_initialization()`**
-
-In some cases (such as camera actions) that finish on one frame, we want to set the status after sending initialization commands.
-To do so, override this method.
-
-#### get_end_commands
+##### get_end_commands
 
 **`self.get_end_commands(resp, static, dynamic, image_frequency)`**
 
