@@ -44,15 +44,15 @@ m.end()
 
 - `transform` The Transform data for this robot.
 
-- `joints` A dictionary of [dynamic joint data](joint_dynamic.md). Key = The ID of the joint.
+- `joints` A dictionary of [dynamic joint data](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/joint_dynamic.md). Key = The ID of the joint.
 
 - `immovable` If True, this robot is immovable.
 
-- `collisions_with_objects` A dictionary of collisions between one of this robot's [body parts (joints or non-moving)](robot_static.md) and another object.
+- `collisions_with_objects` A dictionary of collisions between one of this robot's [body parts (joints or non-moving)](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/robot_static.md) and another object.
 
-- `collisions_with_self` A dictionary of collisions between two of this robot's [body parts](robot_static.md).
+- `collisions_with_self` A dictionary of collisions between two of this robot's [body parts](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/robot_static.md).
 
-- `collisions_with_environment` A dictionary of collisions between one of this robot's [body parts](robot_static.md) and the environment (floors, walls, etc.).
+- `collisions_with_environment` A dictionary of collisions between one of this robot's [body parts](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/robot_static.md) and the environment (floors, walls, etc.).
 
 - `held` A dictionary of object IDs currently held by the Magnebot. Key = The arm. Value = a numpy array of object IDs.
 

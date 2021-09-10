@@ -251,18 +251,7 @@ class MagnebotController(Controller):
         self.occupancy_map = np.load(str(OCCUPANCY_MAPS_DIRECTORY.joinpath(f"{scene[0]}_{layout}.npy").resolve()))
         # Initialize the scene.
         return self._init_scene(scene=scene_commands,
-                                post_processing=[{"$type": "set_aperture",
-                                                  "aperture": 8.0},
-                                                 {"$type": "set_focus_distance",
-                                                  "focus_distance": 2.25},
-                                                 {"$type": "set_post_exposure",
-                                                  "post_exposure": 0.4},
-                                                 {"$type": "set_ambient_occlusion_intensity",
-                                                  "intensity": 0.175},
-                                                 {"$type": "set_ambient_occlusion_thickness_modifier",
-                                                  "thickness": 3.5},
-                                                 {"$type": "set_shadow_strength",
-                                                  "strength": 1.0}],
+                                post_processing=[MagnebotController._get_default_post_processing_commands()],
                                 magnebot_position=magnebot_position)
 
     def turn_by(self, angle: float, aligned_at: float = 1) -> ActionStatus:
@@ -554,4 +543,23 @@ class MagnebotController(Controller):
         object_id, object_commands = init_data.get_commands()
         self._object_init_commands[object_id] = object_commands
         return object_id
+
+    @staticmethod
+    def _get_default_post_processing_commands() -> List[dict]:
+        """
+        :return: The default post-processing commands.
+        """
+
+        return [{"$type": "set_aperture",
+                 "aperture": 8.0},
+                {"$type": "set_focus_distance",
+                 "focus_distance": 2.25},
+                {"$type": "set_post_exposure",
+                 "post_exposure": 0.4},
+                {"$type": "set_ambient_occlusion_intensity",
+                 "intensity": 0.175},
+                {"$type": "set_ambient_occlusion_thickness_modifier",
+                 "thickness": 3.5},
+                {"$type": "set_shadow_strength",
+                 "strength": 1.0}]
 

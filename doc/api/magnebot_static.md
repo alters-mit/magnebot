@@ -40,11 +40,11 @@ m.end()
 
 - `robot_id` The ID of the robot.
 
-- `joints` A dictionary of [Static robot joint data](joint_static.md) for each joint. Key = The ID of the joint.
+- `joints` A dictionary of [Static robot joint data](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/joint_static.md) for each joint. Key = The ID of the joint.
 
 - `joint_ids_by_name` A dictionary of joint names. Key = The name of the joint. Value = The joint ID.
 
-- `non_moving` A dictionary of [Static data for non-moving parts](non_moving.md) for each non-moving part. Key = The ID of the part.
+- `non_moving` A dictionary of [Static data for non-moving parts](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/non_moving.md) for each non-moving part. Key = The ID of the part.
 
 - `body_parts` A list of joint IDs and non-moving body part IDs.
 

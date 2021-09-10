@@ -3,7 +3,7 @@ from pkg_resources import get_distribution
 from typing import Dict, Type, TypeVar, List, Optional
 from requests import get
 from tdw.output_data import OutputData, Transforms, Rigidbodies, Bounds, Images, SegmentationColors, Volumes, Raycast, \
-    CompositeObjects, CameraMatrices, Environments, Overlap, Version, StaticRobot, Robot, Magnebot, NavMeshPath, \
+    CompositeObjects, CameraMatrices, SceneRegions, Overlap, Version, StaticRobot, Robot, Magnebot, NavMeshPath, \
     ScreenPosition, AudioSources, AvatarKinematic, ImageSensors
 
 
@@ -18,7 +18,7 @@ __OUTPUT_IDS: Dict[Type[OutputData], str] = {Transforms: "tran",
                                              Raycast: "rayc",
                                              CompositeObjects: "comp",
                                              CameraMatrices: "cama",
-                                             Environments: "envi",
+                                             SceneRegions: "sreg",
                                              Overlap: "over",
                                              Version: "vers",
                                              StaticRobot: "srob",
