@@ -7,7 +7,7 @@ import numpy as np
 from overrides import final
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
-from tdw.scene.scene_bounds import SceneBounds
+from tdw.scene_data.scene_bounds import SceneBounds
 from tdw.add_ons.object_manager import ObjectManager
 from tdw.add_ons.collision_manager import CollisionManager
 from tdw.object_init_data import AudioInitData
@@ -472,6 +472,9 @@ class MagnebotController(Controller):
         x = self._scene_bounds.x_min + (i * OCCUPANCY_CELL_SIZE)
         z = self._scene_bounds.z_min + (j * OCCUPANCY_CELL_SIZE)
         return x, z
+
+    def communicate(self, commands: Union[dict, List[dict]]) -> list:
+        return super().communicate(commands=commands)
 
     @final
     def _init_scene(self, scene: List[dict], post_processing: List[dict] = None, end: List[dict] = None,

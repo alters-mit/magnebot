@@ -176,7 +176,7 @@ class Magnebot(RobotBase):
         :param robot_id: The ID of the robot.
         :param position: The position of the robot. If None, defaults to `{"x": 0, "y": 0, "z": 0}`.
         :param rotation: The rotation of the robot in Euler angles (degrees). If None, defaults to `{"x": 0, "y": 0, "z": 0}`.
-        :param image_frequency: [The frequency of image capture.](image_Frequency.md)
+        :param image_frequency: [The frequency of image capture.](image_frequency.md)
         :param check_pypi_version: If True, check whether an update to the Magnebot API is available.
         """
 

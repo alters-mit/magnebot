@@ -32,7 +32,27 @@ m.end()
 
 ***
 
+## Class Variables
+
+| Variable | Type | Description |
+| --- | --- | --- |
+| `NON_MOVING` | float | If the joint moved by less than this angle or distance since the previous frame, it's considered to be non-moving. |
+
+***
+
 ## Fields
+
+- `transform` The Transform data for this robot.
+
+- `joints` A dictionary of [dynamic joint data](joint_dynamic.md). Key = The ID of the joint.
+
+- `immovable` If True, this robot is immovable.
+
+- `collisions_with_objects` A dictionary of collisions between one of this robot's [body parts (joints or non-moving)](robot_static.md) and another object.
+
+- `collisions_with_self` A dictionary of collisions between two of this robot's [body parts](robot_static.md).
+
+- `collisions_with_environment` A dictionary of collisions between one of this robot's [body parts](robot_static.md) and the environment (floors, walls, etc.).
 
 - `held` A dictionary of object IDs currently held by the Magnebot. Key = The arm. Value = a numpy array of object IDs.
 

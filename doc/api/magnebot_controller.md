@@ -118,6 +118,12 @@ m.end()
 | skip_frames |  int  | 10 | The build will return output data this many physics frames per simulation frame (communicate() call). This will greatly speed up the simulation, but eventually there will be a noticeable loss in physics accuracy. If you want to render every frame, set this to 0. |
 | check_pypi_version |  bool  | True | If True, compare the locally installed version of TDW and Magnebot to the most recent versions on PyPi. |
 
+***
+
+### Scene Setup
+
+These functions should be sent at the start of the simulation.
+
 #### init_scene
 
 **`self.init_scene()`**
@@ -179,6 +185,12 @@ Images of where each room in a scene is can be found [here](https://github.com/a
 | room |  int  | None | The index of the room that the Magnebot will spawn in the center of. If None, the room will be chosen randomly. |
 
 _Returns:_  An `ActionStatus` (always success).
+
+***
+
+### Movement
+
+These functions move or turn the Magnebot. [Read this for more information about movement and collision detection.](../movement.md)
 
 #### turn_by
 
@@ -248,6 +260,29 @@ Move to a target object or position. This combines turn_to() followed by move_by
 | aligned_at |  float  | 1 | If the difference between the current angle and the target angle is less than this value, then the action is successful. |
 
 _Returns:_  An `ActionStatus` indicating whether the Magnebot succeeded in moving and if not, why.
+
+#### reset_position
+
+**`self.reset_position()`**
+
+Reset the Magnebot so that it isn't tipping over.
+This will rotate the Magnebot to the default rotation (so that it isn't tipped over) and move the Magnebot to the nearest empty space on the floor.
+It will also drop any held objects.
+
+This will be interpreted by the physics engine as a _very_ sudden and fast movement.
+This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
+
+_Returns:_  An `ActionStatus` indicating whether the Magnebot reset its position and if not, why.
+
+***
+
+### Arm Articulation
+
+These functions move and bend the joints of the Magnebots's arms.
+
+During an arm articulation action, the Magnebot is always "immovable", meaning that its wheels are locked and it isn't possible for its root object to move or rotate.
+
+For more information regarding how arm articulation works, [read this](../arm_articulation.md).
 
 #### reach_for
 
@@ -324,18 +359,11 @@ This action should only be called if the Magnebot is a position that will preven
 
 _Returns:_  An `ActionStatus` indicating whether the Magnebot reset its arm and if not, why.
 
-#### reset_position
+***
 
-**`self.reset_position()`**
+### Camera
 
-Reset the Magnebot so that it isn't tipping over.
-This will rotate the Magnebot to the default rotation (so that it isn't tipped over) and move the Magnebot to the nearest empty space on the floor.
-It will also drop any held objects.
-
-This will be interpreted by the physics engine as a _very_ sudden and fast movement.
-This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
-
-_Returns:_  An `ActionStatus` indicating whether the Magnebot reset its position and if not, why.
+These commands rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by exactly 1 frame.
 
 #### rotate_camera
 
@@ -368,6 +396,12 @@ Reset the rotation of the Magnebot's camera to its default angles.
 
 _Returns:_  An `ActionStatus` (always success).
 
+***
+
+### Misc.
+
+These are utility functions that won't advance the simulation by any frames.
+
 #### get_visible_objects
 
 **`self.get_visible_objects()`**
@@ -397,4 +431,193 @@ This only works if you've loaded an occupancy map via `self.init_floorplan_scene
 | j |  int |  | The j coordinate in the occupancy map. |
 
 _Returns:_  Tuple: (x coordinate; z coordinate) of the corresponding worldspace position.
+
+***
+
+### Low-level
+
+These are low-level functions that you are unlikely to ever need to use.
+
+##### communicate
+
+**`self.communicate(commands)`**
+
+Send commands and receive output data in response.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| commands |  Union[dict, List[dict] |  | A list of JSON commands. |
+
+_Returns:_  The output data from the build.
+
+##### get_add_object
+
+**`self.get_add_object(model_name, object_id)`**
+
+**`self.get_add_object(model_name, position={"x" 0, rotation={"x" 0, library="", object_id)`**
+
+Returns a valid add_object command.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| model_name |  str |  | The name of the model. |
+| position |  | {"x" 0 | The position of the model. |
+| rotation |  | {"x" 0 | The starting rotation of the model, in Euler angles. |
+| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `ModelLibrarian.get_library_filenames()` and `ModelLibrarian.get_default_library()`. |
+| object_id |  int |  | The ID of the new object. |
+
+_Returns:_  An add_object command that the controller can then send.
+
+##### get_add_material
+
+**`self.get_add_material(material_name)`**
+
+**`self.get_add_material(material_name, library="")`**
+
+Returns a valid add_material command.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| material_name |  str |  | The name of the material. |
+| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `MaterialLibrarian.get_library_filenames()` and `MaterialLibrarian.get_default_library()`. |
+
+_Returns:_  An add_material command that the controller can then send.
+
+##### get_add_scene
+
+**`self.get_add_scene(scene_name)`**
+
+**`self.get_add_scene(scene_name, library="")`**
+
+Returns a valid add_scene command.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| scene_name |  str |  | The name of the scene. |
+| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `SceneLibrarian.get_library_filenames()` and `SceneLibrarian.get_default_library()`. |
+
+_Returns:_  An add_scene command that the controller can then send.
+
+##### get_add_hdri_skybox
+
+**`self.get_add_hdri_skybox(skybox_name)`**
+
+**`self.get_add_hdri_skybox(skybox_name, library="")`**
+
+Returns a valid add_hdri_skybox command.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| skybox_name |  str |  | The name of the skybox. |
+| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `HDRISkyboxLibrarian.get_library_filenames()` and `HDRISkyboxLibrarian.get_default_library()`. |
+
+_Returns:_  An add_hdri_skybox command that the controller can then send.
+
+##### get_add_humanoid
+
+**`self.get_add_humanoid(humanoid_name, object_id)`**
+
+**`self.get_add_humanoid(humanoid_name, position={"x" 0, rotation={"x" 0, library="", object_id)`**
+
+Returns a valid add_humanoid command.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| humanoid_name |  str |  | The name of the humanoid. |
+| position |  | {"x" 0 | The position of the humanoid. |
+| rotation |  | {"x" 0 | The starting rotation of the humanoid, in Euler angles. |
+| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `HumanoidLibrarian.get_library_filenames()` and `HumanoidLibrarian.get_default_library()`. |
+| object_id |  int |  | The ID of the new object. |
+
+_Returns:_  An add_humanoid command that the controller can then send.
+
+##### get_add_humanoid_animation
+
+**`self.get_add_humanoid_animation(humanoid_animation_name)`**
+
+**`self.get_add_humanoid_animation(humanoid_animation_name, library="")`**
+
+Returns a valid add_humanoid_animation command and the record (which you will need to play an animation).
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| humanoid_animation_name |  str |  | The name of the animation. |
+| library |  | "" | The path to the records file. If left empty, the default library will be selected. See `HumanoidAnimationLibrarian.get_library_filenames()` and `HumanoidAnimationLibrarian.get_default_library()`. |
+
+_Returns:_  An add_humanoid_animation command that the controller can then send.
+
+##### get_add_robot
+
+**`self.get_add_robot(name, robot_id)`**
+
+**`self.get_add_robot(name, robot_id, position=None, rotation=None, library="")`**
+
+Returns a valid add_robot command.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| name |  str |  | The name of the robot. |
+| robot_id |  int |  | A unique ID for the robot. |
+| position |  Dict[str, float] | None | The initial position of the robot. If None, the position will be (0, 0, 0). |
+| rotation |  Dict[str, float] | None | The initial rotation of the robot in Euler angles. |
+| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `RobotLibrarian.get_library_filenames()` and `RobotLibrarian.get_default_library()`. |
+
+_Returns:_  An `add_robot` command that the controller can then send.
+
+##### get_version
+
+**`self.get_version()`**
+
+Send a send_version command to the build.
+
+_Returns:_  The TDW version and the Unity Engine version.
+
+##### get_unique_id
+
+**`Controller(object).get_unique_id()`**
+
+_This is a static function._
+
+Generate a unique integer. Useful when creating objects.
+
+_Returns:_  The new unique ID.
+
+##### get_frame
+
+**`Controller(object).get_frame(frame)`**
+
+_This is a static function._
+
+Converts the frame byte array to an integer.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| frame |  bytes |  | The frame as bytes. |
+
+_Returns:_  The frame as an integer.
+
+##### launch_build
+
+**`Controller(object).launch_build()`**
+
+**`Controller(object).launch_build(port=1071)`**
+
+_This is a static function._
+
+Launch the build. If a build doesn't exist at the expected location, download one to that location.
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| port |  int  | 1071 | The socket port. |
+
+
 

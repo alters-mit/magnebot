@@ -1,23 +1,39 @@
 from pathlib import Path
-from py_md_doc import PyMdDoc
 from os import chdir
+from pkg_resources import resource_filename
+from py_md_doc import PyMdDoc
 from md_link_tester import MdLinkTester
+
 
 if __name__ == "__main__":
     chdir("..")
+    metadata_file = "doc_metadata.json"
+    # Add documentation for classes that inherit from tdw classes.
+    for magnebot_class, abstract_class in zip(["magnebot",
+                                               "magnebot_controller",
+                                               "magnebot_dynamic",
+                                               "magnebot_static",
+                                               "skip_frames"],
+                                              ["add_ons/robot_base.py",
+                                               "controller.py",
+                                               "robot_data/robot_dynamic.py",
+                                               "robot_data/robot_static.py",
+                                               "add_ons/add_on.py"]):
+        # Generate the document.
+        md = PyMdDoc(input_directory="magnebot", files=[f"{magnebot_class}.py"], metadata_path=metadata_file)
+        docs = md.get_docs_with_inheritance(abstract_class_path=resource_filename("tdw", abstract_class),
+                                            child_class_paths=[f"magnebot/{magnebot_class}.py"])
+        Path(f"doc/api/{magnebot_class}.md").write_text(docs[magnebot_class])
+
     md = PyMdDoc(input_directory="magnebot", files=["action_status.py",
                                                     "arm.py",
                                                     "arm_joint.py",
                                                     "collision_detection.py",
                                                     "image_frequency.py",
-                                                    "magnebot.py",
-                                                    "magnebot_controller.py",
-                                                    "magnebot_dynamic.py",
-                                                    "magnebot_static.py",
-                                                    "skip_frames.py",
                                                     "wheel.py",
                                                     "turn_constants.py"], metadata_path="doc_metadata.json")
     md.get_docs(output_directory="doc/api")
+    # Add IK documents.
     md = PyMdDoc(input_directory="magnebot", files=["ik/orientation.py",
                                                     "ik/orientation_mode.py",
                                                     "ik/target_orientation.py"])
