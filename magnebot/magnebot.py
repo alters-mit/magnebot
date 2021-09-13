@@ -419,7 +419,7 @@ class Magnebot(RobotBase):
 
         self.action = ResetPosition()
 
-    def rotate_camera(self, roll: float, pitch: float, yaw: float) -> None:
+    def rotate_camera(self, roll: float = 0, pitch: float = 0, yaw: float = 0) -> None:
         """
         Rotate the Magnebot's camera by the (roll, pitch, yaw) axes.
 

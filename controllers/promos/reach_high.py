@@ -1,8 +1,9 @@
 from tdw.tdw_utils import TDWUtils
-from magnebot import Magnebot, Arm, ActionStatus
+from tdw.add_ons.third_person_camera import ThirdPersonCamera
+from magnebot import MagnebotController, Arm, ActionStatus
 
 
-class ReachHigh(Magnebot):
+class ReachHigh(MagnebotController):
     """
     Test whether the Magnebot can grasp an object on a shelf.
     """
@@ -11,7 +12,7 @@ class ReachHigh(Magnebot):
         super().__init__(port=port, screen_height=screen_height, screen_width=screen_width, skip_frames=0)
         self.target_id: int = -1
 
-    def init_scene(self) -> ActionStatus:
+    def init_scene(self) -> None:
         self._add_object(model_name="cabinet_36_wood_beach_honey", position={"x": 0.04, "y": 0, "z": 1.081}, mass=300)
         self.target_id = self._add_object(model_name="jug05",
                                           position={"x": -0.231, "y": 0.9215012, "z": 0.865})
@@ -23,14 +24,15 @@ class ReachHigh(Magnebot):
                   "name": "parquet_long_horizontal_clean"},
                  {"$type": "set_proc_gen_floor_texture_scale",
                   "scale": {"x": 8, "y": 8}}]
-        return self._init_scene(scene=scene,
-                                post_processing=self._get_post_processing_commands())
+        self._init_scene(scene=scene,
+                         post_processing=self._get_default_post_processing_commands())
 
 
 if __name__ == "__main__":
     m = ReachHigh()
     m.init_scene()
-    m.add_camera(position={"x": -2.36, "y": 2, "z": -2.27}, look_at=True)
+    camera = ThirdPersonCamera(position={"x": -2.36, "y": 2, "z": -2.27}, look_at=m.magnebot.robot_id)
+    m.add_ons.append(camera)
     status = m.grasp(target=m.target_id, arm=Arm.left)
     assert status == ActionStatus.success, status
     m.reset_arm(arm=Arm.left)

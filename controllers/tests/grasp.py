@@ -1,9 +1,9 @@
-from magnebot import Arm, ActionStatus, Magnebot
+from magnebot import Arm, ActionStatus, MagnebotController
 from magnebot.ik.orientation_mode import OrientationMode
 from magnebot.ik.target_orientation import TargetOrientation
 
 
-class Grasp(Magnebot):
+class Grasp(MagnebotController):
     """
     Test the grasp() function.
     """
@@ -12,11 +12,11 @@ class Grasp(Magnebot):
         super().__init__(port=port)
         self.target_id: int = -1
 
-    def init_scene(self) -> ActionStatus:
+    def init_scene(self) -> None:
         self.target_id = self._add_object(model_name="blue_satchal",
                                           position={"x": -0.1024729, "y": 0, "z": -0.6279346},
                                           rotation={"x": -7.730941e+11, "y": 152.176, "z": 4.398})
-        return super().init_scene()
+        super().init_scene()
 
 
 if __name__ == "__main__":

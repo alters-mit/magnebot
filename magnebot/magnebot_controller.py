@@ -251,8 +251,8 @@ class MagnebotController(Controller):
         self.occupancy_map = np.load(str(OCCUPANCY_MAPS_DIRECTORY.joinpath(f"{scene[0]}_{layout}.npy").resolve()))
         # Initialize the scene.
         return self._init_scene(scene=scene_commands,
-                                post_processing=[MagnebotController._get_default_post_processing_commands()],
-                                magnebot_position=magnebot_position)
+                                post_processing=MagnebotController._get_default_post_processing_commands(),
+                                position=magnebot_position)
 
     def turn_by(self, angle: float, aligned_at: float = 1) -> ActionStatus:
         """
@@ -396,7 +396,7 @@ class MagnebotController(Controller):
         self.magnebot.reset_position()
         return self._do_action()
 
-    def rotate_camera(self, roll: float, pitch: float, yaw: float) -> ActionStatus:
+    def rotate_camera(self, roll: float = 0, pitch: float = 0, yaw: float = 0) -> ActionStatus:
         """
         Rotate the Magnebot's camera by the (roll, pitch, yaw) axes.
 
@@ -501,7 +501,7 @@ class MagnebotController(Controller):
         for object_id in self._object_init_commands:
             commands.extend(self._object_init_commands[object_id])
         # Request output data.
-        commands.append({"$type": "send_environments"})
+        commands.append({"$type": "send_scene_regions"})
         # Add misc. end commands.
         if end is not None:
             commands.extend(end)

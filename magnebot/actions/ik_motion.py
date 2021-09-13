@@ -179,12 +179,13 @@ class IKMotion(ArmMotion, ABC):
                 if not dynamic.joints[static.arm_joints[ArmJoint.torso]].moving:
                     commands = [{"$type": "set_prismatic_target",
                                  "joint_id": static.arm_joints[ArmJoint.torso],
-                                 "target": float(np.radians(dynamic.joints[static.arm_joints[ArmJoint.torso]].angles[0])),
+                                 "target": self._y_position_to_torso_position(float(
+                                     np.radians(dynamic.joints[static.arm_joints[ArmJoint.torso]].angles[0]))),
                                  "id": static.robot_id}]
                     commands.extend(self._arm_articulation_commands.pop(0))
                     return commands
                 else:
-                    return self._arm_articulation_commands.pop(0)
+                    return []
             # Star moving everything at once.
             else:
                 return self._arm_articulation_commands.pop(0)

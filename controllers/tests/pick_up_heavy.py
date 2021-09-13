@@ -1,7 +1,7 @@
-from magnebot import Magnebot, Arm, ActionStatus
+from magnebot import MagnebotController, Arm, ActionStatus
 
 
-class PickUpHeavy(Magnebot):
+class PickUpHeavy(MagnebotController):
     """
     Test Magnebot tipping. The Magnebot will try to pick up a heavy object, failed, and then correct the tip.
     """
@@ -11,10 +11,10 @@ class PickUpHeavy(Magnebot):
         self._debug = False
         self.target_id: int = -1
 
-    def init_scene(self) -> ActionStatus:
+    def init_scene(self) -> None:
         self.target_id = self._add_object(model_name="trunck",
                                           position={"x": 0.04, "y": 0, "z": 1.081}, mass=100)
-        return super().init_scene()
+        super().init_scene()
 
 
 if __name__ == "__main__":
