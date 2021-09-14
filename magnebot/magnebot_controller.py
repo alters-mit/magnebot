@@ -10,6 +10,7 @@ from tdw.tdw_utils import TDWUtils
 from tdw.scene_data.scene_bounds import SceneBounds
 from tdw.add_ons.object_manager import ObjectManager
 from tdw.add_ons.collision_manager import CollisionManager
+from tdw.add_ons.step_physics import StepPhysics
 from tdw.object_init_data import AudioInitData
 from tdw.py_impact import PyImpact, ObjectInfo
 from magnebot.action_status import ActionStatus
@@ -18,7 +19,6 @@ from magnebot.ik.orientation_mode import OrientationMode
 from magnebot.ik.target_orientation import TargetOrientation
 from magnebot.image_frequency import ImageFrequency
 from magnebot.magnebot import Magnebot
-from magnebot.skip_frames import SkipFrames
 from magnebot.paths import SPAWN_POSITIONS_PATH, OCCUPANCY_MAPS_DIRECTORY
 from magnebot.constants import OCCUPANCY_CELL_SIZE
 
@@ -108,7 +108,7 @@ class MagnebotController(Controller):
                            "width": screen_width,
                            "height": screen_height}])
         # Skip a set number of frames per communicate() call.
-        self.add_ons.append(SkipFrames(skip_frames))
+        self.add_ons.append(StepPhysics(skip_frames))
         self._check_pypi_version: bool = check_pypi_version
         # Commands to initialize objects.
         self._object_init_commands: Dict[int, List[dict]] = dict()

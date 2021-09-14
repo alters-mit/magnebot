@@ -105,16 +105,16 @@ class Magnebot(RobotBase):
 
     The `Magnebot` and `MagnebotController` were originally the same code--the controller was a hard-coded single-agent simulation.
 
-    The Magnebot has been designed so that a certain number of physics frames will be skipped per frame that actually returns data back to the controller. The `MagnebotController` does this automatically but you can easily add this to your simulation with a [`SkipFrames`](skip_frames.md) object:
+    The Magnebot has been designed so that a certain number of physics frames will be skipped per frame that actually returns data back to the controller. The `MagnebotController` does this automatically but you can easily add this to your simulation with a [`StepPhysics`](https://github.com/threedworld-mit/tdw/blob/master/Python/tdw/add_ons/step_physics.py.md) object:
 
     ```python
     from tdw.controller import Controller
     from tdw.tdw_utils import TDWUtils
+    from tdw.add_ons.step_physics import StepPhysics
     from magnebot.magnebot import Magnebot
-    from magnebot.skip_frames import SkipFrames
 
     m = Magnebot()
-    s = SkipFrames(10)
+    s = StepPhysics(10)
     c = Controller()
     c.add_ons.extend([m, s])
     c.communicate(TDWUtils.create_empty_room(12, 12))

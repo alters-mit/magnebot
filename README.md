@@ -33,6 +33,8 @@ See [Getting Started With TDW](https://github.com/threedworld-mit/tdw/blob/maste
 
 # Usage
 
+The Magnebot API can be used in one of two ways: A single-agent simulation with a simplified API, and a more complicated API that uses lower-level TDW functionality to support multi-agent simulations.
+
 1. Run this controller:
 
 ```python
