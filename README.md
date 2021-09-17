@@ -2,62 +2,110 @@
 
 Magnebot is a high-level robotics-like API for [TDW](https://github.com/threedworld-mit/tdw). The Magnebot can move around the scene and manipulate objects by picking them up with "magnets". The simulation is entirely driven by physics.
 
+The Magnebot can be loaded into a [wide variety of scenes populated by interactable objects](https://github.com/alters-mit/magnebot/tree/main/doc/images/floorplans). 
+
+At a low level, the Magnebot is driven by robotics commands such as set_revolute_target, which will turn a revolute drive. The high-level API combines the low-level commands into "actions", such as `grasp(target_object)` or `move_by(distance)`.
+
 <img src="https://raw.githubusercontent.com/alters-mit/magnebot/main/doc/images/reach_high.gif" />
-
-**[Read the Magnebot API documentation here.](https://github.com/alters-mit/magnebot/blob/main/doc/api/magnebot_controller.md)**
-
-- The Magnebot can be loaded into a [wide variety of scenes populated by interactable objects](https://github.com/alters-mit/magnebot/tree/main/doc/images/floorplans). 
-- At a low level, the Magnebot is driven by robotics commands such as set_revolute_target, which will turn a revolute drive. The high-level API combines the low-level commands into "actions", such as `grasp(target_object)` or `move_by(distance)`.
-- At the end of every action, the Magnebot controller script will return [scene state data](https://github.com/alters-mit/magnebot/blob/main/doc/scene_state.md), which includes an image, a depth map, a segmentation color map, and physics metadata for each body part of the robot and each object in the scene.
 
 # Requirements
 
-See [Getting Started With TDW](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md#Requirements):
-
-- Both the Magnebot API and the simulation executable ("the build") run on Windows, OS X, or Linux.
-
-- The Magnebot API requires Python 3.6 or newer.
-- The build requires a GPU.
-- The Magnebot API doesn't include audio/visual recording or Flex; you can ignore the requirements for those features.
+See [TDW requirements](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/core_concepts/install.md).
 
 # Installation 
 
 1. **`pip3 install magnebot`**
-2. [Download the latest TDW build](https://github.com/threedworld-mit/tdw/releases/latest) and unzip it.
+2. (Linux servers only): [Download the latest TDW build](https://github.com/threedworld-mit/tdw/releases/latest) and unzip it. For more information on setting up a TDW build on a server, [read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/core_concepts/install.md). On a personal computer, the build will be downloaded and launched automatically.
+
+#### Test if your installation was successful
+
+1. Run this controller:
+
+```python
+from magnebot import MagnebotController
+
+m = MagnebotController() # On a server, change this to MagnebotController(launch_build=False)
+
+m.init_scene()
+m.move_by(2)
+m.end()
+```
+
+2. (Linux servers only): [Launch the TDW build.](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/core_concepts/launch_build.md) On a personal computer, the build will launch automatically.
 
 #### Update an existing installation
 
 1. `pip3 install tdw -U`
 2. `pip3 install magnebot -U`
-3. [Download the latest TDW build](https://github.com/threedworld-mit/tdw/releases/latest) and unzip it.
+3. (Linux servers only): [Download the latest TDW build](https://github.com/threedworld-mit/tdw/releases/latest) and unzip it. On a personal computer, the build will automatically be upgraded the next time you create a TDW controller.
 
-# Usage
+# API Modes
 
-The Magnebot API can be used in one of two ways: A single-agent simulation with a simplified API, and a more complicated API that uses lower-level TDW functionality to support multi-agent simulations.
+The Magnebot API supports two modes:
 
-1. Run this controller:
+### 1. `MagnebotController`
+
+`MagnebotController` offers an easy to use API. Each action call ends when the action is totally done; for example, `move_by(2)` will iterate through physics steps until the Magnebot has moved 2 meters or until it otherwise needs to stop, such as on a collision.
+
+Advantages:
+
+- Simple API
+- Automatically adds useful settings such as frame-skipping and an object manager
+
+ Disadvantages: 
+
+- Single-agent only
+- Actions can't be interrupted
 
 ```python
-from magnebot import Magnebot, Arm
+from magnebot import MagnebotController
 
-m = Magnebot()
+m = MagnebotController() # On a server, change this to MagnebotController(launch_build=False)
 
-# Initialize the scene, populate it with objects, and add the Magnebot.
-# This can take a few minutes to finish.
-m.init_floorplan_scene(scene="1a", layout=0, room=1)
-
-# Reach for a target position.
-status = m.reach_for(arm=Arm.left, target={"x": 0.1, "y": 0.6, "z": 0.4}, absolute=False)
-print(status) # ActionStatus.success
-
-# Save images.
-m.state.save_images(output_directory="magnebot_test_images")
-
-# End the simulation.
+m.init_scene()
+m.move_by(2)
+print(m.magnebot.dynamic.transform.position)
 m.end()
 ```
 
-2. [Launch the TDW build.](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md)
+### 2. `Magnebot`
+
+`Magnebot` is an add-on that can be attached to a controller; it is automatically initialized within a `MagnebotController`. 
+
+Advantages:
+
+- Can be used in *any* TDW controller
+- Actions can be interrupted
+- Supports multi-agent simulations
+
+Disadvantages:
+
+- API is more complicated and requires more familiarization with TDW
+- By default, it lacks certain key add-ons that are automatically added to the `MagnebotController` (you can add them manually in your own controller).
+
+This example replicates the behavior of the previous example, but using a `Magnebot` agent instead of a `MagnebotController`:
+
+```python
+from tdw.controller import Controller
+from tdw.tdw_utils import TDWUtils
+from tdw.add_ons.step_physics import StepPhysics
+from tdw.add_ons.object_manager import ObjectManager
+from tdw.add_ons.collision_manager import CollisionManager
+from magnebot import Magnebot, ActionStatus
+
+c = Controller()
+step_physics = StepPhysics(num_frames=10)
+magnebot = Magnebot()
+objects = ObjectManager(transforms=True, rigidbodies=False, bounds=False)
+collisions = CollisionManager(objects=True, environment=True, enter=True, exit=True)
+c.add_ons.extend([step_physics, magnebot, objects, collisions])
+c.communicate(TDWUtils.create_empty_room(12, 12))
+magnebot.move_by(2)
+while magnebot.action.status == ActionStatus.ongoing:
+    c.communicate([])
+print(magnebot.dynamic.transform.position)
+c.communicate({"$type": "terminate"})
+```
 
 # Documentation
 
