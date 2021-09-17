@@ -23,6 +23,7 @@ class MovementVariance(MagnebotController):
         self.init_floorplan_scene(scene="1b", layout=1, room=4)
         self.magnebot.collision_detection.walls = False
         self.magnebot.collision_detection.objects = False
+        self.magnebot.collision_detection.previous_was_same = False
         self.move_to(target={"x": 9.976, "y": 0, "z": -0.97}, arrived_at=0.2)
         self.move_to(target={"x": 12.22, "y": 0, "z": -0.97}, aligned_at=1)
         self.move_to(target={"x": 11.46, "y": 0, "z": -1.11})

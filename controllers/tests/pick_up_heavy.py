@@ -12,8 +12,10 @@ class PickUpHeavy(MagnebotController):
         self.target_id: int = -1
 
     def init_scene(self) -> None:
-        self.target_id = self._add_object(model_name="trunck",
-                                          position={"x": 0.04, "y": 0, "z": 1.081}, mass=100)
+        self.target_id = self.get_unique_id()
+        self._object_init_commands.extend(self.get_add_physics_object(model_name="trunck",
+                                                                      object_id=self.target_id,
+                                                                      position={"x": 0.04, "y": 0, "z": 1.081}))
         super().init_scene()
 
 

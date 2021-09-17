@@ -13,9 +13,11 @@ class Grasp(MagnebotController):
         self.target_id: int = -1
 
     def init_scene(self) -> None:
-        self.target_id = self._add_object(model_name="blue_satchal",
-                                          position={"x": -0.1024729, "y": 0, "z": -0.6279346},
-                                          rotation={"x": -7.730941e+11, "y": 152.176, "z": 4.398})
+        self.target_id = self.get_unique_id()
+        self._object_init_commands.extend(self.get_add_physics_object(object_id=self.target_id,
+                                                                      model_name="blue_satchal",
+                                                                      position={"x": -0.1024729, "y": 0, "z": -0.6279346},
+                                                                      rotation={"x": -7.730941e+11, "y": 152.176, "z": 4.398}))
         super().init_scene()
 
 

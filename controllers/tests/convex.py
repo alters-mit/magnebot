@@ -32,11 +32,13 @@ class Convex(MagnebotController):
             object_position = TDWUtils.rotate_position_around(origin=origin, position=pos, angle=theta)
             object_position[1] = 2
             name = self.rng.choice(Convex.MODELS)
-            self._add_object(model_name=name,
-                             position=TDWUtils.array_to_vector3(object_position),
-                             rotation={"x": self.rng.uniform(-180, 180),
-                                       "y": self.rng.uniform(-180, 180),
-                                       "z": self.rng.uniform(-180, 180)})
+            self._object_init_commands.extend(self.get_add_physics_object(model_name=name,
+                                                                          object_id=self.get_unique_id(),
+                                                                          position=TDWUtils.array_to_vector3(
+                                                                              object_position),
+                                                                          rotation={"x": self.rng.uniform(-180, 180),
+                                                                                    "y": self.rng.uniform(-180, 180),
+                                                                                    "z": self.rng.uniform(-180, 180)}))
             theta += d_theta
         super().init_scene()
 

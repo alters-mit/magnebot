@@ -11,8 +11,6 @@ from tdw.scene_data.scene_bounds import SceneBounds
 from tdw.add_ons.object_manager import ObjectManager
 from tdw.add_ons.collision_manager import CollisionManager
 from tdw.add_ons.step_physics import StepPhysics
-from tdw.object_init_data import AudioInitData
-from tdw.py_impact import PyImpact, ObjectInfo
 from magnebot.action_status import ActionStatus
 from magnebot.arm import Arm
 from magnebot.ik.orientation_mode import OrientationMode
@@ -45,9 +43,6 @@ class MagnebotController(Controller):
     - The `MagnebotController` includes two functions that can initialize a scene optimized for the Magnebot.
     - The `MagnebotController` adds an [`ObjectManager`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/add_ons/object_manager.md) and [`CollisionManager`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/add_ons/collision_manager.md).
     """
-
-    # Load default audio values for objects.
-    _OBJECT_AUDIO = PyImpact.get_object_info()
 
     def __init__(self, port: int = 1071, launch_build: bool = True, screen_width: int = 256, screen_height: int = 256,
                  random_seed: int = None, skip_frames: int = 10, check_pypi_version: bool = True):
@@ -111,7 +106,7 @@ class MagnebotController(Controller):
         self.add_ons.append(StepPhysics(skip_frames))
         self._check_pypi_version: bool = check_pypi_version
         # Commands to initialize objects.
-        self._object_init_commands: Dict[int, List[dict]] = dict()
+        self._object_init_commands: List[dict] = list()
         # The scene bounds. This is used along with the occupancy map to get (x, z) worldspace positions.
         self._scene_bounds: Optional[SceneBounds] = None
         """:field
@@ -232,10 +227,16 @@ class MagnebotController(Controller):
             raise Exception(f"Floorplan not found: {scene_index}")
         if layout not in floorplans[scene_index]:
             raise Exception(f"Layout not found: {layout}")
-        object_data = [AudioInitData(**o) for o in floorplans[scene_index][layout]]
-        for o in object_data:
-            o_id, o_commands = o.get_commands()
-            self._object_init_commands[o_id] = o_commands
+
+        for o in floorplans[scene_index][layout]:
+            self._object_init_commands.extend(self.get_add_physics_object(model_name=o["name"],
+                                                                          library=o["library"],
+                                                                          position=o["position"],
+                                                                          rotation=o["rotation"],
+                                                                          scale_factor=o["scale_factor"],
+                                                                          kinematic=o["kinematic"],
+                                                                          gravity=o["gravity"],
+                                                                          object_id=self.get_unique_id()))
 
         # Get the spawn position of the Magnebot.
         rooms = loads(SPAWN_POSITIONS_PATH.read_text())[scene[0]][layout]
@@ -498,8 +499,7 @@ class MagnebotController(Controller):
         if post_processing is not None:
             commands.extend(post_processing)
         # Add objects.
-        for object_id in self._object_init_commands:
-            commands.extend(self._object_init_commands[object_id])
+        commands.extend(self._object_init_commands)
         # Request output data.
         commands.append({"$type": "send_scene_regions"})
         # Add misc. end commands.
@@ -515,34 +515,6 @@ class MagnebotController(Controller):
         while self.magnebot.action.status == ActionStatus.ongoing:
             self.communicate([])
         return self.magnebot.action.status
-
-    def _add_object(self, model_name: str, position: Dict[str, float] = None,
-                    rotation: Dict[str, float] = None, library: str = "models_core.json",
-                    scale: Dict[str, float] = None, audio: ObjectInfo = None,
-                    mass: float = None) -> int:
-        """
-        Add an object to the scene.
-        :param model_name: The name of the model.
-        :param position: The position of the model.
-        :param rotation: The starting rotation of the model. Can be Euler angles or a quaternion.
-        :param library: The path to the records file. If left empty, the default library will be selected. See `ModelLibrarian.get_library_filenames()` and `ModelLibrarian.get_default_library()`.
-        :param scale: The scale factor of the object. If None, the scale factor is (1, 1, 1)
-        :param audio: Audio values for the object. If None, use default values.
-        :param mass: If not None, use this mass instead of the default.
-        :return: The ID of the object.
-        """
-
-        # Get the data.
-        # There isn't any audio in this simulation, but we use `AudioInitData` anyway to derive physics values.
-        if audio is None:
-            audio = MagnebotController._OBJECT_AUDIO[model_name]
-        if mass is not None:
-            audio.mass = mass
-        init_data = AudioInitData(name=model_name, position=position, rotation=rotation, scale_factor=scale,
-                                  audio=audio, library=library)
-        object_id, object_commands = init_data.get_commands()
-        self._object_init_commands[object_id] = object_commands
-        return object_id
 
     @staticmethod
     def _get_default_post_processing_commands() -> List[dict]:
@@ -562,4 +534,3 @@ class MagnebotController(Controller):
                  "thickness": 3.5},
                 {"$type": "set_shadow_strength",
                  "strength": 1.0}]
-

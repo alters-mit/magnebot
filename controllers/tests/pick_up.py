@@ -17,10 +17,19 @@ class PickUp(MagnebotController):
 
     def init_scene(self) -> None:
         # Add some objects to an empty room. Record their object IDs.
-        self.target_object_0 = self._add_object("jug05", position={"x": -0.408, "y": 0, "z": 0.428},)
-        self.target_object_1 = self._add_object("jug05", position={"x": -1.76, "y": 0, "z": -1.08})
-        self.box = self._add_object("basket_18inx18inx12iin", position={"x": 0.03, "y": 0, "z": -2.38},
-                                    scale={"x": 1, "y": 0.7, "z": 1})
+        self.target_object_0 = self.get_unique_id()
+        self.target_object_1 = self.get_unique_id()
+        self.box = self.get_unique_id()
+        self._object_init_commands.extend(self.get_add_physics_object(model_name="jug05",
+                                                                      object_id=self.target_object_0,
+                                                                      position={"x": -0.408, "y": 0, "z": 0.428}))
+        self._object_init_commands.extend(self.get_add_physics_object(model_name="jug05",
+                                                                      object_id=self.target_object_1,
+                                                                      position={"x": -1.76, "y": 0, "z": -1.08}))
+        self._object_init_commands.extend(self.get_add_physics_object(model_name="basket_18inx18inx12iin",
+                                                                      object_id=self.box,
+                                                                      scale_factor={"x": 1, "y": 0.7, "z": 1},
+                                                                      position={"x": 0.03, "y": 0, "z": -2.38}))
         super().init_scene()
 
 
