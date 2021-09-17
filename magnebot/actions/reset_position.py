@@ -52,7 +52,7 @@ class ResetPosition(Action):
     def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
                                     image_frequency: ImageFrequency) -> List[dict]:
         has_tipped, tipping = self._is_tipping(dynamic=dynamic)
-        if not has_tipped:
+        if not has_tipped and not tipping:
             self.status = ActionStatus.cannot_reset_position
             return []
         commands = super().get_initialization_commands(resp=resp, static=static, dynamic=dynamic,
@@ -112,7 +112,7 @@ class ResetPosition(Action):
                             d = np.linalg.norm(self._formerly_held_objects[o_id] - p1)
                             self._formerly_held_objects[o_id] = np.array([p1[0], p1[1], p1[2]])
                             # Stop if the object somehow fell below the floor or if the object isn't moving.
-                            if self._formerly_held_objects[o_id] > -1 and d > 0.01:
+                            if self._formerly_held_objects[o_id][1] > -1 and d > 0.01:
                                 moving = True
                                 break
                     if moving:
