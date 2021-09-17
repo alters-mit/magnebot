@@ -1,9 +1,9 @@
 from typing import List
 import numpy as np
-from magnebot import Magnebot, Arm, ActionStatus
+from magnebot import MagnebotController, Arm, ActionStatus
 
 
-class PickUp(Magnebot):
+class PickUp(MagnebotController):
     """
     This is an example of how to move the Magnebot around a room and pick up an object.
     """

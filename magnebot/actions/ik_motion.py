@@ -35,6 +35,8 @@ class IKMotion(ArmMotion, ABC):
     _CACHED_IK_POSITIONS: np.array = np.load(str(IK_POSITIONS_PATH.resolve()))
     # Cached IK chains.
     _IK_CHAINS: Dict[Arm, Chain] = dict()
+    # When sliding the torso first (i.e. to reach an object above the Magnebot's shoulder height), slide it slightly higher than the target.
+    _EXTRA_TORSO_HEIGHT: float = 0.05
 
     def __init__(self, arm: Arm, orientation_mode: OrientationMode, target_orientation: TargetOrientation,
                  dynamic: MagnebotDynamic):
@@ -147,13 +149,13 @@ class IKMotion(ArmMotion, ABC):
             torso_id = static.arm_joints[ArmJoint.torso]
             self._arm_articulation_commands.append([{"$type": "set_prismatic_target",
                                                      "joint_id": torso_id,
-                                                     "target": torso_prismatic,
+                                                     "target": torso_prismatic + IKMotion._EXTRA_TORSO_HEIGHT,
                                                      "id": static.robot_id}])
-            self._arm_articulation_commands.append(self._get_ik_commands(angles=angles, static=static, torso=False))
+            self._arm_articulation_commands.append(self._get_ik_commands(angles=angles, static=static))
             self._slide_torso = True
         # Move all joints at once (including the torso prismatic joint).
         else:
-            self._arm_articulation_commands.append(self._get_ik_commands(angles=angles, static=static, torso=True))
+            self._arm_articulation_commands.append(self._get_ik_commands(angles=angles, static=static))
 
     def _evaluate_arm_articulation(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
         """
@@ -239,12 +241,11 @@ class IKMotion(ArmMotion, ABC):
         return [ORIENTATIONS[o] for o in orientations if o >= 0]
 
     @final
-    def _get_ik_commands(self, angles: np.array, torso: bool, static: MagnebotStatic) -> List[dict]:
+    def _get_ik_commands(self, angles: np.array, static: MagnebotStatic) -> List[dict]:
         """
         Convert target angles to TDW commands and append them to `_next_frame_commands`.
 
         :param angles: The target angles in degrees.
-        :param torso: If True, add torso commands.
         :param static: [The static Magnebot data.](../magnebot_static.md)
         """
 
@@ -271,12 +272,10 @@ class IKMotion(ArmMotion, ABC):
                                  "id": static.robot_id})
                 i += 3
             elif joint_type == JointType.prismatic:
-                # Sometimes, we want the torso at its current position.
-                if torso:
-                    commands.append({"$type": "set_prismatic_target",
-                                     "joint_id": joint_id,
-                                     "target": angles[i],
-                                     "id": static.robot_id})
+                commands.append({"$type": "set_prismatic_target",
+                                 "joint_id": joint_id,
+                                 "target": angles[i],
+                                 "id": static.robot_id})
                 i += 1
             else:
                 raise Exception(f"Joint type not defined: {joint_type} for {joint_name}.")
