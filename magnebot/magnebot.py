@@ -234,6 +234,7 @@ class Magnebot(RobotBase):
         The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees as a numpy array. This is handled outside of `self.state` because it isn't calculated using output data from the build. See: `Magnebot.CAMERA_RPY_CONSTRAINTS` and `self.rotate_camera()`
         """
         self.camera_rpy: np.array = np.array([0, 0, 0])
+        self._previous_resp: List[bytes] = list()
         self._previous_action: Optional[Action] = None
         if check_pypi_version:
             check_version()
@@ -273,6 +274,7 @@ class Magnebot(RobotBase):
         """
 
         super().on_send(resp=resp)
+        self._previous_resp = resp
         if self.action is None:
             return
         else:
@@ -325,8 +327,9 @@ class Magnebot(RobotBase):
         :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
         """
 
-        self.action = TurnTo(target=target, aligned_at=aligned_at, collision_detection=self.collision_detection,
-                             previous=self._previous_action, dynamic=self.dynamic)
+        self.action = TurnTo(target=target, resp=self._previous_resp, aligned_at=aligned_at,
+                             collision_detection=self.collision_detection, previous=self._previous_action,
+                             dynamic=self.dynamic)
 
     def move_by(self, distance: float, arrived_at: float = 0.1) -> None:
         """
