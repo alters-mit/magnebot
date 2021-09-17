@@ -1,6 +1,4 @@
 from collections import Counter
-from pathlib import Path
-from pkg_resources import resource_filename
 from json import loads
 from typing import List, Optional, Dict, Union, Tuple
 import numpy as np
@@ -11,6 +9,7 @@ from tdw.scene_data.scene_bounds import SceneBounds
 from tdw.add_ons.object_manager import ObjectManager
 from tdw.add_ons.collision_manager import CollisionManager
 from tdw.add_ons.step_physics import StepPhysics
+from tdw.add_ons.floorplan import Floorplan
 from magnebot.action_status import ActionStatus
 from magnebot.arm import Arm
 from magnebot.ik.orientation_mode import OrientationMode
@@ -215,29 +214,8 @@ class MagnebotController(Controller):
         :return: An `ActionStatus` (always success).
         """
 
-        # Get the scene command.
-        scene_commands = [self.get_add_scene(scene_name=f"floorplan_{scene}")]
-
-        # Get object initialization commands from the floorplan layout file.
-        floorplans = loads(Path(resource_filename("tdw", "floorplan_layouts.json")).
-                           read_text(encoding="utf-8"))
-        scene_index = scene[0]
-        layout = str(layout)
-        if scene_index not in floorplans:
-            raise Exception(f"Floorplan not found: {scene_index}")
-        if layout not in floorplans[scene_index]:
-            raise Exception(f"Layout not found: {layout}")
-
-        for o in floorplans[scene_index][layout]:
-            self._object_init_commands.extend(self.get_add_physics_object(model_name=o["name"],
-                                                                          library=o["library"],
-                                                                          position=o["position"],
-                                                                          rotation=o["rotation"],
-                                                                          scale_factor=o["scale_factor"],
-                                                                          kinematic=o["kinematic"],
-                                                                          gravity=o["gravity"],
-                                                                          object_id=self.get_unique_id()))
-
+        f = Floorplan()
+        f.init_scene(scene=scene, layout=layout)
         # Get the spawn position of the Magnebot.
         rooms = loads(SPAWN_POSITIONS_PATH.read_text())[scene[0]][layout]
         room_keys = list(rooms.keys())
@@ -251,7 +229,7 @@ class MagnebotController(Controller):
         # Load the occupancy map.
         self.occupancy_map = np.load(str(OCCUPANCY_MAPS_DIRECTORY.joinpath(f"{scene[0]}_{layout}.npy").resolve()))
         # Initialize the scene.
-        return self._init_scene(scene=scene_commands,
+        return self._init_scene(scene=f.commands,
                                 post_processing=MagnebotController._get_default_post_processing_commands(),
                                 position=magnebot_position)
 
