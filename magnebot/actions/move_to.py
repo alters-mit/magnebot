@@ -19,11 +19,12 @@ class MoveTo(Action):
 
     def __init__(self, target: Union[int, Dict[str, float], np.array], dynamic: MagnebotDynamic,
                  collision_detection: CollisionDetection, arrived_at: float = 0.1, aligned_at: float = 1,
-                 previous: Action = None):
+                 arrived_offset: float = 0, previous: Action = None):
         """
         :param target: The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array.
         :param arrived_at: If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
         :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
+        :param arrived_offset: Offset the arrival position by this value. This can be useful if the Magnebot needs to move to an object but shouldn't try to move to the object's centroid. This is distinct from `arrived_at` because it won't affect the Magnebot's braking solution.
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
         :param collision_detection: [The collision detection rules.](../collision_detection.md)
         :param previous: The previous action, if any.
@@ -36,6 +37,7 @@ class MoveTo(Action):
         # Cache these in order to initialize the MoveBy action later.
         self.__collision_detection: CollisionDetection = collision_detection
         self.__arrived_at: float = arrived_at
+        self.__arrived_offset: float = arrived_offset
         self._move_by: Optional[MoveBy] = None
 
     def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
@@ -65,7 +67,7 @@ class MoveTo(Action):
                 return self._turn_to.get_end_commands(resp=resp, static=static, dynamic=dynamic,
                                                       image_frequency=self.__image_frequency)
             # The turn succeeded. Start the move action.
-            distance = np.linalg.norm(self._turn_to.target_arr - dynamic.transform.position)
+            distance = np.linalg.norm(self._turn_to.target_arr - dynamic.transform.position) - self.__arrived_offset
             self._move_by = MoveBy(distance=distance, arrived_at=self.__arrived_at, dynamic=dynamic,
                                    collision_detection=self.__collision_detection, previous=self._turn_to)
             self._move_by.initialized = True

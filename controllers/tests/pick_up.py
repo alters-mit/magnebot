@@ -48,7 +48,7 @@ if __name__ == "__main__":
     assert status == ActionStatus.success, status
 
     # Go to the next object.
-    status = m.move_to(target=m.target_object_1, arrived_at=0.3)
+    status = m.move_to(target=m.target_object_1, arrived_offset=0.3)
     assert status == ActionStatus.success, status
     # Grasp the object.
     status = m.grasp(target=m.target_object_1, arm=Arm.right)
@@ -57,11 +57,11 @@ if __name__ == "__main__":
     # Failed to reset entirely due to the mass of the object.
     assert status == ActionStatus.success, status
     # Go to the box.
-    m.move_to(target=m.box, arrived_at=0.3)
+    m.move_to(target=m.box, arrived_offset=0.3)
 
     # Get a point above the box.
     box_top = m.objects.transforms[m.box].position[:]
-    box_top[1] += m.objects.objects_static[m.box].size[1] + 0.7
+    box_top[1] += m.objects.objects_static[m.box].size[1] + 0.2
 
     # Drop each object.
     for arm, object_id in zip([Arm.left, Arm.right], [m.target_object_0, m.target_object_1]):

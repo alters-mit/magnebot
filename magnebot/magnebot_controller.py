@@ -298,18 +298,21 @@ class MagnebotController(Controller):
         self.magnebot.move_by(distance=distance, arrived_at=arrived_at)
         return self._do_action()
 
-    def move_to(self, target: Union[int, Dict[str, float], np.ndarray], arrived_at: float = 0.1, aligned_at: float = 1) -> ActionStatus:
+    def move_to(self, target: Union[int, Dict[str, float], np.ndarray], arrived_at: float = 0.1, aligned_at: float = 1,
+                arrived_offset: float = 0) -> ActionStatus:
         """
         Move to a target object or position. This combines turn_to() followed by move_by().
 
         :param target: The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array.
         :param arrived_at: If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
         :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
+        :param arrived_offset: Offset the arrival position by this value. This can be useful if the Magnebot needs to move to an object but shouldn't try to move to the object's centroid. This is distinct from `arrived_at` because it won't affect the Magnebot's braking solution.
 
         :return: An `ActionStatus` indicating whether the Magnebot succeeded in moving and if not, why.
         """
 
-        self.magnebot.move_to(target=target, arrived_at=arrived_at, aligned_at=aligned_at)
+        self.magnebot.move_to(target=target, arrived_at=arrived_at, aligned_at=aligned_at,
+                              arrived_offset=arrived_offset)
         return self._do_action()
 
     def reach_for(self, target: Union[Dict[str, float], np.ndarray], arm: Arm, absolute: bool = True,
