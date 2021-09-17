@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.2
+
+- Fixed: Crash when trying to add multiple third person cameras with `add_camera()` because the avatar ID is always `"c"`.
+
 ## 1.3.1
 
 - Fixed: `AttributeError` when calling `init_scene()` because the wrong version of `ikpy` is installed. Now, `magnebot` will always install `ikpy` 3.1.
