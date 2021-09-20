@@ -78,13 +78,13 @@ class MoveBy(WheelMotion):
                 if not next_attempt:
                     self._move_frames += 1
                     if self._arrived_at < 0.2:
-                        return[{"$type": "set_magnebot_wheels_during_move",
-                                "position": self._target_position_v3,
-                                "origin": self._initial_position_v3,
-                                "arrived_at": self._arrived_at,
-                                "brake_distance": MoveBy._BRAKE_DISTANCE,
-                                "minimum_friction": self._minimum_friction,
-                                "id": static.robot_id}]
+                        return [{"$type": "set_magnebot_wheels_during_move",
+                                 "position": self._target_position_v3,
+                                 "origin": self._initial_position_v3,
+                                 "arrived_at": self._arrived_at,
+                                 "brake_distance": MoveBy._BRAKE_DISTANCE,
+                                 "minimum_friction": self._minimum_friction,
+                                 "id": static.robot_id}]
             else:
                 next_attempt = True
             # Try another attempt.
