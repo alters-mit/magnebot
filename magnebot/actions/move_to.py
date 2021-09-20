@@ -17,11 +17,12 @@ class MoveTo(Action):
     This action has two "sub-actions": A [`TurnBy`](turn_by.md) and a [`MoveBy`](move_by.md).
     """
 
-    def __init__(self, target: Union[int, Dict[str, float], np.array], dynamic: MagnebotDynamic,
+    def __init__(self, target: Union[int, Dict[str, float], np.array], resp: List[bytes], dynamic: MagnebotDynamic,
                  collision_detection: CollisionDetection, arrived_at: float = 0.1, aligned_at: float = 1,
                  arrived_offset: float = 0, previous: Action = None):
         """
         :param target: The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array.
+        :param resp: The response from the build.
         :param arrived_at: If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
         :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
         :param arrived_offset: Offset the arrival position by this value. This can be useful if the Magnebot needs to move to an object but shouldn't try to move to the object's centroid. This is distinct from `arrived_at` because it won't affect the Magnebot's braking solution.
@@ -31,8 +32,9 @@ class MoveTo(Action):
         """
 
         super().__init__()
-        self._turn_to: TurnTo = TurnTo(target=target, dynamic=dynamic, collision_detection=collision_detection,
-                                       aligned_at=aligned_at, previous=previous)
+        self._turn_to: TurnTo = TurnTo(target=target, resp=resp, dynamic=dynamic,
+                                       collision_detection=collision_detection, aligned_at=aligned_at,
+                                       previous=previous)
         self.__image_frequency: ImageFrequency = ImageFrequency.once
         # Cache these in order to initialize the MoveBy action later.
         self.__collision_detection: CollisionDetection = collision_detection

@@ -7,7 +7,7 @@ from tdw.add_ons.collision_manager import CollisionManager
 from magnebot import Magnebot, ActionStatus
 
 
-c = Controller()
+c = Controller(check_version=False, launch_build=False)
 
 commands = [TDWUtils.create_empty_room(12, 12)]
 # Add ten objects to the scene in a ring.
@@ -25,7 +25,8 @@ for j in range(num_objects):
                                                       object_id=object_id,
                                                       position=TDWUtils.array_to_vector3(object_position)))
     theta += d_theta
-m0 = Magnebot(position={"x": 0, "y": 0, "z": -1.5}, robot_id=0)
+m0 = Magnebot(position={"x": 0, "y": 0, "z": -1.5},
+              robot_id=0)
 m1 = Magnebot(position={"x": 0, "y": 0, "z": 1},
               rotation={"x": 0, "y": 180, "z": 0},
               robot_id=1)
@@ -43,7 +44,12 @@ while m0.action.status == ActionStatus.ongoing:
 # m0 backs up.
 m0.collision_detection.objects = False
 m0.move_by(-2)
-m1.move_to(object_ids[0])
 while m0.action.status == ActionStatus.ongoing:
     c.communicate([])
+m1.collision_detection.previous_was_same = False
+m1.move_to(object_ids[0])
+while m1.action.status == ActionStatus.ongoing:
+    c.communicate([])
 print(m0.action.status)
+print(m1.action.status)
+c.communicate({"$type": "terminate"})

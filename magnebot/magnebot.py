@@ -171,13 +171,13 @@ class Magnebot(RobotBase):
     _CHECKED_VERSION: bool = False
 
     def __init__(self, robot_id: int = 0, position: Dict[str, float] = None, rotation: Dict[str, float] = None,
-                 image_frequency: ImageFrequency = ImageFrequency.once, check_pypi_version: bool = True):
+                 image_frequency: ImageFrequency = ImageFrequency.once, check_version: bool = True):
         """
         :param robot_id: The ID of the robot.
         :param position: The position of the robot. If None, defaults to `{"x": 0, "y": 0, "z": 0}`.
         :param rotation: The rotation of the robot in Euler angles (degrees). If None, defaults to `{"x": 0, "y": 0, "z": 0}`.
         :param image_frequency: [The frequency of image capture.](image_frequency.md)
-        :param check_pypi_version: If True, check whether an update to the Magnebot API is available.
+        :param check_version: If True, check whether an update to the Magnebot API or TDW API is available.
         """
 
         super().__init__(robot_id=robot_id, position=position, rotation=rotation)
@@ -236,8 +236,7 @@ class Magnebot(RobotBase):
         self.camera_rpy: np.array = np.array([0, 0, 0])
         self._previous_resp: List[bytes] = list()
         self._previous_action: Optional[Action] = None
-        if check_pypi_version:
-            check_version()
+        self._check_version: bool = check_version
 
     def get_initialization_commands(self) -> List[dict]:
         """
@@ -353,9 +352,9 @@ class Magnebot(RobotBase):
         :param arrived_offset: Offset the arrival position by this value. This can be useful if the Magnebot needs to move to an object but shouldn't try to move to the object's centroid. This is distinct from `arrived_at` because it won't affect the Magnebot's braking solution.
         """
 
-        self.action = MoveTo(target=target, dynamic=self.dynamic, collision_detection=self.collision_detection,
-                             arrived_at=arrived_at, aligned_at=aligned_at, arrived_offset=arrived_offset,
-                             previous=self._previous_action)
+        self.action = MoveTo(target=target, resp=self._previous_resp, dynamic=self.dynamic,
+                             collision_detection=self.collision_detection, arrived_at=arrived_at, aligned_at=aligned_at,
+                             arrived_offset=arrived_offset, previous=self._previous_action)
 
     def reach_for(self, target: Union[Dict[str, float], np.ndarray], arm: Arm, absolute: bool = True,
                   orientation_mode: OrientationMode = OrientationMode.auto,
@@ -462,8 +461,9 @@ class Magnebot(RobotBase):
         :param resp: The response from the build.
         """
 
-        if not Magnebot._CHECKED_VERSION:
+        if self._check_version and not Magnebot._CHECKED_VERSION:
             Magnebot._CHECKED_VERSION = True
+            check_version()
             version_data = get_data(resp=resp, d_type=Version)
             build_version = version_data.get_tdw_version()
             PyPi.required_tdw_version_is_installed(required_version=TDW_VERSION, build_version=build_version,

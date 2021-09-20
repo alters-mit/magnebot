@@ -89,16 +89,12 @@ This example replicates the behavior of the previous example, but using a `Magne
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.step_physics import StepPhysics
-from tdw.add_ons.object_manager import ObjectManager
-from tdw.add_ons.collision_manager import CollisionManager
 from magnebot import Magnebot, ActionStatus
 
 c = Controller()
 step_physics = StepPhysics(num_frames=10)
 magnebot = Magnebot()
-objects = ObjectManager(transforms=True, rigidbodies=False, bounds=False)
-collisions = CollisionManager(objects=True, environment=True, enter=True, exit=True)
-c.add_ons.extend([step_physics, magnebot, objects, collisions])
+c.add_ons.extend([step_physics, magnebot])
 c.communicate(TDWUtils.create_empty_room(12, 12))
 magnebot.move_by(2)
 while magnebot.action.status == ActionStatus.ongoing:

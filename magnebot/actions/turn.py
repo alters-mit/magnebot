@@ -41,8 +41,8 @@ class Turn(WheelMotion, ABC):
         :param previous: The previous action, if any.
         """
 
-        super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous)
         self._angle = self._get_angle(dynamic=dynamic)
+        super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous)
         self._clamp_angle()
         self._aligned_at: float = aligned_at
         self._max_attempts: int = int((np.abs(self._angle) + 1) / 2)
