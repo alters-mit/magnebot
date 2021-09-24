@@ -46,10 +46,6 @@ m0.collision_detection.objects = False
 m0.move_by(-2)
 while m0.action.status == ActionStatus.ongoing:
     c.communicate([])
-m1.collision_detection.previous_was_same = False
-m1.move_to(object_ids[0])
-while m1.action.status == ActionStatus.ongoing:
-    c.communicate([])
 print(m0.action.status)
 print(m1.action.status)
 c.communicate({"$type": "terminate"})

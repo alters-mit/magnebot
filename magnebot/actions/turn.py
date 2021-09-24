@@ -73,7 +73,7 @@ class Turn(WheelMotion, ABC):
         else:
             next_attempt: bool = False
             if self._turn_frames < 2000 and self._wheels_are_turning(static=static, dynamic=dynamic):
-                if self._wheel_motion_complete(resp=resp):
+                if self._wheel_motion_complete(static=static, resp=resp):
                     if self.status == ActionStatus.success:
                         return []
                     else:

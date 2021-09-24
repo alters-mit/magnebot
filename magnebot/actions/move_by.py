@@ -67,13 +67,25 @@ class MoveBy(WheelMotion):
             return []
         else:
             next_attempt: bool = False
+            overshot: bool = False
+            # Stop if any wheels aren't turning.
+            wheels_are_turning = True
+            for wheel in static.wheels:
+                if not dynamic.joints[static.wheels[wheel]].moving:
+                    wheels_are_turning = False
             # We are still moving.
-            if self._move_frames < 2000 and self._wheels_are_turning(static=static, dynamic=dynamic):
-                if self._wheel_motion_complete(resp=resp):
+            if self._move_frames < 2000 and wheels_are_turning:
+                if self._wheel_motion_complete(static=static, resp=resp):
                     if self.status == ActionStatus.success:
                         return []
                     else:
                         next_attempt = True
+                        # When the Magnebot overshoots, "reset" the parameters of the action to aim for a new target.
+                        overshot = True
+                        self._initial_position_arr = np.array(p1[:])
+                        self._initial_position_v3 = TDWUtils.array_to_vector3(self._initial_position_arr)
+                        self._target_position_arr = dynamic.transform.position + (dynamic.transform.forward * self._distance)
+                        self._target_position_v3 = TDWUtils.array_to_vector3(self._target_position_arr)
                 # Check the position of the Magnebot between frames and adjust the wheels accordingly.
                 if not next_attempt:
                     self._move_frames += 1
@@ -102,7 +114,9 @@ class MoveBy(WheelMotion):
                     if d < 0.5:
                         commands.extend(self._set_brake_wheel_drives(static=static))
                         self._minimum_friction = BRAKE_FRICTION
-                    self._spin = (d / WHEEL_CIRCUMFERENCE) * 360 * 0.5 * (1 if self._distance > 0 else -1)
+                    self._spin = (d / WHEEL_CIRCUMFERENCE) * 360 * (1 if self._distance > 0 else -1)
+                    if not overshot:
+                        self._spin *= 0.5
                     d_total = np.linalg.norm(p1 - self._initial_position_arr)
                     if d_total > self._initial_distance:
                         self._spin *= -1

@@ -210,8 +210,9 @@ class WheelMotion(Action, ABC):
         return commands
 
     @final
-    def _wheel_motion_complete(self, resp: List[bytes]) -> bool:
+    def _wheel_motion_complete(self, static: MagnebotStatic, resp: List[bytes]) -> bool:
         """
+        :param static: [The static Magnebot data.](../magnebot_static.md)
         :param resp: The response from the build.
 
         :return: True if we received MagnebotWheels output data for this Magnebot.
@@ -221,10 +222,11 @@ class WheelMotion(Action, ABC):
         for i in range(len(resp) - 1):
             if OutputData.get_data_type_id(resp[i]) == "mwhe":
                 mwhe = MagnebotWheels(resp[i])
-                # Arrived at the destination.
-                if mwhe.get_success():
-                    self.status = ActionStatus.success
-                return True
+                if mwhe.get_id() == static.robot_id:
+                    # Arrived at the destination.
+                    if mwhe.get_success():
+                        self.status = ActionStatus.success
+                    return True
         return False
 
     @final
