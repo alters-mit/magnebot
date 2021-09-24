@@ -27,6 +27,7 @@ from magnebot.actions.reset_arm import ResetArm
 from magnebot.actions.reset_position import ResetPosition
 from magnebot.actions.rotate_camera import RotateCamera
 from magnebot.actions.reset_camera import ResetCamera
+from magnebot.actions.stop import Stop
 from magnebot.actions.wait import Wait
 from magnebot.constants import TDW_VERSION
 from magnebot.wheel import Wheel
@@ -289,6 +290,12 @@ class Magnebot(RobotBase):
                         # Set the status after initialization.
                         # This is required from one-frame actions such as RotateCamera.
                         self.action.set_status_after_initialization()
+                        # This action is done. Append end commands.
+                        if self.action.status != ActionStatus.ongoing:
+                            self.commands.extend(self.action.get_end_commands(resp=resp,
+                                                                              static=self.static,
+                                                                              dynamic=self.dynamic,
+                                                                              image_frequency=self.image_frequency))
             else:
                 action_commands = self.action.get_ongoing_commands(resp=resp, static=self.static, dynamic=self.dynamic)
                 # This is an ongoing action. Append ongoing commands.
@@ -296,8 +303,10 @@ class Magnebot(RobotBase):
                     self.commands.extend(action_commands)
                 # This action is done. Append end commands.
                 else:
-                    self.commands.extend(self.action.get_end_commands(resp=resp, static=self.static,
-                                                                      dynamic=self.dynamic, image_frequency=self.image_frequency))
+                    self.commands.extend(self.action.get_end_commands(resp=resp,
+                                                                      static=self.static,
+                                                                      dynamic=self.dynamic,
+                                                                      image_frequency=self.image_frequency))
             # This action ended. Remember it as the previous action.
             if self.action.status != ActionStatus.ongoing:
                 # Remember the previous action.
@@ -355,6 +364,13 @@ class Magnebot(RobotBase):
         self.action = MoveTo(target=target, resp=self._previous_resp, dynamic=self.dynamic,
                              collision_detection=self.collision_detection, arrived_at=arrived_at, aligned_at=aligned_at,
                              arrived_offset=arrived_offset, previous=self._previous_action)
+
+    def stop(self) -> None:
+        """
+        Stop the Magnebot's wheels at their current positions.
+        """
+
+        self.action = Stop()
 
     def reach_for(self, target: Union[Dict[str, float], np.ndarray], arm: Arm, absolute: bool = True,
                   orientation_mode: OrientationMode = OrientationMode.auto,

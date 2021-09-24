@@ -39,7 +39,7 @@ if __name__ == "__main__":
     md.get_docs(output_directory="doc/api/ik")
     child_class_paths = ["arm_motion.py", "camera_action.py", "drop.py", "grasp.py", "ik_motion.py", "move_by.py",
                          "move_to.py", "reach_for.py", "reset_arm.py", "reset_position.py", "rotate_camera.py",
-                         "turn.py", "turn_to.py", "wait.py", "wheel_motion.py"]
+                         "stop.py", "turn.py", "turn_to.py", "wait.py", "wheel_motion.py"]
     docs = md.get_docs_with_inheritance(abstract_class_path="magnebot/actions/action.py",
                                         child_class_paths=[f"magnebot/actions/{c}" for c in child_class_paths])
     paths = child_class_paths[:]

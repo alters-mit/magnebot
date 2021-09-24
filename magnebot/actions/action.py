@@ -130,3 +130,21 @@ class Action(ABC):
                                              np.array([dynamic.top[0], dynamic.top[2]]))
         return bottom_top_distance > 1.7, bottom_top_distance > 0.4
 
+    @final
+    def _get_stop_wheels_commands(self, static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
+        """
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+
+        :return: A list of commands to make the wheels stop spinning.
+        """
+
+        commands = []
+        for wheel in static.wheels:
+            # Set the target of each wheel to its current position.
+            commands.append({"$type": "set_revolute_target",
+                             "id": static.robot_id,
+                             "target": float(dynamic.joints[static.wheels[wheel]].angles[0]),
+                             "joint_id": static.wheels[wheel]})
+        return commands
+

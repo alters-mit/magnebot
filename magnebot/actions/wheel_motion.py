@@ -114,13 +114,7 @@ class WheelMotion(Action, ABC):
         :return: A list of commands that must be sent to end any action.
         """
 
-        commands = []
-        for wheel in static.wheels:
-            # Set the target of each wheel to its current position.
-            commands.append({"$type": "set_revolute_target",
-                             "id": static.robot_id,
-                             "target": float(dynamic.joints[static.wheels[wheel]].angles[0]),
-                             "joint_id": static.wheels[wheel]})
+        commands = self._get_stop_wheels_commands(static=static, dynamic=dynamic)
         commands.extend(super().get_end_commands(resp=resp, static=static, dynamic=dynamic,
                                                  image_frequency=image_frequency))
         return commands
