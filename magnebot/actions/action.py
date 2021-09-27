@@ -29,6 +29,10 @@ class Action(ABC):
         If True, the action has initialized. If False, the action will try to send `get_initialization_commands(resp)` on this frame.
         """
         self.initialized: bool = False
+        """:field
+        If True, this action is done and won't send any more commands.
+        """
+        self.done: bool = False
 
     def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
                                     image_frequency: ImageFrequency) -> List[dict]:

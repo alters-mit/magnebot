@@ -68,11 +68,12 @@ class MoveBy(WheelMotion):
         else:
             next_attempt: bool = False
             overshot: bool = False
-            # Stop if any wheels aren't turning.
+            # Check if any wheels stopped turning.
             wheels_are_turning = True
             for wheel in static.wheels:
                 if not dynamic.joints[static.wheels[wheel]].moving:
                     wheels_are_turning = False
+                    break
             # We are still moving.
             if self._move_frames < 2000 and wheels_are_turning:
                 if self._wheel_motion_complete(static=static, resp=resp):
@@ -86,6 +87,7 @@ class MoveBy(WheelMotion):
                         self._initial_position_v3 = TDWUtils.array_to_vector3(self._initial_position_arr)
                         self._target_position_arr = dynamic.transform.position + (dynamic.transform.forward * self._distance)
                         self._target_position_v3 = TDWUtils.array_to_vector3(self._target_position_arr)
+                        d = np.linalg.norm(p1 - self._target_position_arr)
                 # Check the position of the Magnebot between frames and adjust the wheels accordingly.
                 if not next_attempt:
                     self._move_frames += 1
@@ -115,6 +117,7 @@ class MoveBy(WheelMotion):
                         commands.extend(self._set_brake_wheel_drives(static=static))
                         self._minimum_friction = BRAKE_FRICTION
                     self._spin = (d / WHEEL_CIRCUMFERENCE) * 360 * (1 if self._distance > 0 else -1)
+                    # If this isn't an overshoot, multiply the spin by a magic number.
                     if not overshot:
                         self._spin *= 0.5
                     d_total = np.linalg.norm(p1 - self._initial_position_arr)

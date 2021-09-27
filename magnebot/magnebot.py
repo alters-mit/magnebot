@@ -275,7 +275,7 @@ class Magnebot(RobotBase):
 
         super().on_send(resp=resp)
         self._previous_resp = resp
-        if self.action is None:
+        if self.action is None or self.action.done:
             return
         else:
             if not self.action.initialized:
@@ -309,6 +309,8 @@ class Magnebot(RobotBase):
                                                                       image_frequency=self.image_frequency))
             # This action ended. Remember it as the previous action.
             if self.action.status != ActionStatus.ongoing:
+                # Mark the action as done.
+                self.action.done = True
                 # Remember the previous action.
                 self._previous_action = deepcopy(self.action)
 

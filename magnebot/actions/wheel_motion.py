@@ -217,7 +217,6 @@ class WheelMotion(Action, ABC):
             if OutputData.get_data_type_id(resp[i]) == "mwhe":
                 mwhe = MagnebotWheels(resp[i])
                 if mwhe.get_id() == static.robot_id:
-                    # Arrived at the destination.
                     if mwhe.get_success():
                         self.status = ActionStatus.success
                     return True
