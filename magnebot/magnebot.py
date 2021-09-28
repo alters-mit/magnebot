@@ -410,7 +410,7 @@ class Magnebot(RobotBase):
         self.action = Grasp(target=target, arm=arm, orientation_mode=orientation_mode,
                             target_orientation=target_orientation, dynamic=self.dynamic)
 
-    def drop(self, target: int, arm: Arm, wait_for_object: bool) -> None:
+    def drop(self, target: int, arm: Arm, wait_for_object: bool = True) -> None:
         """
         Drop an object held by a magnet.
 

@@ -6,6 +6,7 @@ from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.object_manager import ObjectManager
 from tdw.add_ons.step_physics import StepPhysics
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
+from tdw.output_data import OutputData, Transforms, Robot
 from magnebot import Magnebot, Arm, ImageFrequency, ActionStatus
 
 
@@ -51,6 +52,9 @@ class ArticulationState(Enum):
     resetting = 2
 
 
+RNG = np.random.RandomState(0)
+
+
 class Navigator(Magnebot):
     """
     This is a sub-class of Magnebot that uses "state machines" for basic navigation.
@@ -78,18 +82,23 @@ class Navigator(Magnebot):
         self.avoidance_state: AvoidanceState = AvoidanceState.turning
         self.articulation_state: ArticulationState = ArticulationState.grasping
 
-    def update(self, object_manager: ObjectManager, other_magnebot_position: np.array,
-               rng: np.random.RandomState) -> None:
-        """
-        Update the Magnebot's current action based on the state of the simulation and its state machine flag.
-
-        :param object_manager: The object manager. This is used to choose a target object.
-        :param other_magnebot_position: The position of the other magnebot.
-        :param rng: The random number generator.
-        """
-
+    def on_send(self, resp: List[bytes]) -> None:
+        super().on_send(resp=resp)
         if self.done:
             return
+        # Get the position of the other Magnebot and the positions of the objects.
+        other_magnebot_position: np.array = np.array([0, 0, 0])
+        object_positions: Dict[int, np.array] = dict()
+        for i in range(len(resp) - 1):
+            r_id = OutputData.get_data_type_id(resp[i])
+            if r_id == "tran":
+                transforms = Transforms(resp[i])
+                for j in range(transforms.get_num()):
+                    object_positions[transforms.get_id(j)] = np.array(transforms.get_position(j))
+            elif r_id == "robo":
+                robot = Robot(resp[i])
+                if robot.get_id() != self.robot_id:
+                    other_magnebot_position = np.array(robot.get_position())
         # Finish initializing the Magnebot.
         if self.meta_state == MetaState.initializing:
             # The Magnebot is done initializing. Go to the target object.
@@ -97,8 +106,8 @@ class Navigator(Magnebot):
                 # Set the target.
                 farthest_distance = -np.inf
                 farthest_id = -1
-                for object_id in object_manager.transforms:
-                    d = np.linalg.norm(self.dynamic.transform.position - object_manager.transforms[object_id].position)
+                for object_id in object_positions:
+                    d = np.linalg.norm(self.dynamic.transform.position - object_positions[object_id])
                     if d > farthest_distance:
                         farthest_distance = d
                         farthest_id = object_id
@@ -106,8 +115,8 @@ class Navigator(Magnebot):
                 self.move_to(self.target_id)
                 self.meta_state = MetaState.navigation
                 self.navigation_state = NavigationState.moving_to_target
-
-                self.collision_detection.exclude_objects = list(object_manager.transforms.keys())
+                # Ignore collisions with the objects.
+                self.collision_detection.exclude_objects = list(object_positions.keys())
         # Try to navigate somewhere.
         elif self.meta_state == MetaState.navigation:
             # Check if we need to avoid the other Magnebot.
@@ -147,7 +156,7 @@ class Navigator(Magnebot):
             if self.avoidance_state == AvoidanceState.stopping:
                 self.avoidance_state = AvoidanceState.turning
                 # Pick a random direction to turn.
-                if rng.random() < 0.5:
+                if RNG.random() < 0.5:
                     self.turn_by(60)
                 else:
                     self.turn_by(-60)
@@ -225,17 +234,18 @@ class MultiMagnebot(Controller):
 
     def __init__(self, port: int = 1071, check_version: bool = True, launch_build: bool = True, random_seed: int = 0):
         super().__init__(port=port, check_version=check_version, launch_build=launch_build)
-        self.rng = np.random.RandomState(random_seed)
+        global RNG
+        RNG = np.random.RandomState(random_seed)
 
         commands = [TDWUtils.create_empty_room(12, 12)]
         # Add the objects.
-        commands.extend(self.get_add_physics_object(model_name=self.rng.choice(self.TARGET_OBJECTS),
-                                                    position={"x": self.rng.uniform(-0.2, 0.2), "y": 0, "z": self.rng.uniform(-3, -3.3)},
-                                                    rotation={"x": 0, "y": self.rng.uniform(-360, 360), "z": 0},
+        commands.extend(self.get_add_physics_object(model_name=RNG.choice(self.TARGET_OBJECTS),
+                                                    position={"x": RNG.uniform(-0.2, 0.2), "y": 0, "z": RNG.uniform(-3, -3.3)},
+                                                    rotation={"x": 0, "y": RNG.uniform(-360, 360), "z": 0},
                                                     object_id=self.get_unique_id()))
-        commands.extend(self.get_add_physics_object(model_name=self.rng.choice(self.TARGET_OBJECTS),
-                                                    position={"x": self.rng.uniform(-0.2, 0.2), "y": 0, "z": self.rng.uniform(3, 3.3)},
-                                                    rotation={"x": 0, "y": self.rng.uniform(-360, 360), "z": 0},
+        commands.extend(self.get_add_physics_object(model_name=RNG.choice(self.TARGET_OBJECTS),
+                                                    position={"x": RNG.uniform(-0.2, 0.2), "y": 0, "z": RNG.uniform(3, 3.3)},
+                                                    rotation={"x": 0, "y": RNG.uniform(-360, 360), "z": 0},
                                                     object_id=self.get_unique_id()))
         # Add an object manager.
         self.object_manager: ObjectManager = ObjectManager()
@@ -260,13 +270,8 @@ class MultiMagnebot(Controller):
         """
 
         while not self.m0.done or not self.m1.done:
-            # Advance the simulation.
+            # Advance the simulation and update the Magnebots.
             self.communicate([])
-            # Update the Magnebots.
-            for this_magnebot, other_magnebot in zip([self.m0, self.m1], [self.m1, self.m0]):
-                this_magnebot.update(object_manager=self.object_manager,
-                                     other_magnebot_position=other_magnebot.dynamic.transform.position,
-                                     rng=self.rng)
         self.communicate({"$type": "terminate"})
 
 

@@ -230,7 +230,7 @@ class MagnebotController(Controller):
         self.occupancy_map = np.load(str(OCCUPANCY_MAPS_DIRECTORY.joinpath(f"{scene[0]}_{layout}.npy").resolve()))
         # Initialize the scene.
         return self._init_scene(scene=f.commands,
-                                post_processing=MagnebotController._get_default_post_processing_commands(),
+                                post_processing=MagnebotController.get_default_post_processing_commands(),
                                 position=magnebot_position)
 
     def turn_by(self, angle: float, aligned_at: float = 1) -> ActionStatus:
@@ -447,6 +447,25 @@ class MagnebotController(Controller):
     def communicate(self, commands: Union[dict, List[dict]]) -> list:
         return super().communicate(commands=commands)
 
+    @staticmethod
+    def get_default_post_processing_commands() -> List[dict]:
+        """
+        :return: The default post-processing commands.
+        """
+
+        return [{"$type": "set_aperture",
+                 "aperture": 8.0},
+                {"$type": "set_focus_distance",
+                 "focus_distance": 2.25},
+                {"$type": "set_post_exposure",
+                 "post_exposure": 0.4},
+                {"$type": "set_ambient_occlusion_intensity",
+                 "intensity": 0.175},
+                {"$type": "set_ambient_occlusion_thickness_modifier",
+                 "thickness": 3.5},
+                {"$type": "set_shadow_strength",
+                 "strength": 1.0}]
+
     @final
     def _init_scene(self, scene: List[dict], post_processing: List[dict] = None, end: List[dict] = None,
                     position: Dict[str, float] = None, rotation: Dict[str, float] = None) -> None:
@@ -466,7 +485,7 @@ class MagnebotController(Controller):
             rotation = TDWUtils.VECTOR3_ZERO
         # Define the agent.
         self.magnebot = Magnebot(robot_id=0, position=position, rotation=rotation,
-                                 image_frequency=ImageFrequency.once, check_pypi_version=self._check_pypi_version)
+                                 image_frequency=ImageFrequency.once, check_version=self._check_pypi_version)
         # Add the object manager and collision manager.
         self.objects = ObjectManager(transforms=True, rigidbodies=False, bounds=False)
         self.collisions = CollisionManager(objects=True, environment=True, enter=True, exit=True)
@@ -496,22 +515,3 @@ class MagnebotController(Controller):
         while self.magnebot.action.status == ActionStatus.ongoing:
             self.communicate([])
         return self.magnebot.action.status
-
-    @staticmethod
-    def _get_default_post_processing_commands() -> List[dict]:
-        """
-        :return: The default post-processing commands.
-        """
-
-        return [{"$type": "set_aperture",
-                 "aperture": 8.0},
-                {"$type": "set_focus_distance",
-                 "focus_distance": 2.25},
-                {"$type": "set_post_exposure",
-                 "post_exposure": 0.4},
-                {"$type": "set_ambient_occlusion_intensity",
-                 "intensity": 0.175},
-                {"$type": "set_ambient_occlusion_thickness_modifier",
-                 "thickness": 3.5},
-                {"$type": "set_shadow_strength",
-                 "strength": 1.0}]
