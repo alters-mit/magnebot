@@ -12,6 +12,8 @@ Drop an object held by a magnet.
 
 - `initialized` If True, the action has initialized. If False, the action will try to send `get_initialization_commands(resp)` on this frame.
 
+- `done` If True, this action is done and won't send any more commands.
+
 ***
 
 ## Functions
@@ -27,7 +29,7 @@ Drop an object held by a magnet.
 | wait_for_object |  bool |  | If True, the action will continue until the object has finished falling. If False, the action advances the simulation by exactly 1 frame. |
 | dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |
 
-##### get_initialization_commands
+#### get_initialization_commands
 
 **`self.get_initialization_commands(resp, static, dynamic, image_frequency)`**
 
@@ -54,7 +56,7 @@ Update the object's position and check if it's still moving.
 
 _Returns:_  True if the object is moving.
 
-##### get_ongoing_commands
+#### get_ongoing_commands
 
 **`self.get_ongoing_commands(resp, static, dynamic)`**
 
@@ -76,7 +78,7 @@ _Returns:_  Tuple: A list of commands to send to the build to continue the actio
 In some cases (such as camera actions) that finish on one frame, we want to set the status after sending initialization commands.
 To do so, override this method.
 
-##### get_end_commands
+#### get_end_commands
 
 **`self.get_end_commands(resp, static, dynamic, image_frequency)`**
 

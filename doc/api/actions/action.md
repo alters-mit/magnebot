@@ -13,6 +13,8 @@ An action also has a status indicating whether it's ongoing, succeeded, or faile
 
 - `initialized` If True, the action has initialized. If False, the action will try to send `get_initialization_commands(resp)` on this frame.
 
+- `done` If True, this action is done and won't send any more commands.
+
 ***
 
 ## Functions

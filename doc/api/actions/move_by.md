@@ -12,6 +12,8 @@ Move the Magnebot forward or backward by a given distance.
 
 - `initialized` If True, the action has initialized. If False, the action will try to send `get_initialization_commands(resp)` on this frame.
 
+- `done` If True, this action is done and won't send any more commands.
+
 ***
 
 ## Functions
@@ -30,7 +32,7 @@ Move the Magnebot forward or backward by a given distance.
 | collision_detection |  CollisionDetection |  | [The collision detection rules.](../collision_detection.md) |
 | previous |  Action  | None | The previous action, if any. |
 
-##### get_initialization_commands
+#### get_initialization_commands
 
 **`self.get_initialization_commands(resp, static, dynamic, image_frequency)`**
 
@@ -44,14 +46,14 @@ Move the Magnebot forward or backward by a given distance.
 
 _Returns:_  A list of commands to initialize this action.
 
-##### set_status_after_initialization
+#### set_status_after_initialization
 
 **`self.set_status_after_initialization()`**
 
 In some cases (such as camera actions) that finish on one frame, we want to set the status after sending initialization commands.
 To do so, override this method.
 
-##### get_ongoing_commands
+#### get_ongoing_commands
 
 **`self.get_ongoing_commands(resp, static, dynamic)`**
 
@@ -66,7 +68,7 @@ Evaluate an action per-frame to determine whether it's done.
 
 _Returns:_  Tuple: A list of commands to send to the build to continue the action.
 
-##### get_end_commands
+#### get_end_commands
 
 **`self.get_end_commands(resp, static, dynamic, image_frequency)`**
 

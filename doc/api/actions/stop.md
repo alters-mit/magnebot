@@ -1,9 +1,8 @@
-# ReachFor
+# Stop
 
-`from magnebot.reach_for import ReachFor`
+`from magnebot.stop import Stop`
 
-Reach for a target position. The action ends when the magnet is at or near the target position, or if it fails to reach the target.
-The Magnebot may try to reach for the target multiple times, trying different IK orientations each time, or no times, if it knows the action will fail.
+Stop the Magnebot's wheels at their current positions.
 
 ***
 
@@ -16,24 +15,6 @@ The Magnebot may try to reach for the target multiple times, trying different IK
 - `done` If True, this action is done and won't send any more commands.
 
 ***
-
-## Functions
-
-#### \_\_init\_\_
-
-**`ReachFor(target, absolute, arm, orientation_mode, target_orientation, dynamic)`**
-
-**`ReachFor(target, absolute, arrived_at=0.125, arm, orientation_mode, target_orientation, dynamic)`**
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| target |  np.array |  | The target position. |
-| absolute |  bool |  | If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot. |
-| arrived_at |  float  | 0.125 | If the magnet is this distance or less from `target`, then the action is successful. |
-| arm |  Arm |  | [The arm used for this action.](../arm.md) |
-| orientation_mode |  OrientationMode |  | [The orientation mode.](../../arm_articulation.md) |
-| target_orientation |  TargetOrientation |  | [The target orientation.](../../arm_articulation.md) |
-| dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |
 
 #### get_initialization_commands
 
@@ -59,6 +40,8 @@ _Returns:_  A list of commands to initialize this action.
 
 In some cases (such as camera actions) that finish on one frame, we want to set the status after sending initialization commands.
 To do so, override this method.
+
+# Functions
 
 #### get_ongoing_commands
 

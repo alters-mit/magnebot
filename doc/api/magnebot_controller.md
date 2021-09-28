@@ -248,7 +248,7 @@ _Returns:_  An `ActionStatus` indicating whether the Magnebot succeeded in movin
 
 **`self.move_to(target)`**
 
-**`self.move_to(target, arrived_at=0.1, aligned_at=1)`**
+**`self.move_to(target, arrived_at=0.1, aligned_at=1, arrived_offset=0)`**
 
 Move to a target object or position. This combines turn_to() followed by move_by().
 
@@ -258,6 +258,7 @@ Move to a target object or position. This combines turn_to() followed by move_by
 | target |  Union[int, Dict[str, float] |  | The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array. |
 | arrived_at |  float  | 0.1 | If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
 | aligned_at |  float  | 1 | If the difference between the current angle and the target angle is less than this value, then the action is successful. |
+| arrived_offset |  float  | 0 | Offset the arrival position by this value. This can be useful if the Magnebot needs to move to an object but shouldn't try to move to the object's centroid. This is distinct from `arrived_at` because it won't affect the Magnebot's braking solution. |
 
 _Returns:_  An `ActionStatus` indicating whether the Magnebot succeeded in moving and if not, why.
 
@@ -367,7 +368,9 @@ These commands rotate the Magnebot's camera or add additional camera to the scen
 
 #### rotate_camera
 
-**`self.rotate_camera(roll, pitch, yaw)`**
+**`self.rotate_camera()`**
+
+**`self.rotate_camera(roll=0, pitch=0, yaw=0)`**
 
 Rotate the Magnebot's camera by the (roll, pitch, yaw) axes.
 
@@ -382,9 +385,9 @@ Each axis of rotation is constrained by the following limits:
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| roll |  float |  | The roll angle in degrees. |
-| pitch |  float |  | The pitch angle in degrees. |
-| yaw |  float |  | The yaw angle in degrees. |
+| roll |  float  | 0 | The roll angle in degrees. |
+| pitch |  float  | 0 | The pitch angle in degrees. |
+| yaw |  float  | 0 | The yaw angle in degrees. |
 
 _Returns:_  An `ActionStatus` indicating whether the Magnebot rotated its camera freely or if the rotation was clamped at a limit.
 
@@ -432,13 +435,21 @@ This only works if you've loaded an occupancy map via `self.init_floorplan_scene
 
 _Returns:_  Tuple: (x coordinate; z coordinate) of the corresponding worldspace position.
 
+#### get_default_post_processing_commands
+
+**`MagnebotController(Controller).get_default_post_processing_commands()`**
+
+_This is a static function._
+
+_Returns:_  The default post-processing commands.
+
 ***
 
 ### Low-level
 
 These are low-level functions that you are unlikely to ever need to use.
 
-##### communicate
+#### communicate
 
 **`self.communicate(commands)`**
 
@@ -451,11 +462,13 @@ Send commands and receive output data in response.
 
 _Returns:_  The output data from the build.
 
-##### get_add_object
+#### get_add_object
 
-**`self.get_add_object(model_name, object_id)`**
+**`Controller(object).get_add_object(model_name, object_id)`**
 
-**`self.get_add_object(model_name, position={"x" 0, rotation={"x" 0, library="", object_id)`**
+**`Controller(object).get_add_object(model_name, position=None, rotation=None, library="", object_id)`**
+
+_This is a static function._
 
 Returns a valid add_object command.
 
@@ -463,18 +476,40 @@ Returns a valid add_object command.
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | model_name |  str |  | The name of the model. |
-| position |  | {"x" 0 | The position of the model. |
-| rotation |  | {"x" 0 | The starting rotation of the model, in Euler angles. |
+| position |  Dict[str, float] | None | The position of the model. If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
+| rotation |  Dict[str, float] | None | The starting rotation of the model, in Euler angles. If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
 | library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `ModelLibrarian.get_library_filenames()` and `ModelLibrarian.get_default_library()`. |
 | object_id |  int |  | The ID of the new object. |
 
 _Returns:_  An add_object command that the controller can then send.
 
-##### get_add_material
+#### get_add_physics_object
 
-**`self.get_add_material(material_name)`**
+**`Controller(object).get_add_physics_object(model_name, object_id)`**
 
-**`self.get_add_material(material_name, library="")`**
+**`Controller(object).get_add_physics_object(model_name, position=None, rotation=None, library="", object_id, scale_factor=None, kinematic=False, gravity=True, default_physics_values=True, mass=1, dynamic_friction=0.3, static_friction=0.3, bounciness=0.7)`**
+
+_This is a static function._
+
+Add an object to the scene with physics values (mass, friction coefficients, etc.).
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| model_name |  str |  | The name of the model. |
+| position |  Dict[str, float] | None | The position of the model. If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
+| rotation |  Dict[str, float] | None | The starting rotation of the model, in Euler angles. If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
+| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `ModelLibrarian.get_library_filenames()` and `ModelLibrarian.get_default_library()`. |
+| object_id |  int |  | The ID of the new object. |
+| scale_factor |  Dict[str, float] | None | The [scale factor](../api/command_api.md#
+
+#### get_add_material
+
+**`Controller(object).get_add_material(material_name)`**
+
+**`Controller(object).get_add_material(material_name, library="")`**
+
+_This is a static function._
 
 Returns a valid add_material command.
 
@@ -486,11 +521,13 @@ Returns a valid add_material command.
 
 _Returns:_  An add_material command that the controller can then send.
 
-##### get_add_scene
+#### get_add_scene
 
-**`self.get_add_scene(scene_name)`**
+**`Controller(object).get_add_scene(scene_name)`**
 
-**`self.get_add_scene(scene_name, library="")`**
+**`Controller(object).get_add_scene(scene_name, library="")`**
+
+_This is a static function._
 
 Returns a valid add_scene command.
 
@@ -502,11 +539,13 @@ Returns a valid add_scene command.
 
 _Returns:_  An add_scene command that the controller can then send.
 
-##### get_add_hdri_skybox
+#### get_add_hdri_skybox
 
-**`self.get_add_hdri_skybox(skybox_name)`**
+**`Controller(object).get_add_hdri_skybox(skybox_name)`**
 
-**`self.get_add_hdri_skybox(skybox_name, library="")`**
+**`Controller(object).get_add_hdri_skybox(skybox_name, library="")`**
+
+_This is a static function._
 
 Returns a valid add_hdri_skybox command.
 
@@ -518,11 +557,13 @@ Returns a valid add_hdri_skybox command.
 
 _Returns:_  An add_hdri_skybox command that the controller can then send.
 
-##### get_add_humanoid
+#### get_add_humanoid
 
-**`self.get_add_humanoid(humanoid_name, object_id)`**
+**`Controller(object).get_add_humanoid(humanoid_name, object_id)`**
 
-**`self.get_add_humanoid(humanoid_name, position={"x" 0, rotation={"x" 0, library="", object_id)`**
+**`Controller(object).get_add_humanoid(humanoid_name, position={"x" 0, rotation={"x" 0, library="", object_id)`**
+
+_This is a static function._
 
 Returns a valid add_humanoid command.
 
@@ -537,11 +578,13 @@ Returns a valid add_humanoid command.
 
 _Returns:_  An add_humanoid command that the controller can then send.
 
-##### get_add_humanoid_animation
+#### get_add_humanoid_animation
 
-**`self.get_add_humanoid_animation(humanoid_animation_name)`**
+**`Controller(object).get_add_humanoid_animation(humanoid_animation_name)`**
 
-**`self.get_add_humanoid_animation(humanoid_animation_name, library="")`**
+**`Controller(object).get_add_humanoid_animation(humanoid_animation_name, library="")`**
+
+_This is a static function._
 
 Returns a valid add_humanoid_animation command and the record (which you will need to play an animation).
 
@@ -553,11 +596,13 @@ Returns a valid add_humanoid_animation command and the record (which you will ne
 
 _Returns:_  An add_humanoid_animation command that the controller can then send.
 
-##### get_add_robot
+#### get_add_robot
 
-**`self.get_add_robot(name, robot_id)`**
+**`Controller(object).get_add_robot(name, robot_id)`**
 
-**`self.get_add_robot(name, robot_id, position=None, rotation=None, library="")`**
+**`Controller(object).get_add_robot(name, robot_id, position=None, rotation=None, library="")`**
+
+_This is a static function._
 
 Returns a valid add_robot command.
 
@@ -572,7 +617,7 @@ Returns a valid add_robot command.
 
 _Returns:_  An `add_robot` command that the controller can then send.
 
-##### get_version
+#### get_version
 
 **`self.get_version()`**
 
@@ -580,7 +625,7 @@ Send a send_version command to the build.
 
 _Returns:_  The TDW version and the Unity Engine version.
 
-##### get_unique_id
+#### get_unique_id
 
 **`Controller(object).get_unique_id()`**
 
@@ -590,7 +635,7 @@ Generate a unique integer. Useful when creating objects.
 
 _Returns:_  The new unique ID.
 
-##### get_frame
+#### get_frame
 
 **`Controller(object).get_frame(frame)`**
 
@@ -605,7 +650,7 @@ Converts the frame byte array to an integer.
 
 _Returns:_  The frame as an integer.
 
-##### launch_build
+#### launch_build
 
 **`Controller(object).launch_build()`**
 

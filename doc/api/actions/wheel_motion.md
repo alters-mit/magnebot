@@ -12,6 +12,8 @@ Abstract base class for a motion action involving the Magnebot's wheels.
 
 - `initialized` If True, the action has initialized. If False, the action will try to send `get_initialization_commands(resp)` on this frame.
 
+- `done` If True, this action is done and won't send any more commands.
+
 ***
 
 ## Functions
@@ -28,7 +30,7 @@ Abstract base class for a motion action involving the Magnebot's wheels.
 | collision_detection |  CollisionDetection |  | [The collision detection rules.](../collision_detection.md) |
 | previous |  Action  | None | The previous action, if any. |
 
-##### get_initialization_commands
+#### get_initialization_commands
 
 **`self.get_initialization_commands(resp, static, dynamic, image_frequency)`**
 
@@ -59,7 +61,7 @@ Evaluate an action per-frame to determine whether it's done.
 
 _Returns:_  Tuple: An `ActionStatus` describing whether the action is ongoing, succeeded, or failed; A list of commands to send to the build if the action is ongoing.
 
-##### get_end_commands
+#### get_end_commands
 
 _(Final)_
 
@@ -75,14 +77,14 @@ _(Final)_
 
 _Returns:_  A list of commands that must be sent to end any action.
 
-#### set_status_after_initialization
+### set_status_after_initialization
 
 **`self.set_status_after_initialization()`**
 
 In some cases (such as camera actions) that finish on one frame, we want to set the status after sending initialization commands.
 To do so, override this method.
 
-##### get_ongoing_commands
+#### get_ongoing_commands
 
 _(Final)_
 

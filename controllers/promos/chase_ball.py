@@ -35,7 +35,7 @@ class ChaseBall(Controller):
     - It uses a very state machine to manage behavior that is probably too simple for actual use-cases.
     - It includes image capture and a "cinematic camera" which look nice but are likely impractical for actual use cases.
     """
-    
+
     def __init__(self, port: int = 1071, check_version: bool = True, launch_build: bool = True):
         super().__init__(port=port, check_version=check_version, launch_build=launch_build)
 

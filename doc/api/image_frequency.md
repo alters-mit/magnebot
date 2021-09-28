@@ -1,6 +1,6 @@
 # ImageFrequency
 
-`from magnebot.image_frequency import ImageFrequency`
+`from magnebot import ImageFrequency`
 
 The per-frame frequency of image capture.
 

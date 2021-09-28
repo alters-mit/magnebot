@@ -81,16 +81,16 @@ m.end()
 
 The `Magnebot` and `MagnebotController` were originally the same code--the controller was a hard-coded single-agent simulation.
 
-The Magnebot has been designed so that a certain number of physics frames will be skipped per frame that actually returns data back to the controller. The `MagnebotController` does this automatically but you can easily add this to your simulation with a [`SkipFrames`](skip_frames.md) object:
+The Magnebot has been designed so that a certain number of physics frames will be skipped per frame that actually returns data back to the controller. The `MagnebotController` does this automatically but you can easily add this to your simulation with a [`StepPhysics`](https://github.com/threedworld-mit/tdw/blob/master/Python/tdw/add_ons/step_physics.py.md) object:
 
 ```python
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
+from tdw.add_ons.step_physics import StepPhysics
 from magnebot.magnebot import Magnebot
-from magnebot.skip_frames import SkipFrames
 
 m = Magnebot()
-s = SkipFrames(10)
+s = StepPhysics(10)
 c = Controller()
 c.add_ons.extend([m, s])
 c.communicate(TDWUtils.create_empty_room(12, 12))
@@ -205,7 +205,7 @@ c.communicate({"$type": "terminate"})
 
 **`Magnebot()`**
 
-**`Magnebot(robot_id=0, position=None, rotation=None, image_frequency=ImageFrequency.once, check_pypi_version=True)`**
+**`Magnebot(robot_id=0, position=None, rotation=None, image_frequency=ImageFrequency.once, check_version=True)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -213,7 +213,7 @@ c.communicate({"$type": "terminate"})
 | position |  Dict[str, float] | None | The position of the robot. If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
 | rotation |  Dict[str, float] | None | The rotation of the robot in Euler angles (degrees). If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
 | image_frequency |  ImageFrequency  | ImageFrequency.once | [The frequency of image capture.](image_frequency.md) |
-| check_pypi_version |  bool  | True | If True, check whether an update to the Magnebot API is available. |
+| check_version |  bool  | True | If True, check whether an update to the Magnebot API or TDW API is available. |
 
 ***
 
@@ -268,7 +268,7 @@ Move the Magnebot forward or backward by a given distance.
 
 **`self.move_to(target)`**
 
-**`self.move_to(target, arrived_at=0.1, aligned_at=1)`**
+**`self.move_to(target, arrived_at=0.1, aligned_at=1, arrived_offset=0)`**
 
 Move to a target object or position. This combines turn_to() followed by move_by().
 
@@ -277,6 +277,13 @@ Move to a target object or position. This combines turn_to() followed by move_by
 | target |  Union[int, Dict[str, float] |  | The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array. |
 | arrived_at |  float  | 0.1 | If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
 | aligned_at |  float  | 1 | If the difference between the current angle and the target angle is less than this value, then the action is successful. |
+| arrived_offset |  float  | 0 | Offset the arrival position by this value. This can be useful if the Magnebot needs to move to an object but shouldn't try to move to the object's centroid. This is distinct from `arrived_at` because it won't affect the Magnebot's braking solution. |
+
+#### stop
+
+**`self.stop()`**
+
+Stop the Magnebot's wheels at their current positions.
 
 #### reset_position
 
@@ -291,7 +298,7 @@ This action should only be called if the Magnebot is a position that will preven
 
 ***
 
-### Arm Articulation
+#### Arm Articulation
 
 These functions move and bend the joints of the Magnebots's arms.
 
@@ -335,7 +342,9 @@ The action ends when either the Magnebot grasps the object, can't grasp it, or f
 
 #### drop
 
-**`self.drop(target, arm, wait_for_object)`**
+**`self.drop(target, arm)`**
+
+**`self.drop(target, arm, wait_for_object=True)`**
 
 Drop an object held by a magnet.
 
@@ -343,7 +352,7 @@ Drop an object held by a magnet.
 | --- | --- | --- | --- |
 | target |  int |  | The ID of the object currently held by the magnet. |
 | arm |  Arm |  | [The arm of the magnet holding the object.](arm.md) |
-| wait_for_object |  bool |  | If True, the action will continue until the object has finished falling. If False, the action advances the simulation by exactly 1 frame. |
+| wait_for_object |  bool  | True | If True, the action will continue until the object has finished falling. If False, the action advances the simulation by exactly 1 frame. |
 
 #### reset_arm
 
@@ -363,7 +372,9 @@ These commands rotate the Magnebot's camera or add additional camera to the scen
 
 #### rotate_camera
 
-**`self.rotate_camera(roll, pitch, yaw)`**
+**`self.rotate_camera()`**
+
+**`self.rotate_camera(roll=0, pitch=0, yaw=0)`**
 
 Rotate the Magnebot's camera by the (roll, pitch, yaw) axes.
 
@@ -377,9 +388,9 @@ Each axis of rotation is constrained by the following limits:
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| roll |  float |  | The roll angle in degrees. |
-| pitch |  float |  | The pitch angle in degrees. |
-| yaw |  float |  | The yaw angle in degrees. |
+| roll |  float  | 0 | The roll angle in degrees. |
+| pitch |  float  | 0 | The pitch angle in degrees. |
+| yaw |  float  | 0 | The yaw angle in degrees. |
 
 #### reset_camera
 
@@ -393,7 +404,7 @@ Reset the rotation of the Magnebot's camera to its default angles.
 
 These functions are inherited from the `RobotBase` parent class.
 
-##### get_initialization_commands
+#### get_initialization_commands
 
 **`self.get_initialization_commands()`**
 
@@ -415,7 +426,7 @@ This function is called automatically by the controller; you don't need to call 
 
 ***
 
-##### joints_are_moving
+#### joints_are_moving
 
 **`self.joints_are_moving()`**
 
@@ -428,7 +439,7 @@ This function is called automatically by the controller; you don't need to call 
 
 _Returns:_  True if the joints are moving.
 
-##### on_send
+#### on_send
 
 **`self.on_send(resp)`**
 
@@ -441,7 +452,7 @@ Any commands in the `self.commands` list will be sent on the next frame.
 | --- | --- | --- | --- |
 | resp |  List[bytes] |  | The response from the build. |
 
-##### before_send
+#### before_send
 
 **`self.before_send(commands)`**
 
