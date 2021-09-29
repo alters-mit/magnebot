@@ -47,11 +47,11 @@ class ChaseBall(Controller):
         # Add a ball.
         self.ball_id: int = self.get_unique_id()
         # Add a camera and enable image capture.
-        self.camera: CinematicCamera = CinematicCamera(position={"x": -2, "y": 2.7, "z": -1.1},
-                                                       look_at=self.ball_id,
+        self.camera: CinematicCamera = CinematicCamera(position={"x": 3.1, "y": 2.7, "z": 0.1},
+                                                       look_at={"x": -1.37, "y": 1, "z": 0.8},
                                                        avatar_id="a",
-                                                       rotate_speed=2.5,
-                                                       move_speed=0.075)
+                                                       rotate_speed=0.5,
+                                                       move_speed=0.01)
         images_path = EXAMPLE_CONTROLLER_OUTPUT_PATH.joinpath("chase_ball")
         print(f"Images will be saved to: {images_path}")
         image_capture = ImageCapture(avatar_ids=[self.camera.avatar_id], path=images_path)
@@ -116,10 +116,16 @@ class ChaseBall(Controller):
                 if self.magnebot.action.status == ActionStatus.collision:
                     self.state = State.backing_away_from_wall
                     self.magnebot.move_by(-2)
+                    self.camera.move_to_position({"x": 0, "y": 2.7, "z": 0.9})
                 else:
                     self._frame += 1
                     # Every so often, course-correct the Magnebot.
                     if self._frame % 15 == 0:
+                        # If the Magnebot is near the center of the room, start to rotate the camera.
+                        if np.linalg.norm(self.magnebot.dynamic.transform.position - np.array([0, 0, 0])) < 1.25:
+                            self.camera.rotate_to_object(target=self.magnebot.robot_id)
+                            # Move the camera towards the center of the room.
+                            self.camera.move_to_position({"x": -3, "y": 2.7, "z": 0.9})
                         # If the Magnebot is near the ball, try to pick it up.
                         if np.linalg.norm(self.object_manager.transforms[self.ball_id].position -
                                           self.magnebot.dynamic.transform.position) < 0.9:
