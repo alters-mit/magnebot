@@ -59,7 +59,7 @@ class Navigator(Magnebot):
     """
     This is a sub-class of Magnebot that uses "state machines" for basic navigation.
 
-    The state machine flags are evaulated in an `update()` function that will be called by the controller.
+    The state machine flags are evaluated per frame via `on_send(resp)`.
 
     Note that this is a VERY primitive navigation system!
     Image capture has been totally disabled.
