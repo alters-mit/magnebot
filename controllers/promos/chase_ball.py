@@ -47,7 +47,7 @@ class ChaseBall(Controller):
         # Add a ball.
         self.ball_id: int = self.get_unique_id()
         # Add a camera and enable image capture.
-        self.camera: CinematicCamera = CinematicCamera(position={"x": 3.1, "y": 2.7, "z": 0.1},
+        self.camera: CinematicCamera = CinematicCamera(position={"x": 3.1, "y": 3.7, "z": 0.1},
                                                        look_at={"x": -1.37, "y": 1, "z": 0.8},
                                                        avatar_id="a",
                                                        rotate_speed=0.5,
@@ -116,23 +116,22 @@ class ChaseBall(Controller):
                 if self.magnebot.action.status == ActionStatus.collision:
                     self.state = State.backing_away_from_wall
                     self.magnebot.move_by(-2)
-                    self.camera.move_to_position({"x": 0, "y": 2.7, "z": 0.9})
+                    self.camera.move_to_position({"x": 0, "y": 3.7, "z": 0.9})
+                    self.camera.rotate_to_position(target=TDWUtils.array_to_vector3(self._get_midpoint()))
                 else:
                     self._frame += 1
+                    # If the Magnebot is near the center of the room, start to rotate the camera.
+                    if np.linalg.norm(self.magnebot.dynamic.transform.position - np.array([0, 0, 0])) < 1.25:
+                        self.camera.rotate_to_position(target=TDWUtils.array_to_vector3(self._get_midpoint()))
+                        # Move the camera towards the center of the room.
+                        self.camera.move_to_position({"x": -3, "y": 3.7, "z": 0.9})
                     # Every so often, course-correct the Magnebot.
                     if self._frame % 15 == 0:
-                        # If the Magnebot is near the center of the room, start to rotate the camera.
-                        if np.linalg.norm(self.magnebot.dynamic.transform.position - np.array([0, 0, 0])) < 1.25:
-                            self.camera.rotate_to_object(target=self.magnebot.robot_id)
-                            # Move the camera towards the center of the room.
-                            self.camera.move_to_position({"x": -3, "y": 2.7, "z": 0.9})
                         # If the Magnebot is near the ball, try to pick it up.
                         if np.linalg.norm(self.object_manager.transforms[self.ball_id].position -
                                           self.magnebot.dynamic.transform.position) < 0.9:
                             self.state = State.grasping
                             self.magnebot.grasp(target=self.ball_id, arm=Arm.right)
-                            # Zoom in on the Magnebot.
-                            self.camera.move_to_object(target=self.magnebot.robot_id)
                         # Course-correct.
                         else:
                             self.magnebot.move_to(target=self.ball_id, arrived_offset=0.3)
@@ -163,12 +162,13 @@ class ChaseBall(Controller):
                     self.state = State.backing_away_from_wall_with_ball
                     self.magnebot.move_by(-3)
                     # Move the camera away from the Magnebot.
-                    self.camera.move_to_position(target={"x": 0, "y": 2.7, "z": 0})
+                    self.camera.move_to_position(target={"x": -3, "y": 4.7, "z": 0})
+                    self.camera.rotate_to_object(target=self.magnebot.robot_id)
             elif self.state == State.backing_away_from_wall_with_ball:
                 # The Magnebot has backed away from the wall. Move towards the robot.
                 if self.magnebot.action.status != ActionStatus.ongoing:
                     self.state = State.moving_to_robot
-                    self.magnebot.move_to(target={"x": -0.871, "y": 0.1, "z": 3}, arrived_offset=0.1)
+                    self.magnebot.move_to(target={"x": -0.871, "y": 0, "z": 3}, arrived_offset=0.1)
             elif self.state == State.moving_to_robot:
                 # The Magnebot has arrived at the robot. Drop the object.
                 if self.magnebot.action.status != ActionStatus.ongoing:
@@ -188,6 +188,17 @@ class ChaseBall(Controller):
                 if self.magnebot.action.status != ActionStatus.ongoing and not self.robot.joints_are_moving():
                     done = True
         self.communicate({"$type": "terminate"})
+
+    def _get_midpoint(self) -> np.array:
+        """
+        :return: The midpoint between the Magenbot and the ball.
+        """
+
+        return np.array([(self.magnebot.dynamic.transform.position[0] +
+                          self.object_manager.transforms[self.ball_id].position[0]) / 2,
+                         0.5,
+                         (self.magnebot.dynamic.transform.position[2] +
+                          self.object_manager.transforms[self.ball_id].position[2]) / 2])
 
 
 if __name__ == "__main__":
