@@ -5,7 +5,7 @@ from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.robot import Robot
 from tdw.add_ons.collision_manager import CollisionManager
 from tdw.add_ons.object_manager import ObjectManager
-from tdw.add_ons.cinematic_camera import CinematicCamera
+from tdw.add_ons.third_person_camera import ThirdPersonCamera
 from tdw.add_ons.image_capture import ImageCapture
 from tdw.backend.paths import EXAMPLE_CONTROLLER_OUTPUT_PATH
 from magnebot import Magnebot, Arm, ActionStatus, ImageFrequency, MagnebotController
@@ -33,7 +33,7 @@ class ChaseBall(Controller):
     This is a "promo" controller rather than an "example" controller for several reasons:
 
     - It uses a very state machine to manage behavior that is probably too simple for actual use-cases.
-    - It includes image capture and a "cinematic camera" which look nice but are likely impractical for actual use cases.
+    - It includes per-frame image capture which is very slow.
     """
 
     def __init__(self, port: int = 1071, check_version: bool = True, launch_build: bool = True):
@@ -47,11 +47,9 @@ class ChaseBall(Controller):
         # Add a ball.
         self.ball_id: int = self.get_unique_id()
         # Add a camera and enable image capture.
-        self.camera: CinematicCamera = CinematicCamera(position={"x": 3.1, "y": 3.7, "z": 0.1},
-                                                       look_at={"x": -1.37, "y": 1, "z": 0.8},
-                                                       avatar_id="a",
-                                                       rotate_speed=0.5,
-                                                       move_speed=0.01)
+        self.camera: ThirdPersonCamera = ThirdPersonCamera(position={"x": 0, "y": 10, "z": -1},
+                                                           look_at={"x": 0, "y": 0, "z": 0},
+                                                           avatar_id="a")
         images_path = EXAMPLE_CONTROLLER_OUTPUT_PATH.joinpath("chase_ball")
         print(f"Images will be saved to: {images_path}")
         image_capture = ImageCapture(avatar_ids=[self.camera.avatar_id], path=images_path)
@@ -70,8 +68,11 @@ class ChaseBall(Controller):
                     {"$type": "set_proc_gen_floor_texture_scale",
                      "scale": {"x": 3, "y": 3}},
                     {"$type": "set_screen_size",
-                     "width": 1280,
-                     "height": 720}]
+                     "width": 1024,
+                     "height": 1024},
+                    {"$type": "rotate_directional_light_by",
+                     "angle": 30,
+                     "axis": "pitch"}]
         # Add post-processing.
         commands.extend(MagnebotController.get_default_post_processing_commands())
         commands.extend(self.get_add_physics_object(model_name="prim_sphere",
@@ -116,15 +117,8 @@ class ChaseBall(Controller):
                 if self.magnebot.action.status == ActionStatus.collision:
                     self.state = State.backing_away_from_wall
                     self.magnebot.move_by(-2)
-                    self.camera.move_to_position({"x": 0, "y": 3.7, "z": 0.9})
-                    self.camera.rotate_to_position(target=TDWUtils.array_to_vector3(self._get_midpoint()))
                 else:
                     self._frame += 1
-                    # If the Magnebot is near the center of the room, start to rotate the camera.
-                    if np.linalg.norm(self.magnebot.dynamic.transform.position - np.array([0, 0, 0])) < 1.25:
-                        self.camera.rotate_to_position(target=TDWUtils.array_to_vector3(self._get_midpoint()))
-                        # Move the camera towards the center of the room.
-                        self.camera.move_to_position({"x": -3, "y": 3.7, "z": 0.9})
                     # Every so often, course-correct the Magnebot.
                     if self._frame % 15 == 0:
                         # If the Magnebot is near the ball, try to pick it up.
@@ -161,9 +155,6 @@ class ChaseBall(Controller):
                 if self.magnebot.action.status != ActionStatus.ongoing:
                     self.state = State.backing_away_from_wall_with_ball
                     self.magnebot.move_by(-3)
-                    # Move the camera away from the Magnebot.
-                    self.camera.move_to_position(target={"x": -3, "y": 4.7, "z": 0})
-                    self.camera.rotate_to_object(target=self.magnebot.robot_id)
             elif self.state == State.backing_away_from_wall_with_ball:
                 # The Magnebot has backed away from the wall. Move towards the robot.
                 if self.magnebot.action.status != ActionStatus.ongoing:
