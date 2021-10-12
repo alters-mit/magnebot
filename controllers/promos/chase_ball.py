@@ -3,7 +3,6 @@ import numpy as np
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.robot import Robot
-from tdw.add_ons.collision_manager import CollisionManager
 from tdw.add_ons.object_manager import ObjectManager
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
 from tdw.add_ons.image_capture import ImageCapture
@@ -55,10 +54,6 @@ class ChaseBall(Controller):
         image_capture = ImageCapture(avatar_ids=[self.camera.avatar_id], path=images_path)
         self.add_ons.extend([self.robot, self.magnebot, self.object_manager, self.camera, image_capture])
 
-        # Don't add this just yet! The robot initializes at a position that intersects with the floor.
-        # If you request collision data now, the build will crash.
-        self.collision_manager = CollisionManager()
-
         # Create the scene.
         commands = [TDWUtils.create_empty_room(9, 9),
                     self.get_add_material("parquet_long_horizontal_clean",
@@ -91,22 +86,27 @@ class ChaseBall(Controller):
 
     def run(self):
         done = False
+        commands = []
         while not done:
-            self.communicate([])
+            self.communicate(commands)
+            commands.clear()
             # Initialize the robots.
             if self.state == State.initializing:
                 # Stop initializing and start swinging.
                 if not self.robot.joints_are_moving() and self.magnebot.action.status != ActionStatus.ongoing:
                     # Now that the robot isn't intersecting with the floor, it is safe to request collision data.
-                    self.add_ons.append(self.collision_manager)
+                    commands.append({"$type": "send_collisions",
+                                     "enter": True,
+                                     "stay": False,
+                                     "exit": False,
+                                     "collision_types": ["obj"]})
                     # Rotate the shoulder to swing at the ball.
                     self.robot.set_joint_targets(targets={self.robot.static.joint_ids_by_name["shoulder_link"]: -70})
                     self.state = State.swinging
             elif self.state == State.swinging:
-                for collision in self.collision_manager.obj_collisions:
-                    # A robot joint collided with the ball.
-                    if (collision.int1 in self.robot.static.joints and collision.int2 == self.ball_id) or \
-                            (collision.int2 in self.robot.static.joints and collision.int1 == self.ball_id):
+                for collision in self.robot.dynamic.collisions_with_objects:
+                    # The first element in `collision` is always a body part and the second element is always an object.
+                    if collision[1] == self.ball_id:
                         # Start moving the Magnebot towards the ball.
                         self.state = State.moving_to_ball
                         self.magnebot.move_to(target=self.ball_id, arrived_offset=0.3)
