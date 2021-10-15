@@ -2,7 +2,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import List, Dict, Union, Optional
 import numpy as np
-from PIL.Image import Image
+from PIL import Image
 from tdw.tdw_utils import TDWUtils
 from tdw.output_data import OutputData, Magnebot, Images, CameraMatrices
 from tdw.robot_data.robot_dynamic import RobotDynamic
@@ -146,7 +146,7 @@ class MagnebotDynamic(RobotDynamic):
                 with p.open("wb") as f:
                     f.write(self.images[pass_name])
 
-    def get_pil_images(self) -> Dict[str, Image]:
+    def get_pil_images(self) -> Dict[str, Image.Image]:
         """
         Convert each image pass from the robot camera to PIL images.
 

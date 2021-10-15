@@ -7,7 +7,6 @@ from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
 from tdw.scene_data.scene_bounds import SceneBounds
 from tdw.add_ons.object_manager import ObjectManager
-from tdw.add_ons.collision_manager import CollisionManager
 from tdw.add_ons.step_physics import StepPhysics
 from tdw.add_ons.floorplan import Floorplan
 from magnebot.action_status import ActionStatus
@@ -140,20 +139,6 @@ class MagnebotController(Controller):
         ```
         """
         self.objects: Optional[ObjectManager] = None
-        """:field
-        [A `CollisionManager`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/add_ons/collision_manager.md) for collisions from the previous frame:
-        
-        ```python
-        from magnebot import MagnebotController
-
-        m = MagnebotController()
-        m.init_floorplan_scene(scene="1a", layout=0, room=0)
-        for object_id in m.collisions.env_collisions:
-            print(object_id)
-        m.end()
-        ```
-        """
-        self.collisions: Optional[CollisionManager] = None
 
     def init_scene(self) -> None:
         """
@@ -217,7 +202,7 @@ class MagnebotController(Controller):
         f = Floorplan()
         f.init_scene(scene=scene, layout=layout)
         # Get the spawn position of the Magnebot.
-        rooms = loads(SPAWN_POSITIONS_PATH.read_text())[scene[0]][layout]
+        rooms = loads(SPAWN_POSITIONS_PATH.read_text())[scene[0]][str(layout)]
         room_keys = list(rooms.keys())
         if room is None:
             room = self.rng.choice(room_keys)
@@ -418,8 +403,14 @@ class MagnebotController(Controller):
         """
 
         # Source: https://stackoverflow.com/a/59709420
-        colors = set(Counter(self.magnebot.dynamic.get_pil_images()["id"].getdata()))
-        return [o for o in self.objects.objects_static if self.objects.objects_static[o].segmentation_color in colors]
+        colors = list(set(Counter(self.magnebot.dynamic.get_pil_images()["id"].getdata())))
+        visible: List[int] = list()
+        for o in self.objects.objects_static:
+            segmentation_color = self.objects.objects_static[o].segmentation_color
+            color = (segmentation_color[0], segmentation_color[1], segmentation_color[2])
+            if color in colors:
+                visible.append(o)
+        return visible
 
     def end(self) -> None:
         """
@@ -488,9 +479,8 @@ class MagnebotController(Controller):
                                  image_frequency=ImageFrequency.once, check_version=self._check_pypi_version)
         # Add the object manager and collision manager.
         self.objects = ObjectManager(transforms=True, rigidbodies=False, bounds=False)
-        self.collisions = CollisionManager(objects=True, environment=True, enter=True, exit=True)
         # Add the add-ons.
-        self.add_ons.extend([self.magnebot, self.objects, self.collisions])
+        self.add_ons.extend([self.magnebot, self.objects])
 
         commands: List[dict] = []
         # Initialize the scene.
