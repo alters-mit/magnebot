@@ -1,167 +1,174 @@
+from enum import Enum
+from typing import List
 import numpy as np
 from tdw.tdw_utils import TDWUtils
 from tdw.output_data import Bounds
-from magnebot import Magnebot, ActionStatus, Arm, ArmJoint
-from magnebot.scene_state import SceneState
+from magnebot import Magnebot, ActionStatus, Arm, ArmJoint, ImageFrequency
 from magnebot.util import get_data
 from magnebot.ik.orientation_mode import OrientationMode
 from magnebot.ik.target_orientation import TargetOrientation
+from magnebot.actions.ik_motion import IKMotion
+from magnebot.magnebot_dynamic import MagnebotDynamic
+from magnebot.magnebot_static import MagnebotStatic
+from tdw.controller import Controller
+from tdw.tdw_utils import TDWUtils
+from tdw.add_ons.third_person_camera import ThirdPersonCamera
 
 
-class CustomAPI(Magnebot):
-    """
-    This is an example example of how to set up your own scene setup and arm articulation action to the API.
-    """
+class PushState(Enum):
+    getting_bounds = 1
+    sliding_torso = 2
+    pushing = 4
 
-    def __init__(self, port: int = 1071, screen_width: int = 1024, screen_height: int = 1024):
-        super().__init__(port=port, screen_height=screen_height, screen_width=screen_width, auto_save_images=True,
-                         skip_frames=0)
-        # The IDs of target object.
-        self.object_id: int = -1
-        # The ID of a surface.
-        self.surface_id: int = -1
-        # The starting y positional coordinate for each object on the surface.
-        self.object_y = 0.794254
 
-    def init_scene(self, width: int = 12, length: int = 12) -> ActionStatus:
+class Push(IKMotion):
+    def __init__(self, target: int, arm: Arm, dynamic: MagnebotDynamic):
         """
-        Create a simple box-shaped room.
-
-        :param width: The width of the room.
-        :param length: The length of the room.
-
-        :return: An `ActionStatus` (always success).
+        :param target: The target object ID.
+        :param arm: The arm used for this action.
+        :param dynamic: The dynamic Magnebot data.
         """
 
-        # Load the "ProcGenScene".
-        # TDWUtils.create_empty_room() is a wrapper function for the `create_exterior_walls` command.
-        # It's possible to create much more complicated scenes with this command.
-        # See: `tdw/Python/example_controllers/proc_gen_room.py` for some examples.
-        scene = [{"$type": "load_scene",
-                  "scene_name": "ProcGenScene"},
-                 TDWUtils.create_empty_room(width, length)]
-        # Add a surface to the scene. Remember its object ID.
-        self.surface_id = self._add_object(model_name="trunck",
-                                           position={"x": -2.133, "y": 0, "z": 2.471},
-                                           rotation={"x": 0, "y": -29, "z": 0},
-                                           scale={"x": 1, "y": 0.8, "z": 1},
-                                           mass=300)
-        # Put an object on top of the surface. Remember its ID.
-        self.object_id = self._add_object(model_name="vase_02",
-                                          position={"x": -1.969, "y": 0.794254, "z": 2.336})
-        # Initialize the scene.
-        return self._init_scene(scene=scene,
-                                post_processing=self._get_post_processing_commands())
+        self.target: int = target
+        self.push_state: PushState = PushState.getting_bounds
 
-    def push(self, target: int,  arm: Arm) -> ActionStatus:
-        """
-        This is an example custom API call.
-        This will push a target object with a magnet.
+        # This will be set during get_ongoing_commands()
+        self.ik_target_position: np.array = np.array([0, 0, 0])
+        self.initial_object_position: np.array = np.array([0, 0, 0])
 
-        :param target: The target object.
-        :param arm: The arm that the magnet is attached to.
+        super().__init__(arm=arm,
+                         orientation_mode=OrientationMode.x,
+                         target_orientation=TargetOrientation.up,
+                         dynamic=dynamic)
 
-        :return: An `ActionStatus` indicating if the arm motion was successful and if the object was pushed.
-        """
+    def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
+                                    image_frequency: ImageFrequency) -> List[dict]:
+        commands = super().get_initialization_commands(resp=resp,
+                                                       static=static,
+                                                       dynamic=dynamic,
+                                                       image_frequency=image_frequency)
+        # Request bounds data.
+        commands.append({"$type": "send_bounds",
+                         "frequency": "always"})
+        return commands
 
-        self._start_action()
-
-        # Slide the torso up and above the target object. We need to do this before calling `self._start_ik()` because
-        # this action aims for the object using the position of the magnet relative to the object's position.
-        torso_position = self.state.object_transforms[target].position[1] + 0.1
-        # Convert the torso position from meters to prismatic joint position.
-        torso_position = Magnebot._y_position_to_torso_position(torso_position)
-        # Send a low-level TDW command to move the joint to the target.
-        self._next_frame_commands.append({"$type": "set_prismatic_target",
-                                          "joint_id": self.magnebot_static.arm_joints[ArmJoint.torso],
-                                          "target": torso_position})
-        # Wait for the torso to finish moving.
-        self._do_arm_motion(joint_ids=[self.magnebot_static.arm_joints[ArmJoint.torso]])
-
-        # Get center of the object.
-        resp = self.communicate([{"$type": "send_bounds",
-                                  "ids": [target],
-                                  "frequency": "once"}])
-        # Get the side on the bounds closet to the magnet.
-        bounds = get_data(resp=resp, d_type=Bounds)
-        center = np.array(bounds.get_center(0))
-        state = SceneState(resp=resp)
-        # Get the position of the magnet.
-        magnet_position = state.joint_positions[self.magnebot_static.magnets[arm]]
-
-        # Slide the torso upwards to the target height.
-
-        # Get a position opposite the center of the object from the magnet.
-        v = magnet_position - center
-        v = v / np.linalg.norm(v)
-        target_position = center - (v * 0.1)
-
-        # Start the IK motion. Some notes regarding these parameters:
-        #
-        # - We need to explicitly set `state` because of the extra simulation step invoked by `communicate()`.
-        # - `fixed_torso_prismatic` means that we'll use the position defined above rather than set it automatically.
-        # - `do_prismatic_first` means that the torso will move before the rest of the arm movement.
-        # - For more information re: `orientation_mode` and `target_orientation`, see `doc/arm_articulation.md`
-        status = self._start_ik(target=TDWUtils.array_to_vector3(target_position),
-                                arm=arm,
-                                state=state,
-                                fixed_torso_prismatic=torso_position,
-                                do_prismatic_first=True,
-                                orientation_mode=OrientationMode.x,
-                                target_orientation=TargetOrientation.up)
-
-        # If the arm motion isn't possible, end the action here.
-        if status != ActionStatus.success:
-            self._end_action()
-            return status
-
-        # Remember the original position of the object.
-        p_0 = state.object_transforms[target].position
-        # Wait for the arm to stop moving.
-        # We don't need the action status returned by this function because we care about whether the object was pushed,
-        # not whether the arm articulation was a "success".
-        self._do_arm_motion()
-        self._end_action()
-
-        # Get the new position of the object.
-        p_1 = self.state.object_transforms[target].position
-
-        # If the object moved, then we pushed it.
-        if np.linalg.norm(p_0 - p_1) > 0.1:
-            return ActionStatus.success
+    def get_ongoing_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
+        # Use the bounds data to get the position of the object.
+        if self.push_state == PushState.getting_bounds:
+            # Get the initial position of the object.
+            target_position = self._get_object_position(resp=resp)
+            # Slide the torso up and above the target object.
+            torso_position = target_position[1] + 0.1
+            # Convert the torso position from meters to prismatic joint position.
+            torso_position = IKMotion._y_position_to_torso_position(torso_position)
+            # Start sliding the torso.
+            self.push_state = PushState.sliding_torso
+            return [{"$type": "set_prismatic_target",
+                     "id": static.robot_id,
+                     "joint_id": static.arm_joints[ArmJoint.torso],
+                     "target": torso_position}]
+        # Slide the torso.
+        elif self.push_state == PushState.sliding_torso:
+            # Continue to slide the torso.
+            if self._joints_are_moving(static=static, dynamic=dynamic):
+                return []
+            # Push the object.
+            else:
+                self.initial_object_position = self._get_object_position(resp=resp)
+                magnet_position = dynamic.joints[static.magnets[self.arm]].position
+                # Get a position opposite the center of the object from the magnet.
+                v = magnet_position - self.initial_object_position
+                v = v / np.linalg.norm(v)
+                target_position = self.initial_object_position - (v * 0.1)
+                # Convert the position to relative coordinates.
+                self.ik_target_position = self._absolute_to_relative(position=target_position, dynamic=dynamic)
+                # Start the IK motion.
+                self._set_start_arm_articulation_commands(static=static, dynamic=dynamic)
+                self.push_state = PushState.pushing
+                return self._evaluate_arm_articulation(resp=resp, static=static, dynamic=dynamic)
+        # Continue to push.
+        elif self.push_state == PushState.pushing:
+            return self._evaluate_arm_articulation(resp=resp, static=static, dynamic=dynamic)
         else:
-            # This is normally used in movement actions but it's good enough for this action too.
-            return ActionStatus.failed_to_move
+            raise Exception(f"Not defined: {self.push_state}")
 
-    def run(self) -> None:
-        """
-        Run the example simulation.
-        """
+    def get_end_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
+                         image_frequency: ImageFrequency) -> List[dict]:
+        commands = super().get_end_commands(resp=resp, static=static, dynamic=dynamic,
+                                            image_frequency=image_frequency)
+        commands.append({"$type": "send_bounds",
+                         "frequency": "never"})
+        return commands
 
-        # Initialize the scene.
-        self.init_scene(width=12, length=12)
+    def _get_object_position(self, resp: List[bytes]) -> np.array:
+        bounds = get_data(resp=resp, d_type=Bounds)
+        for i in range(bounds.get_num()):
+            if bounds.get_id(i) == self.target:
+                return np.array(bounds.get_center(i))
 
-        print("Skipping 0 frames per `communicate()` call. This will slow down the simulation but is useful for "
-              "debugging.")
-        self.add_camera(position={"x": 1.03, "y": 2, "z": 2.34}, look_at=True, follow=True)
-        print("Added a third-person camera to the scene. This will slow down the simulation but is for debugging.")
+    def _get_ik_target_position(self) -> np.array:
+        return self.ik_target_position
 
-        # Go to the box.
-        status = self.move_to(target=self.surface_id)
-        # If we collided with the box, move back just a bit.
-        if status == ActionStatus.collision:
-            self.move_by(-0.2, arrived_at=0.05, stop_on_collision=False)
-        print("Moved to the box.")
-        # Push the other object.
-        status = self.push(target=self.object_id, arm=Arm.right)
-        print(f"Pushed the object: {status}")
+    def _is_success(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic) -> bool:
+        target_position = self._get_object_position(resp=resp)
+        return np.linalg.norm(self.initial_object_position - target_position) > 0.1
+
+    def _get_fail_status(self) -> ActionStatus:
+        return ActionStatus.failed_to_move
+
+
+class CustomActionController(Controller):
+    def __init__(self, port: int = 1071, check_version: bool = True, launch_build: bool = True):
+        super().__init__(port=port, check_version=check_version, launch_build=launch_build)
+        self.magnebot: Magnebot = Magnebot()
+        self.communicate({"$type": "set_screen_size",
+                          "width": 1024,
+                          "height": 1024})
+
+    def run(self):
+        magnebot = Magnebot(robot_id=0)
+        camera = ThirdPersonCamera(position={"x": 1.03, "y": 2, "z": 2.34},
+                                   look_at=0,
+                                   follow_object=0)
+        self.add_ons.extend([magnebot, camera])
+        commands = [TDWUtils.create_empty_room(12, 12)]
+        trunck_id = self.get_unique_id()
+        vase_id = self.get_unique_id()
+        commands.extend(self.get_add_physics_object(model_name="trunck",
+                                                    position={"x": -2.133, "y": 0, "z": 2.471},
+                                                    rotation={"x": 0, "y": -29, "z": 0},
+                                                    scale_factor={"x": 1, "y": 0.8, "z": 1},
+                                                    default_physics_values=False,
+                                                    kinematic=True,
+                                                    object_id=trunck_id))
+        commands.extend(self.get_add_physics_object(model_name="vase_02",
+                                                    position={"x": -1.969, "y": 0.794254, "z": 2.336},
+                                                    object_id=vase_id))
+        self.communicate(commands)
+        # Wait for the Magnebot to initialize.
+        while magnebot.action.status != ActionStatus.ongoing:
+            self.communicate([])
+        # Move to the object.
+        magnebot.move_to(target=trunck_id, arrived_offset=0.3)
+
+        # Push the vase.
+        magnebot.action = Push(target=vase_id, arm=Arm.right, dynamic=magnebot.dynamic)
+        while magnebot.action.status != ActionStatus.ongoing:
+            self.communicate([])
+        print(magnebot.action.status)
+
+        # Back away.
+        magnebot.move_by(-0.5)
+        while magnebot.action.status != ActionStatus.ongoing:
+            self.communicate([])
         # Reset the arms.
-        self.move_by(-0.5, stop_on_collision=False)
-        self.reset_arm(arm=Arm.left)
-        self.reset_arm(arm=Arm.right)
+        for arm in [Arm.left, Arm.right]:
+            magnebot.reset_arm(arm=arm)
+            while magnebot.action.status != ActionStatus.ongoing:
+                self.communicate([])
+        self.communicate({"$type": "terminate"})
 
 
 if __name__ == "__main__":
-    m = CustomAPI()
-    m.run()
-    m.end()
+    c = CustomActionController()
+    c.run()
