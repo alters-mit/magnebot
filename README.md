@@ -39,51 +39,62 @@ m.end()
 2. `pip3 install magnebot -U`
 3. (Linux servers only): [Download the latest TDW build](https://github.com/threedworld-mit/tdw/releases/latest) and unzip it. On a personal computer, the build will automatically be upgraded the next time you create a TDW controller.
 
-# API Modes
+# Manual
 
-The Magnebot API supports two modes:
+## 1. General
 
-### 1. `MagnebotController`
+- [Changelog](https://github.com/alters-mit/magnebot/blob/main/doc/changelog.md)
+- [Troubleshooting and debugging](https://github.com/alters-mit/magnebot/blob/main/doc/troubleshooting.md)
 
-`MagnebotController` offers an easy to use API. Each action call ends when the action is totally done; for example, `move_by(2)` will iterate through physics steps until the Magnebot has moved 2 meters or until it otherwise needs to stop, such as on a collision.
+## 2. TDW Documentation
 
-Advantages:
+Before using Magnebot, we recommend you read TDW's documentation to familiarize yourself with some of the underlying concepts in this API:
 
-- Simple API
-- Automatically adds useful settings such as frame-skipping and an object manager
+- Setup
+- Core Concepts
+- Robots
 
- Disadvantages: 
+## 3. Magnebot Simulation Modes
 
-- Single-agent only
-- Actions can't be interrupted
+The Magnebot API has three simulation modes, each with certain benefits and certain trade-offs:
+
+### 3.1 [`MagnebotController`](doc/api/magnebot_controller.md) (single-agent, simple API)
+
+[`MagnebotController`](doc/api/magnebot_controller.md) offers an easy to use API. Each action call ends when the action is totally done; for example, `move_by(2)` will iterate through physics steps until the Magnebot has moved 2 meters or until it otherwise needs to stop, such as on a collision.
+
+`MagnebotController` supports only single-agent simulations. Actions can't be interrupted.
+
+This example creates a scene and adds a Magnebot. The Magnebot then moves forward by 2 meters.
 
 ```python
 from magnebot import MagnebotController
 
 m = MagnebotController() # On a server, change this to MagnebotController(launch_build=False)
-
 m.init_scene()
 m.move_by(2)
 print(m.magnebot.dynamic.transform.position)
 m.end()
 ```
 
-### 2. `Magnebot`
+- Scene setup
+- Output data
+- Moving, turning, and collision detection
+- Arm articulation
+- Camera rotation
+- Third-person cameras
 
-`Magnebot` is an add-on that can be attached to a controller; it is automatically initialized within a `MagnebotController`. 
+### 3.2 [`Magnebot` (single-agent)](doc/api/magnebot.md)  (lower-level API)
 
-Advantages:
+[`Magnebot`](doc/api/magnebot.md) is a TDW add-on. It is used by the `MagnebotController`. By programming directly with a `Magnebot`, you can add it to any TDW controller, thereby allowing for more varied simulation setups and for actions to be interrupted. The trade-off is that this requires more advanced knowledge of TDW.
 
-- Can be used in *any* TDW controller
-- Actions can be interrupted
-- Supports multi-agent simulations
+- Scene setup
+- Output data
+- Moving, turning, and collision detection
+- Arm articulation
+- Camera rotation
+- Third-person cameras
 
-Disadvantages:
-
-- API is more complicated and requires more familiarization with TDW
-- By default, it lacks certain key add-ons that are automatically added to the `MagnebotController` (you can add them manually in your own controller).
-
-This example replicates the behavior of the previous example, but using a `Magnebot` agent instead of a `MagnebotController`:
+This example creates a scene and adds a Magnebot. The Magnebot then moves forward by 2 meters.
 
 ```python
 from tdw.controller import Controller
@@ -103,7 +114,57 @@ print(magnebot.dynamic.transform.position)
 c.communicate({"$type": "terminate"})
 ```
 
-# Documentation
+### 3.3 [`Magnebot` (multi-agent)](doc/api/magnebot.md)  (lower-level API)
+
+It is possible add multiple [`Magnebot`)](doc/api/magnebot.md) agents to a scene. It is also possible add a `Magnebot` and any other TDW agent, such as a robot.
+
+This example creates a scene and adds two Magnebots. The first Magnebot moves forward by 2 meters and the second Magnebot moves backwards by 2 meters.
+
+```python
+from tdw.controller import Controller
+from tdw.tdw_utils import TDWUtils
+from tdw.add_ons.step_physics import StepPhysics
+from magnebot import Magnebot, ActionStatus
+
+c = Controller()
+step_physics = StepPhysics(num_frames=10)
+magnebot_0 = Magnebot(robot_id=0, position={"x": 2, "y": 0, "z": 0})
+magnebot_1 = Magnebot(robot_id=1, position={"x": -2, "y": 0, "z": 0})
+c.add_ons.extend([step_physics, magnebot_0, magnebot_1])
+c.communicate(TDWUtils.create_empty_room(12, 12))
+magnebot_0.move_by(2)
+magnebot_1.move_by(-2)
+while magnebot_0.action.status == ActionStatus.ongoing or magnebot_1.action.status == ActionStatus.ongoing:
+    c.communicate([])
+print(magnebot_0.dynamic.transform.position)
+print(magnebot_1.dynamic.transform.position)
+c.communicate({"$type": "terminate"})
+```
+
+## 4. Custom actions
+
+It is possible to define custom Magnebot actions by extending the [`Action`](doc/api/actions/action.md) class.
+
+- Overview
+- Move and turn actions
+- IK (arm articulation) actions
+- Camera actions
+
+***
+
+# API
+
+- [`MagnebotController`](doc/api/magnebot_controller.md)
+- [`Magnebot`](doc/api/magnebot.md)
+- [Other API documentation](doc/api)
+
+***
+
+## Example controllers
+
+**TODO**
+
+
 
 - **[Magnebot API](https://github.com/alters-mit/magnebot/blob/main/doc/api/magnebot_controller.md)**
 - [**APIs for other classes in the Magnebot module**](https://github.com/alters-mit/magnebot/tree/main/doc/api)
@@ -111,14 +172,6 @@ c.communicate({"$type": "terminate"})
   - [Scene setup](https://github.com/alters-mit/magnebot/blob/main/doc/scene.md)
   - [Arm articulation](https://github.com/alters-mit/magnebot/blob/main/doc/arm_articulation.md)
   - [Movement](https://github.com/alters-mit/magnebot/blob/main/doc/movement.md)
-- [Changelog](https://github.com/alters-mit/magnebot/blob/main/doc/changelog.md)
-- [Troubleshooting and debugging](https://github.com/alters-mit/magnebot/blob/main/doc/troubleshooting.md)
-- For more information regarding TDW, see the [TDW repo](https://github.com/threedworld-mit/tdw/). Relevant documentation includes:
-  - [Getting Started With TDW](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md) 
-  - [The Command API documentation](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md)
-  - [Robotics in TDW](https://github.com/threedworld-mit/tdw/blob/master/Documentation/misc_frontend/robots.md)
-  - [Docker and TDW](https://github.com/threedworld-mit/tdw/blob/master/Documentation/Docker/docker.md)
-- [Benchmark](https://github.com/alters-mit/magnebot/blob/main/doc/benchmark.md)
 
 # Examples
 
