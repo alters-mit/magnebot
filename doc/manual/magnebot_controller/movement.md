@@ -2,7 +2,7 @@
 
 # Moving, turning, and collision detection
 
-There are four movement actions in the [`MagnebotController`](../../api/magnebot_controller.md) that all all share basic functionality: `turn_by()`, `turn_to()`, `move_by()`, and `move_to()`. All of these actions set target angles for the Magnebot's wheels in order to move or turn the Magnebot.
+There are four movement actions in the [`MagnebotController`](../../api/magnebot_controller.md) that all all share basic functionality: `turn_by(angle)`, `turn_to(target)`, `move_by(distance)`, and `move_to(target)`. All of these actions set target angles for the Magnebot's wheels in order to move or turn the Magnebot.
 
 ## Directions
 
@@ -10,6 +10,105 @@ There are four movement actions in the [`MagnebotController`](../../api/magnebot
 - `move_by(-x)` moves the Magnebot backward by x meters.
 - `turn_by(x)` turns the Magnebot clockwise by x degrees.
 - `turn_by(-x)` turns the Magnebot counterclockwise by x degrees.
+
+## `arrived_at`, `aligned_at`, and `arrived_offset`
+
+`move_by(distance)` has an optional parameter `arrived_at`. If the Magnebot is within this many meters of the target distance, the action is a success. Increasing the `arrived_at` distance will result in faster but less accurate movement:
+
+```python
+from time import time
+from magnebot import MagnebotController
+
+c = MagnebotController()
+c.init_scene()
+t0 = time()
+c.move_by(distance=2, arrived_at=0.1)
+print(c.magnebot.dynamic.transform.position)
+print(time() - t0)
+
+c.init_scene()
+t0 = time()
+c.move_by(distance=2, arrived_at=0.3)
+print(c.magnebot.dynamic.transform.position)
+print(time() - t0)
+
+c.end()
+```
+
+Output:
+
+```
+[-8.41087010e-03  1.10985515e-04  1.91277754e+00]
+0.76544189453125
+[-0.00764174  0.0022367   1.73882854]
+0.23400402069091797
+```
+
+`turn_by(angle)` and `turn_to(target)` have an optional parameter `aligned_at`. If the Magnebot is within this many degrees of the target angle, the action is a success. Increasing the `aligned_at` distance will result in faster but less accurate movement:
+
+```python
+from time import time
+from magnebot import MagnebotController
+
+c = MagnebotController()
+c.init_scene()
+t0 = time()
+c.turn_by(angle=45, aligned_at=1)
+print(time() - t0)
+
+c.init_scene()
+t0 = time()
+c.turn_by(angle=45, aligned_at=3)
+print(time() - t0)
+
+c.end()
+```
+
+Output:
+
+```
+0.2699716091156006
+0.18059253692626953
+```
+
+`move_to(target)` is a combination of `turn_to(target, aligned_at)` and `move_by(distance, arrived_at)` and therefore has both an `aligned_at` parameter and an `arrived_at` parameter. It also has an `arrived_offset` parameter. After automatically calculating `distance` (i.e. the distance to `target`), the action will subtract `arrived_offset`. This is useful for approaching an object without colliding with it:
+
+```python
+from tdw.tdw_utils import TDWUtils
+from magnebot import MagnebotController
+
+class MyController(MagnebotController):
+    def init_scene(self):
+        scene = [{"$type": "load_scene",
+                  "scene_name": "ProcGenScene"},
+                 TDWUtils.create_empty_room(12, 12)]
+        objects = self.get_add_physics_object(model_name="rh10",
+                                        position={"x": 0.04, "y": 0, "z": 1.081},
+                                        object_id=self.get_unique_id())
+        self._init_scene(scene=scene,
+                         objects=objects,
+                         position={"x": 1, "y": 0, "z": -3},
+                         rotation={"x": 0, "y": 46, "z": 0})
+
+    def run(self, arrived_offset: float) -> None:
+        self.init_scene()
+        object_id = list(self.objects.transforms.keys())[0]
+        status = self.move_to(object_id, arrived_at=0.3, aligned_at=1, arrived_offset=arrived_offset)
+        print(status)
+
+if __name__ == "__main__":
+    c = MyController()
+    c.run(arrived_offset=0)
+    c.run(arrived_offset=0.3)
+    c.end()
+```
+
+Output:
+
+```
+ActionStatus.collision
+ActionStatus.success
+```
 
 ## Tipping over
 

@@ -103,8 +103,6 @@ class MagnebotController(Controller):
         # Skip a set number of frames per communicate() call.
         self.add_ons.append(StepPhysics(skip_frames))
         self._check_pypi_version: bool = check_pypi_version
-        # Commands to initialize objects.
-        self._object_init_commands: List[dict] = list()
         # The scene bounds. This is used along with the occupancy map to get (x, z) worldspace positions.
         self._scene_bounds: Optional[SceneBounds] = None
         """:field
@@ -458,13 +456,15 @@ class MagnebotController(Controller):
                  "strength": 1.0}]
 
     @final
-    def _init_scene(self, scene: List[dict], post_processing: List[dict] = None, end: List[dict] = None,
-                    position: Dict[str, float] = None, rotation: Dict[str, float] = None) -> None:
+    def _init_scene(self, scene: List[dict], post_processing: List[dict] = None, objects: List[dict] = None,
+                    end: List[dict] = None, position: Dict[str, float] = None,
+                    rotation: Dict[str, float] = None) -> None:
         """
         Add a scene to TDW. Set post-processing. Add objects (if any). Add the Magnebot. Request and cache data.
 
         :param scene: A list of commands to initialize the scene.
         :param post_processing: A list of commands to set post-processing values. Can be None.
+        :param objects: A list of object initialization commands.
         :param end: A list of commands sent at the end of scene initialization (on the same frame). Can be None.
         :param position: The position of the Magnebot. If None, defaults to {"x": 0, "y": 0, "z": 0}.
         :param rotation: The rotation of the Magnebot. If None, defaults to {"x": 0, "y": 0, "z": 0}.
@@ -474,22 +474,29 @@ class MagnebotController(Controller):
             position = TDWUtils.VECTOR3_ZERO
         if rotation is None:
             rotation = TDWUtils.VECTOR3_ZERO
-        # Define the agent.
-        self.magnebot = Magnebot(robot_id=0, position=position, rotation=rotation,
-                                 image_frequency=ImageFrequency.once, check_version=self._check_pypi_version)
-        # Add the object manager and collision manager.
-        self.objects = ObjectManager(transforms=True, rigidbodies=False, bounds=False)
-        # Add the add-ons.
-        self.add_ons.extend([self.magnebot, self.objects])
 
+        # Add the Magnebot.
+        if self.magnebot is None:
+            self.magnebot = Magnebot(robot_id=0, position=position, rotation=rotation,
+                                     image_frequency=ImageFrequency.once, check_version=self._check_pypi_version)
+            self.add_ons.append(self.magnebot)
+        else:
+            self.magnebot.reset(position=position, rotation=rotation)
+        # Add the object manager.
+        if self.objects is None:
+            self.objects = ObjectManager(transforms=True, rigidbodies=False, bounds=False)
+            self.add_ons.append(self.objects)
+        # Reset the object manager.
+        else:
+            self.objects.initialized = False
         commands: List[dict] = []
         # Initialize the scene.
         commands.extend(scene)
+        # Add objects.
+        commands.extend(objects)
         # Initialize post-processing settings.
         if post_processing is not None:
             commands.extend(post_processing)
-        # Add objects.
-        commands.extend(self._object_init_commands)
         # Request output data.
         commands.append({"$type": "send_scene_regions"})
         # Add misc. end commands.

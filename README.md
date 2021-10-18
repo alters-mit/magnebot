@@ -24,11 +24,12 @@ See [TDW requirements](https://github.com/threedworld-mit/tdw/blob/master/Docume
 ```python
 from magnebot import MagnebotController
 
-m = MagnebotController() # On a server, change this to MagnebotController(launch_build=False)
+c = MagnebotController() # On a server, change this to MagnebotController(launch_build=False)
 
-m.init_scene()
-m.move_by(2)
-m.end()
+c.init_scene()
+c.move_by(2)
+print(c.magnebot.dynamic.transform.position)
+c.end()
 ```
 
 2. (Linux servers only): [Launch the TDW build.](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/core_concepts/launch_build.md) On a personal computer, the build will launch automatically.
@@ -67,8 +68,8 @@ The Magnebot API has three simulation modes, each with certain benefits and cert
 - [Output data](doc/manual/magnebot_controller/output_data.md)
 - [Actions](doc/manual/magnebot_controller/actions.md)
 - [Moving, turning, and collision detection](doc/manual/magnebot_controller/movement.md)
-- Arm articulation
-- Grasping
+- [Arm articulation](doc/manual/magnebot_controller/arm_articulation.md)
+- [Grasp action](doc/manual/magnebot_controller/grasp.md)
 - Camera rotation
 - Occupancy map
 - Third-person cameras
@@ -78,6 +79,7 @@ The Magnebot API has three simulation modes, each with certain benefits and cert
 [`Magnebot`](doc/api/magnebot.md) is a TDW add-on. It is used by the `MagnebotController`. By programming directly with a `Magnebot`, you can add it to any TDW controller, thereby allowing for more varied simulation setups and for actions to be interrupted. The trade-off is that this requires more advanced knowledge of TDW.
 
 - Scene setup
+- Reset a scene
 - Output data
 - Actions
 - Moving, turning, and collision detection

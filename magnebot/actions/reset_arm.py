@@ -22,7 +22,7 @@ class ResetArm(ArmMotion):
                          "target": 1,
                          "id": static.robot_id})
         # Reset every arm joint after the torso.
-        for joint_name in ArmMotion._JOINT_ORDER[self._arm][1:]:
+        for joint_name in ArmMotion._JOINT_ORDER[self._arm]:
             joint_id = static.arm_joints[joint_name]
             joint_type = static.joints[joint_id].joint_type
             if joint_type == JointType.revolute:

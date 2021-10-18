@@ -61,6 +61,12 @@ print(status)  # ActionStatus.collision
 c.end()
 ```
 
+## Skipped frames
+
+For performance reasons, `MagnebotController` advances 11 physics frames per output frame and renders frames only at the end of every action.
+
+You can control the number of skipped physics frames by setting the `skip_frames` parameter in the constructor. If `skip_frames=0` the simulation will advance 1 physics frame per output frame. As a result, the simulation will be much slower.
+
 ***
 
 **Next: [Moving, turning, and collision detection](movement.md)**
