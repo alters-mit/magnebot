@@ -78,9 +78,11 @@ m.end()
 ```
 
 - [Scene setup](doc/manual/magnebot_controller/scene_setup.md)
-- Output data
+- [Output data](doc/manual/magnebot_controller/output_data.md)
+- [Actions](doc/manual/magnebot_controller/actions.md)
 - Moving, turning, and collision detection
 - Arm articulation
+- Grasping
 - Camera rotation
 - Third-person cameras
 
@@ -90,8 +92,10 @@ m.end()
 
 - Scene setup
 - Output data
+- Actions
 - Moving, turning, and collision detection
 - Arm articulation
+- Grasping
 - Camera rotation
 - Third-person cameras
 
