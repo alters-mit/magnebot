@@ -80,7 +80,7 @@ class Action(ABC):
         :param static: [The static Magnebot data.](../magnebot_static.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
 
-        :return: Tuple: A list of commands to send to the build to continue the action.
+        :return: A list of commands to send to the build to continue the action.
         """
 
         raise Exception()

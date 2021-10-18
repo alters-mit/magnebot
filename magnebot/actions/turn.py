@@ -89,7 +89,7 @@ class Turn(WheelMotion, ABC):
                     return []
         if next_attempt:
             if self._attempts == 0:
-                return self._get_wheel_commands(static=static, dynamic=dynamic)
+                return self._get_start_wheels_commands(static=static, dynamic=dynamic)
             # Course-correct the angle.
             self._delta_angle = self._angle - theta
             # Handle cases where we flip over the axis.
@@ -97,7 +97,7 @@ class Turn(WheelMotion, ABC):
                 self._delta_angle *= -1
             self._previous_delta_angle = self._delta_angle
             # Set a new turn.
-            return self._get_wheel_commands(static=static, dynamic=dynamic)
+            return self._get_start_wheels_commands(static=static, dynamic=dynamic)
         else:
             return []
 
@@ -120,7 +120,7 @@ class Turn(WheelMotion, ABC):
                 self._angle += 360
 
     @final
-    def _get_wheel_commands(self, static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
+    def _get_start_wheels_commands(self, static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
         """
         :param static: [The static Magnebot data.](../magnebot_static.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)

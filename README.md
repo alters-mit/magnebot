@@ -61,29 +61,16 @@ The Magnebot API has three simulation modes, each with certain benefits and cert
 
 ### 3.1 [`MagnebotController`](doc/api/magnebot_controller.md) (single-agent, simple API)
 
-[`MagnebotController`](doc/api/magnebot_controller.md) offers an easy to use API. Each action call ends when the action is totally done; for example, `move_by(2)` will iterate through physics steps until the Magnebot has moved 2 meters or until it otherwise needs to stop, such as on a collision.
-
-`MagnebotController` supports only single-agent simulations. Actions can't be interrupted.
-
-This example creates a scene and adds a Magnebot. The Magnebot then moves forward by 2 meters.
-
-```python
-from magnebot import MagnebotController
-
-m = MagnebotController() # On a server, change this to MagnebotController(launch_build=False)
-m.init_scene()
-m.move_by(2)
-print(m.magnebot.dynamic.transform.position)
-m.end()
-```
+[`MagnebotController`](doc/api/magnebot_controller.md) offers an easy to use API. Each action call ends when the action is totally done; for example, `move_by(2)` will iterate through physics steps until the Magnebot has moved 2 meters or until it otherwise needs to stop, such as on a collision. `MagnebotController` supports only single-agent simulations. Actions can't be interrupted.
 
 - [Scene setup](doc/manual/magnebot_controller/scene_setup.md)
 - [Output data](doc/manual/magnebot_controller/output_data.md)
 - [Actions](doc/manual/magnebot_controller/actions.md)
-- Moving, turning, and collision detection
+- [Moving, turning, and collision detection](doc/manual/magnebot_controller/movement.md)
 - Arm articulation
 - Grasping
 - Camera rotation
+- Occupancy map
 - Third-person cameras
 
 ### 3.2 [`Magnebot` (single-agent)](doc/api/magnebot.md)  (lower-level API)
@@ -97,54 +84,14 @@ m.end()
 - Arm articulation
 - Grasping
 - Camera rotation
+- Occupancy map
 - Third-person cameras
-
-This example creates a scene and adds a Magnebot. The Magnebot then moves forward by 2 meters.
-
-```python
-from tdw.controller import Controller
-from tdw.tdw_utils import TDWUtils
-from tdw.add_ons.step_physics import StepPhysics
-from magnebot import Magnebot, ActionStatus
-
-c = Controller()
-step_physics = StepPhysics(num_frames=10)
-magnebot = Magnebot()
-c.add_ons.extend([step_physics, magnebot])
-c.communicate(TDWUtils.create_empty_room(12, 12))
-magnebot.move_by(2)
-while magnebot.action.status == ActionStatus.ongoing:
-    c.communicate([])
-print(magnebot.dynamic.transform.position)
-c.communicate({"$type": "terminate"})
-```
 
 ### 3.3 [`Magnebot` (multi-agent)](doc/api/magnebot.md)  (lower-level API)
 
 It is possible add multiple [`Magnebot`)](doc/api/magnebot.md) agents to a scene. It is also possible add a `Magnebot` and any other TDW agent, such as a robot.
 
-This example creates a scene and adds two Magnebots. The first Magnebot moves forward by 2 meters and the second Magnebot moves backwards by 2 meters.
-
-```python
-from tdw.controller import Controller
-from tdw.tdw_utils import TDWUtils
-from tdw.add_ons.step_physics import StepPhysics
-from magnebot import Magnebot, ActionStatus
-
-c = Controller()
-step_physics = StepPhysics(num_frames=10)
-magnebot_0 = Magnebot(robot_id=0, position={"x": 2, "y": 0, "z": 0})
-magnebot_1 = Magnebot(robot_id=1, position={"x": -2, "y": 0, "z": 0})
-c.add_ons.extend([step_physics, magnebot_0, magnebot_1])
-c.communicate(TDWUtils.create_empty_room(12, 12))
-magnebot_0.move_by(2)
-magnebot_1.move_by(-2)
-while magnebot_0.action.status == ActionStatus.ongoing or magnebot_1.action.status == ActionStatus.ongoing:
-    c.communicate([])
-print(magnebot_0.dynamic.transform.position)
-print(magnebot_1.dynamic.transform.position)
-c.communicate({"$type": "terminate"})
-```
+- Multi-agent simulations
 
 ## 4. Custom actions
 

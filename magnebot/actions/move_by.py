@@ -3,7 +3,6 @@ import numpy as np
 from tdw.tdw_utils import TDWUtils
 from magnebot.actions.action import Action
 from magnebot.actions.wheel_motion import WheelMotion
-from magnebot.image_frequency import ImageFrequency
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.collision_detection import CollisionDetection
@@ -47,14 +46,6 @@ class MoveBy(WheelMotion):
         # We're already here.
         if self._initial_distance < arrived_at:
             self.status = ActionStatus.success
-
-    def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
-                                    image_frequency: ImageFrequency) -> List[dict]:
-        # Start spinning the wheels.
-        commands = super().get_initialization_commands(resp=resp, static=static, dynamic=dynamic,
-                                                       image_frequency=image_frequency)
-        commands.extend(self._get_wheel_commands(static=static, dynamic=dynamic))
-        return commands
 
     def _get_ongoing_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
         p1 = dynamic.transform.position
@@ -123,7 +114,7 @@ class MoveBy(WheelMotion):
                     d_total = np.linalg.norm(p1 - self._initial_position_arr)
                     if d_total > self._initial_distance:
                         self._spin *= -1
-                    commands.extend(self._get_wheel_commands(static=static, dynamic=dynamic))
+                    commands.extend(self._get_start_wheels_commands(static=static, dynamic=dynamic))
                     return commands
             else:
                 return []
@@ -134,14 +125,7 @@ class MoveBy(WheelMotion):
         else:
             return False
 
-    def _get_wheel_commands(self, static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
-        """
-        :param static: [The static Magnebot data.](../magnebot_static.md)
-        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
-
-        :return: A list of commands to start spinning the wheels.
-        """
-
+    def _get_start_wheels_commands(self, static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
         commands = []
         for wheel in static.wheels:
             # Get the target from the current joint angles. Add or subtract the speed.

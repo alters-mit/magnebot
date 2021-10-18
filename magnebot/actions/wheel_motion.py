@@ -41,6 +41,7 @@ class WheelMotion(Action, ABC):
             elif previous.status == ActionStatus.tipping:
                 self.status = ActionStatus.tipping
 
+    @final
     def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
                                     image_frequency: ImageFrequency) -> List[dict]:
         """
@@ -92,13 +93,16 @@ class WheelMotion(Action, ABC):
         :param static: [The static Magnebot data.](../magnebot_static.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
 
-        :return: Tuple: An `ActionStatus` describing whether the action is ongoing, succeeded, or failed; A list of commands to send to the build if the action is ongoing.
+        :return: A list of commands to send to the build if the action is ongoing.
         """
 
         if self._resetting:
             self._resetting = dynamic.joints[static.arm_joints[ArmJoint.torso]].moving and \
                               dynamic.joints[static.arm_joints[ArmJoint.column]].moving
-            return []
+            if self._resetting:
+                return []
+            else:
+                return self._get_start_wheels_commands(static=static, dynamic=dynamic)
         else:
             return self._get_ongoing_commands(resp=resp, static=static, dynamic=dynamic)
 
@@ -118,6 +122,19 @@ class WheelMotion(Action, ABC):
         commands.extend(super().get_end_commands(resp=resp, static=static, dynamic=dynamic,
                                                  image_frequency=image_frequency))
         return commands
+
+    @abstractmethod
+    def _get_start_wheels_commands(self, static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
+        """
+        Evaluate an action per-frame to determine whether it's done.
+
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+
+        :return: A list of commands to send to the build if the action is ongoing.
+        """
+
+        raise Exception()
 
     @final
     def _is_valid_ongoing(self, dynamic: MagnebotDynamic) -> bool:
