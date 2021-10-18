@@ -27,7 +27,7 @@ class ReachHigh(MagnebotController):
                  {"$type": "set_proc_gen_floor_texture_scale",
                   "scale": {"x": 8, "y": 8}}]
         self._init_scene(scene=scene,
-                         post_processing=self._get_default_post_processing_commands())
+                         post_processing=self.get_default_post_processing_commands())
 
 
 if __name__ == "__main__":

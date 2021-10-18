@@ -52,6 +52,7 @@ Before using Magnebot, we recommend you read TDW's documentation to familiarize 
 
 - Setup
 - Core Concepts
+- Objects and scenes
 - Robots
 
 ## 3. Magnebot Simulation Modes
@@ -76,7 +77,7 @@ print(m.magnebot.dynamic.transform.position)
 m.end()
 ```
 
-- Scene setup
+- [Scene setup](doc/manual/magnebot_controller/scene_setup.md)
 - Output data
 - Moving, turning, and collision detection
 - Arm articulation
@@ -156,6 +157,7 @@ It is possible to define custom Magnebot actions by extending the [`Action`](doc
 
 - [`MagnebotController`](doc/api/magnebot_controller.md)
 - [`Magnebot`](doc/api/magnebot.md)
+- [Low-level API controls](doc/api/low_level.md)
 - [Other API documentation](doc/api)
 
 ***

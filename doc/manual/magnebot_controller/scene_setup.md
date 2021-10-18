@@ -1,0 +1,178 @@
+##### MagnebotController
+
+# Scene Setup
+
+By default, the [`MagnebotController`](../../api/magnebot_controller.md) has two options for initializing a scene:
+
+- `self.init_scene()` will load an empty 12x12 meter test room:
+
+```python
+from magnebot import MagnebotController
+
+m = MagnebotController()
+m.init_scene()
+```
+
+- `self.init_floorplan_scene(scene, layout, room)` will load an interior environment and populate with objects
+
+```python
+from magnebot import MagnebotController
+
+m = MagnebotController()
+m.init_floorplan_scene(scene="1a", layout=0, room=0)
+```
+
+Both actions will add a Magnebot, cache static data, and so on.
+
+## Custom Scene Setup
+
+Most scene setup logic is handled in the backend function `self._init_scene()` (note the extra `_`). This function should always be called in any scene setup function. It can't (and shouldn't) be overridden. `self._init_scene()` has the following parameters:
+
+| Parameter         | Type             | Default | Description                                                  |
+| ----------------- | ---------------- | ------- | ------------------------------------------------------------ |
+| scene             | List[dict]       |         | A list of commands to initialize the scene.                  |
+| post_processing   | List[dict]       | None    | A list of commands to set post-processing values. Can be None. |
+| end               | List[dict]       | None    | A list of commands sent at the end of scene initialization (on the same frame). Can be None. |
+| magnebot_position | Dict[str, float] | None    | The position of the Magnebot. If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
+
+### The `scene` parameter
+
+*For more information regarding TDW scenes in general, [read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/core_concepts/scenes.md).*
+
+*For more information regarding TDW scene setup concepts, [read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/objects_and_scenes/overview.md).*
+
+If you're loading a streamed scene, this can be a list that just contains `self.get_add_scene()`, a function that is deliberately not listed in the Magnebot API but is  part of the base class Controller API:
+
+```python
+from magnebot import MagnebotController
+
+class MyController(MagnebotController):
+    def init_scene(self):
+        scene = [self.get_add_scene(scene_name="floorplan_1a")]
+        self._init_scene(scene=scene)
+
+
+if __name__ == "__main__":
+    m = MyController()
+    m.init_scene()
+```
+
+You can also create an empty test room:
+
+```python
+from tdw.tdw_utils import TDWUtils
+from magnebot import MagnebotController
+
+class MyController(MagnebotController):
+    def init_scene(self):
+        scene = [{"$type": "load_scene", 
+                  "scene_name": "ProcGenScene"},
+                 TDWUtils.create_empty_room(12, 12)]
+        self._init_scene(scene=scene)
+
+
+if __name__ == "__main__":
+    m = MyController()
+    m.init_scene()
+```
+
+[This is an example in the Magnebot API that adds a nice-looking floor to a test room.](https://github.com/alters-mit/magnebot/blob/main/controllers/promos/reach_high.py)  Most scene setup recipes that would work in TDW will work in the Magnebot API. The keys differences are that:
+
+- All scene setup commands must be in the same list and sent as the `scene` parameter of `self._init_scene()`
+- Object initialization commands shouldn't be in the same list as scene initialization commands (see below)
+- The Magnebot API works best if the floor is level
+
+### The `post_processing` parameter
+
+Add a list of post-processing commands here. You can use default commands via `self._get_post_processing_commands()`:
+
+```python
+from tdw.tdw_utils import TDWUtils
+from magnebot import MagnebotController
+
+class MyMagnebot(MagnebotController):
+    def init_scene(self):
+        scene = [{"$type": "load_scene",
+                  "scene_name": "ProcGenScene"},
+                 TDWUtils.create_empty_room(12, 12)]
+        self._init_scene(scene=scene,
+                         post_processing=MagnebotController.get_default_post_processing_commands())
+
+
+if __name__ == "__main__":
+    m = MyMagnebot()
+    m.init_scene()
+```
+
+If you're using a test scene, you might not want to enable  post-processing, in which case you should omit this parameter (it will  default to None).
+
+### The `end` parameter
+
+Add miscellaneous commands to the end of the list of scene  initialization commands. This is a good way of modifying object data  i.e. applying a force to an object (see below for how to add objects).  If you don't need to add any extra commands, omit this parameter (it  will default to None).
+
+### The `position` and `rotation` parameters
+
+These set the starting position and rotation of the Magnebot. Their default values are `{"x": 0, "y": 0, "z": 0}`.
+
+```python
+from tdw.tdw_utils import TDWUtils
+from magnebot import MagnebotController
+
+class MyController(MagnebotController):
+    def init_scene(self):
+        scene = [{"$type": "load_scene",
+                  "scene_name": "ProcGenScene"},
+                 TDWUtils.create_empty_room(12, 12)]
+        self._init_scene(scene=scene,
+                         position={"x": 1, "y": 0, "z": -3},
+                         rotation={"x": 0, "y": 46, "z": 0})
+
+
+if __name__ == "__main__":
+    m = MyController()
+    m.init_scene()
+```
+
+## Object initialization
+
+*For more information regarding TDW objects, [read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/core_concepts/objects.md).*
+
+*For more information regarding TDW object physics values, [read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/physx/physics_objects.md).*
+
+The backend `self._init_scene()` function automatically adds objects from the list `self._object_init_commands`. By adding object initialization commands to this list, you will ensure that they are added at the correct time in the scene initialization sequence.
+
+This example creates a simple 12x12 meter test scene and adds a cabinet object:
+
+```python
+from tdw.tdw_utils import TDWUtils
+from magnebot import MagnebotController
+
+class MyController(MagnebotController):
+    def init_scene(self):
+        scene = [{"$type": "load_scene",
+                  "scene_name": "ProcGenScene"},
+                 TDWUtils.create_empty_room(12, 12)]
+        self._object_init_commands.extend(
+            self.get_add_physics_object(model_name="cabinet_36_wood_beach_honey",
+                                        position={"x": 0.04, "y": 0, "z": 1.081},
+                                        object_id=self.get_unique_id()))
+        self._init_scene(scene=scene,
+                         position={"x": 1, "y": 0, "z": -3},
+                         rotation={"x": 0, "y": 46, "z": 0})
+
+
+if __name__ == "__main__":
+    m = MyController()
+    m.init_scene()
+```
+
+## Limitations
+
+- **You should only create objects within your scene initialization function.** Once you call `self._init_scene()`, it will clear any previous static data and cache new static data. It will also request output data. If you add objects *afterwards*, they won't appear in `self.objects_static` or `self.state`!
+- `self.init_floorplan_scene()` is fairly difficult to modify because the floorplan data is stored in the `tdw` repo, not the `magnebot` repo. We recommend that you don't modify it and instead use the above examples as a template for more complex scenes.
+
+***
+
+**Next: [Output data](output_data.md)**
+
+[Return to the README](../../../README.md)
