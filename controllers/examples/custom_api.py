@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import List
 import numpy as np
-from tdw.tdw_utils import TDWUtils
 from tdw.output_data import Bounds
 from magnebot import Magnebot, ActionStatus, Arm, ArmJoint, ImageFrequency
 from magnebot.util import get_data
@@ -146,25 +145,27 @@ class CustomActionController(Controller):
                                                     object_id=vase_id))
         self.communicate(commands)
         # Wait for the Magnebot to initialize.
-        while magnebot.action.status != ActionStatus.ongoing:
+        while magnebot.action.status == ActionStatus.ongoing:
             self.communicate([])
         # Move to the object.
         magnebot.move_to(target=trunck_id, arrived_offset=0.3)
+        while magnebot.action.status == ActionStatus.ongoing:
+            self.communicate([])
 
         # Push the vase.
         magnebot.action = Push(target=vase_id, arm=Arm.right, dynamic=magnebot.dynamic)
-        while magnebot.action.status != ActionStatus.ongoing:
+        while magnebot.action.status == ActionStatus.ongoing:
             self.communicate([])
         print(magnebot.action.status)
 
         # Back away.
         magnebot.move_by(-0.5)
-        while magnebot.action.status != ActionStatus.ongoing:
+        while magnebot.action.status == ActionStatus.ongoing:
             self.communicate([])
         # Reset the arms.
         for arm in [Arm.left, Arm.right]:
             magnebot.reset_arm(arm=arm)
-            while magnebot.action.status != ActionStatus.ongoing:
+            while magnebot.action.status == ActionStatus.ongoing:
                 self.communicate([])
         self.communicate({"$type": "terminate"})
 
