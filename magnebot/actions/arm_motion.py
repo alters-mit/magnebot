@@ -17,17 +17,19 @@ class ArmMotion(Action, ABC):
     Abstract base class for arm motions.
     """
 
-    # The order in which joint angles will be set.
-    _JOINT_ORDER: Dict[Arm, List[ArmJoint]] = {Arm.left: [ArmJoint.column,
+    """:class_var
+    The order in which joint angles will be set.
+    """
+    JOINT_ORDER: Dict[Arm, List[ArmJoint]] = {Arm.left: [ArmJoint.column,
+                                                         ArmJoint.torso,
+                                                         ArmJoint.shoulder_left,
+                                                         ArmJoint.elbow_left,
+                                                         ArmJoint.wrist_left],
+                                              Arm.right: [ArmJoint.column,
                                                           ArmJoint.torso,
-                                                          ArmJoint.shoulder_left,
-                                                          ArmJoint.elbow_left,
-                                                          ArmJoint.wrist_left],
-                                               Arm.right: [ArmJoint.column,
-                                                           ArmJoint.torso,
-                                                           ArmJoint.shoulder_right,
-                                                           ArmJoint.elbow_right,
-                                                           ArmJoint.wrist_right]}
+                                                          ArmJoint.shoulder_right,
+                                                          ArmJoint.elbow_right,
+                                                          ArmJoint.wrist_right]}
 
     def __init__(self, arm: Arm):
         """
@@ -55,9 +57,10 @@ class ArmMotion(Action, ABC):
         commands.extend(self._get_stop_arm_commands(static=static, dynamic=dynamic))
         return commands
 
-    @final
-    def _get_stop_arm_commands(self, static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
+    @staticmethod
+    def get_stop_arm_commands(arm: Arm, static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
         """
+        :param arm: The arm.
         :param static: [The static Magnebot data.](../magnebot_static.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
 
@@ -65,7 +68,7 @@ class ArmMotion(Action, ABC):
         """
 
         commands = []
-        for arm_joint in ArmMotion._JOINT_ORDER[self._arm]:
+        for arm_joint in ArmMotion.JOINT_ORDER[arm]:
             joint_id = static.arm_joints[arm_joint]
             angles = dynamic.joints[joint_id].angles
             joint_type = static.joints[joint_id].joint_type
@@ -94,6 +97,17 @@ class ArmMotion(Action, ABC):
         return commands
 
     @final
+    def _get_stop_arm_commands(self, static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
+        """
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+
+        :return: A list of commands to stop the arm's joints.
+        """
+
+        return ArmMotion.get_stop_arm_commands(arm=arm, static=static, dynamic=dynamic)
+
+    @final
     def _joints_are_moving(self, static: MagnebotStatic, dynamic: MagnebotDynamic) -> bool:
         """
         :param static: [The static Magnebot data.](../magnebot_static.md)
@@ -102,7 +116,7 @@ class ArmMotion(Action, ABC):
         :return: True if these joints are still moving.
         """
 
-        for arm_joint in ArmMotion._JOINT_ORDER[self._arm]:
+        for arm_joint in ArmMotion.JOINT_ORDER[self._arm]:
             if dynamic.joints[static.arm_joints[arm_joint]].moving:
                 return True
         return False

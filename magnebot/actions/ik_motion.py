@@ -139,7 +139,7 @@ class IKMotion(ArmMotion, ABC):
             # This is the torso.
             if i == 1:
                 # Convert the torso value to a percentage and then to a joint position.
-                torso_prismatic = IKMotion._y_position_to_torso_position(y_position=angle)
+                torso_prismatic = IKMotion.y_position_to_torso_position(y_position=angle)
                 angles.append(torso_prismatic)
             # Append all other angles normally.
             else:
@@ -181,7 +181,7 @@ class IKMotion(ArmMotion, ABC):
                 if not dynamic.joints[static.arm_joints[ArmJoint.torso]].moving:
                     commands = [{"$type": "set_prismatic_target",
                                  "joint_id": static.arm_joints[ArmJoint.torso],
-                                 "target": self._y_position_to_torso_position(float(
+                                 "target": self.y_position_to_torso_position(float(
                                      np.radians(dynamic.joints[static.arm_joints[ArmJoint.torso]].angles[0]))),
                                  "id": static.robot_id}]
                     commands.extend(self._arm_articulation_commands.pop(0))
@@ -254,7 +254,7 @@ class IKMotion(ArmMotion, ABC):
         i = 0
         joint_order_index = 0
         while i < len(angles):
-            joint_name = ArmMotion._JOINT_ORDER[self._arm][joint_order_index]
+            joint_name = ArmMotion.JOINT_ORDER[self._arm][joint_order_index]
             joint_id = static.arm_joints[joint_name]
             joint_type = static.joints[joint_id].joint_type
             # If this is a revolute joint, the next command includes only the next angle.
@@ -296,7 +296,7 @@ class IKMotion(ArmMotion, ABC):
         # Get the initial angles of each joint.
         # The first angle is always 0 (the origin link).
         initial_angles = [0]
-        for j in ArmMotion._JOINT_ORDER[arm]:
+        for j in ArmMotion.JOINT_ORDER[arm]:
             j_id = static.arm_joints[j]
             initial_angles.extend(dynamic.joints[j_id].angles)
         # Add the magnet.
@@ -304,7 +304,7 @@ class IKMotion(ArmMotion, ABC):
         return np.radians(initial_angles)
 
     @staticmethod
-    def _y_position_to_torso_position(y_position: float) -> float:
+    def y_position_to_torso_position(y_position: float) -> float:
         """
         :param y_position: A y positional value in meters.
 
