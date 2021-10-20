@@ -18,6 +18,7 @@ Each axis of rotation is constrained (see `Magnebot.CAMERA_RPY_CONSTRAINTS`).
 
 | Variable | Type | Description |
 | --- | --- | --- |
+| `JOINT_ORDER` | Dict[Arm, List[ArmJoint]] | The order in which joint angles will be set. |
 | `CAMERA_RPY_CONSTRAINTS` | List[float] | The camera roll, pitch, yaw constraints in degrees. |
 
 ***
@@ -87,7 +88,7 @@ Evaluate an action per-frame to determine whether it's done.
 | static |  MagnebotStatic |  | [The static Magnebot data.](../magnebot_static.md) |
 | dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |
 
-_Returns:_  Tuple: A list of commands to send to the build to continue the action.
+_Returns:_  A list of commands to send to the build to continue the action.
 
 #### get_end_commands
 

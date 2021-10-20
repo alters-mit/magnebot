@@ -59,7 +59,7 @@ class Push(IKMotion):
             # Slide the torso up and above the target object.
             torso_position = target_position[1] + 0.1
             # Convert the torso position from meters to prismatic joint position.
-            torso_position = IKMotion.y_position_to_torso_position(torso_position)
+            torso_position = self._y_position_to_torso_position(torso_position)
             # Start sliding the torso.
             self.push_state = PushState.sliding_torso
             return [{"$type": "set_prismatic_target",

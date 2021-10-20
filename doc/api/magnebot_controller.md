@@ -86,18 +86,6 @@ for object_id in m.objects.transforms:
 m.end()
 ```
 
-- `collisions` [A `CollisionManager`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/add_ons/collision_manager.md) for collisions from the previous frame:
-
-```python
-from magnebot import MagnebotController
-
-m = MagnebotController()
-m.init_floorplan_scene(scene="1a", layout=0, room=0)
-for object_id in m.collisions.env_collisions:
-    print(object_id)
-m.end()
-```
-
 ***
 
 ## Functions
@@ -561,7 +549,7 @@ _Returns:_  An add_hdri_skybox command that the controller can then send.
 
 **`Controller(object).get_add_humanoid(humanoid_name, object_id)`**
 
-**`Controller(object).get_add_humanoid(humanoid_name, position={"x" 0, rotation={"x" 0, library="", object_id)`**
+**`Controller(object).get_add_humanoid(humanoid_name, position=None, rotation=None, library="", object_id)`**
 
 _This is a static function._
 
@@ -571,8 +559,8 @@ Returns a valid add_humanoid command.
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | humanoid_name |  str |  | The name of the humanoid. |
-| position |  | {"x" 0 | The position of the humanoid. |
-| rotation |  | {"x" 0 | The starting rotation of the humanoid, in Euler angles. |
+| position |  Dict[str, float] | None | The position of the humanoid. |
+| rotation |  Dict[str, float] | None | The starting rotation of the humanoid, in Euler angles. |
 | library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `HumanoidLibrarian.get_library_filenames()` and `HumanoidLibrarian.get_default_library()`. |
 | object_id |  int |  | The ID of the new object. |
 

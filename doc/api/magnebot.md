@@ -285,20 +285,20 @@ Move to a target object or position. This combines turn_to() followed by move_by
 
 Stop the Magnebot's wheels at their current positions.
 
-#### reset_position
+#### reset
 
-**`self.reset_position()`**
+**`self.reset()`**
 
-Reset the Magnebot so that it isn't tipping over.
-This will rotate the Magnebot to the default rotation (so that it isn't tipped over) and move the Magnebot to the nearest empty space on the floor.
-It will also drop any held objects.
+**`self.reset(position=None, rotation=None)`**
 
-This will be interpreted by the physics engine as a _very_ sudden and fast movement.
-This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
+Reset the robot.
 
-***
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| position |  Dict[str, float] | None | The position of the robot. |
+| rotation |  Dict[str, float] | None | The rotation of the robot. |
 
-#### Arm Articulation
+## Arm Articulation
 
 These functions move and bend the joints of the Magnebots's arms.
 
@@ -354,19 +354,20 @@ Drop an object held by a magnet.
 | arm |  Arm |  | [The arm of the magnet holding the object.](arm.md) |
 | wait_for_object |  bool  | True | If True, the action will continue until the object has finished falling. If False, the action advances the simulation by exactly 1 frame. |
 
-#### reset_arm
+#### reset
 
-**`self.reset_arm(arm)`**
+**`self.reset()`**
 
-Reset an arm to its neutral position.
+**`self.reset(position=None, rotation=None)`**
+
+Reset the robot.
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| arm |  Arm |  | [The arm to reset.](arm.md) |
+| position |  Dict[str, float] | None | The position of the robot. |
+| rotation |  Dict[str, float] | None | The rotation of the robot. |
 
-***
-
-### Camera
+## Camera
 
 These commands rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by exactly 1 frame.
 
@@ -392,15 +393,20 @@ Each axis of rotation is constrained by the following limits:
 | pitch |  float  | 0 | The pitch angle in degrees. |
 | yaw |  float  | 0 | The yaw angle in degrees. |
 
-#### reset_camera
+#### reset
 
-**`self.reset_camera()`**
+**`self.reset()`**
 
-Reset the rotation of the Magnebot's camera to its default angles.
+**`self.reset(position=None, rotation=None)`**
 
-***
+Reset the robot.
 
-### RobotBase
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| position |  Dict[str, float] | None | The position of the robot. |
+| rotation |  Dict[str, float] | None | The rotation of the robot. |
+
+## RobotBase
 
 These functions are inherited from the `RobotBase` parent class.
 

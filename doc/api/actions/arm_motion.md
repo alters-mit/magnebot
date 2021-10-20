@@ -6,6 +6,14 @@ Abstract base class for arm motions.
 
 ***
 
+## Class Variables
+
+| Variable | Type | Description |
+| --- | --- | --- |
+| `JOINT_ORDER` | Dict[Arm, List[ArmJoint]] | The order in which joint angles will be set. |
+
+***
+
 ## Fields
 
 - `status` [The current status of the action.](../action_status.md) By default, this is `ongoing` (the action isn't done).
@@ -50,7 +58,7 @@ _Returns:_  A list of commands to initialize this action.
 | static |  MagnebotStatic |  | [The static Magnebot data.](../magnebot_static.md) |
 | dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |
 
-_Returns:_  A list of commands to stop the arm's joints.
+_Returns:_  True if these joints are still moving.
 
 #### set_status_after_initialization
 
@@ -72,7 +80,7 @@ Evaluate an action per-frame to determine whether it's done.
 | static |  MagnebotStatic |  | [The static Magnebot data.](../magnebot_static.md) |
 | dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |
 
-_Returns:_  Tuple: A list of commands to send to the build to continue the action.
+_Returns:_  A list of commands to send to the build to continue the action.
 
 #### get_end_commands
 

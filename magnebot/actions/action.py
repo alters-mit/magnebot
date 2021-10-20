@@ -1,8 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from overrides import final
 import numpy as np
-from tdw.tdw_utils import QuaternionUtils
+from tdw.tdw_utils import TDWUtils, QuaternionUtils
+from tdw.robot_data.joint_type import JointType
+from magnebot.arm import Arm
+from magnebot.arm_joint import ArmJoint
 from magnebot.action_status import ActionStatus
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
@@ -15,6 +18,20 @@ class Action(ABC):
     An action that the Magnebot can do. An action is initialized, has an ongoing state, and an end state.
     An action also has a status indicating whether it's ongoing, succeeded, or failed; and if it failed, why.
     """
+
+    """:class_var
+    The order in which joint angles will be set.
+    """
+    JOINT_ORDER: Dict[Arm, List[ArmJoint]] = {Arm.left: [ArmJoint.column,
+                                                         ArmJoint.torso,
+                                                         ArmJoint.shoulder_left,
+                                                         ArmJoint.elbow_left,
+                                                         ArmJoint.wrist_left],
+                                              Arm.right: [ArmJoint.column,
+                                                          ArmJoint.torso,
+                                                          ArmJoint.shoulder_right,
+                                                          ArmJoint.elbow_right,
+                                                          ArmJoint.wrist_right]}
 
     def __init__(self):
         """
@@ -152,3 +169,103 @@ class Action(ABC):
                              "joint_id": static.wheels[wheel]})
         return commands
 
+    @staticmethod
+    def _y_position_to_torso_position(y_position: float) -> float:
+        """
+        :param y_position: A y positional value in meters.
+
+        :return: A corresponding joint position value for the torso prismatic joint.
+        """
+
+        # Convert the torso value to a percentage and then to a joint position.
+        p = (y_position * (TORSO_MAX_Y - TORSO_MIN_Y)) + TORSO_MIN_Y
+        return float(p * 1.5)
+
+    @staticmethod
+    def _get_initial_angles(arm: Arm, static: MagnebotStatic, dynamic: MagnebotDynamic) -> np.array:
+        """
+        :param arm: The arm.
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+
+        :return: The angles of the arm in the current state.
+        """
+
+        # Get the initial angles of each joint.
+        # The first angle is always 0 (the origin link).
+        initial_angles = [0]
+        for j in Action.JOINT_ORDER[arm]:
+            j_id = static.arm_joints[j]
+            initial_angles.extend(dynamic.joints[j_id].angles)
+        # Add the magnet.
+        initial_angles.append(0)
+        return np.radians(initial_angles)
+
+    @staticmethod
+    def _get_stop_arm_commands(arm: Arm, static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
+        """
+        :param arm: The arm.
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+
+        :return: A list of commands to stop the arm's joints.
+        """
+
+        commands = []
+        for arm_joint in Action.JOINT_ORDER[arm]:
+            joint_id = static.arm_joints[arm_joint]
+            angles = dynamic.joints[joint_id].angles
+            joint_type = static.joints[joint_id].joint_type
+            if joint_type == JointType.fixed_joint:
+                continue
+            # Set the target to the angle of the first (and only) revolute drive.
+            elif joint_type == JointType.revolute:
+                commands.append({"$type": "set_revolute_target",
+                                 "joint_id": joint_id,
+                                 "target": float(angles[0]),
+                                 "id": static.robot_id})
+            # Convert the current prismatic "angle" back into "radians".
+            elif joint_type == JointType.prismatic:
+                commands.append({"$type": "set_prismatic_target",
+                                 "joint_id": joint_id,
+                                 "target": float(np.radians(angles[0])),
+                                 "id": static.robot_id})
+            # Set each spherical drive axis.
+            elif joint_type == JointType.spherical:
+                commands.append({"$type": "set_spherical_target",
+                                 "target": TDWUtils.array_to_vector3(angles),
+                                 "joint_id": joint_id,
+                                 "id": static.robot_id})
+            else:
+                raise Exception(f"Cannot stop joint type {joint_type}")
+        return commands
+
+    @staticmethod
+    def _get_reset_arm_commands(arm: Arm, static: MagnebotStatic) -> List[dict]:
+        """
+        :param arm: The arm to reset.
+        :param static: [The static Magnebot data.](../magnebot_static.md)
+
+        :return: A list of commands to reset the arm.
+        """
+
+        commands = [{"$type": "set_prismatic_target",
+                     "joint_id": static.arm_joints[ArmJoint.torso],
+                     "target": 1,
+                     "id": static.robot_id}]
+        # Reset every arm joint after the torso.
+        for joint_name in Action.JOINT_ORDER[arm]:
+            joint_id = static.arm_joints[joint_name]
+            joint_type = static.joints[joint_id].joint_type
+            if joint_type == JointType.revolute:
+                # Set the revolute joints to 0 except for the elbow, which should be held at a right angle.
+                commands.append({"$type": "set_revolute_target",
+                                 "joint_id": joint_id,
+                                 "target": 0 if "elbow" not in joint_name.name else 90,
+                                 "id": static.robot_id})
+            elif joint_type == JointType.spherical:
+                commands.append({"$type": "set_spherical_target",
+                                 "joint_id": joint_id,
+                                 "target": {"x": 0, "y": 0, "z": 0},
+                                 "id": static.robot_id})
+        return commands

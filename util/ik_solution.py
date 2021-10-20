@@ -2,13 +2,13 @@ from typing import List
 import numpy as np
 from tqdm import tqdm
 from tdw.tdw_utils import TDWUtils
-from magnebot import Magnebot, ActionStatus, Arm
+from magnebot import MagnebotController, ActionStatus, Arm
 from magnebot.paths import IK_POSITIONS_PATH, IK_ORIENTATIONS_LEFT_PATH, IK_ORIENTATIONS_RIGHT_PATH
 from magnebot.ik.orientation import ORIENTATIONS
 from magnebot.constants import MAGNEBOT_RADIUS
 
 
-class IKSolution(Magnebot):
+class IKSolution(MagnebotController):
     """
     Create a cloud of positions as cylinders of increasing radius around the Magnebot.
     For every position, try to `reach_for()` the target with every `Orientation`.
@@ -20,7 +20,6 @@ class IKSolution(Magnebot):
     def __init__(self, port: int = 1071):
         # Start the controller. Turn off debug mode.
         super().__init__(port=port, screen_width=128, screen_height=128)
-        self._debug = False
 
     @staticmethod
     def get_positions(radius: float = 1.05, step: float = 0.1) -> np.array:

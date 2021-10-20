@@ -73,7 +73,7 @@ class IKMotion(ArmMotion, ABC):
     def get_end_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
                          image_frequency: ImageFrequency) -> List[dict]:
         commands = super().get_end_commands(resp=resp, static=static, dynamic=dynamic, image_frequency=image_frequency)
-        commands.extend(self._get_stop_arm_commands(static=static, dynamic=dynamic))
+        commands.extend(self._get_stop_arm_commands(arm=self._arm, static=static, dynamic=dynamic))
         return commands
 
     def _set_start_arm_articulation_commands(self, static: MagnebotStatic, dynamic: MagnebotDynamic, arrived_at: float = 0.125) -> None:
@@ -139,7 +139,7 @@ class IKMotion(ArmMotion, ABC):
             # This is the torso.
             if i == 1:
                 # Convert the torso value to a percentage and then to a joint position.
-                torso_prismatic = IKMotion.y_position_to_torso_position(y_position=angle)
+                torso_prismatic = self._y_position_to_torso_position(y_position=angle)
                 angles.append(torso_prismatic)
             # Append all other angles normally.
             else:
@@ -181,7 +181,7 @@ class IKMotion(ArmMotion, ABC):
                 if not dynamic.joints[static.arm_joints[ArmJoint.torso]].moving:
                     commands = [{"$type": "set_prismatic_target",
                                  "joint_id": static.arm_joints[ArmJoint.torso],
-                                 "target": self.y_position_to_torso_position(float(
+                                 "target": self._y_position_to_torso_position(float(
                                      np.radians(dynamic.joints[static.arm_joints[ArmJoint.torso]].angles[0]))),
                                  "id": static.robot_id}]
                     commands.extend(self._arm_articulation_commands.pop(0))
@@ -283,37 +283,7 @@ class IKMotion(ArmMotion, ABC):
             joint_order_index += 1
         return commands
 
-    @staticmethod
-    def _get_initial_angles(arm: Arm, static: MagnebotStatic, dynamic: MagnebotDynamic) -> np.array:
-        """
-        :param arm: The arm.
-        :param static: [The static Magnebot data.](../magnebot_static.md)
-        :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
 
-        :return: The angles of the arm in the current state.
-        """
-
-        # Get the initial angles of each joint.
-        # The first angle is always 0 (the origin link).
-        initial_angles = [0]
-        for j in ArmMotion.JOINT_ORDER[arm]:
-            j_id = static.arm_joints[j]
-            initial_angles.extend(dynamic.joints[j_id].angles)
-        # Add the magnet.
-        initial_angles.append(0)
-        return np.radians(initial_angles)
-
-    @staticmethod
-    def y_position_to_torso_position(y_position: float) -> float:
-        """
-        :param y_position: A y positional value in meters.
-
-        :return: A corresponding joint position value for the torso prismatic joint.
-        """
-
-        # Convert the torso value to a percentage and then to a joint position.
-        p = (y_position * (TORSO_MAX_Y - TORSO_MIN_Y)) + TORSO_MIN_Y
-        return float(p * 1.5)
 
     @staticmethod
     def _get_ik_links(arm: Arm) -> List[Link]:
