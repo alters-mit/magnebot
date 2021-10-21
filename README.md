@@ -70,9 +70,9 @@ The Magnebot API has three simulation modes, each with certain benefits and cert
 - [Moving, turning, and collision detection](doc/manual/magnebot_controller/movement.md)
 - [Arm articulation](doc/manual/magnebot_controller/arm_articulation.md)
 - [Grasp action](doc/manual/magnebot_controller/grasp.md)
-- Camera rotation
-- Occupancy map
-- Third-person cameras
+- [Camera rotation](doc/manual/magnebot_controller/camera_rotation.md)
+- [Third-person cameras](doc/manual/magnebot_controller/third_person_camera.md)
+- [Occupancy maps](doc/manual/magnebot_controller/third_person_camera.md)
 
 ### 3.2 [`Magnebot` (single-agent)](doc/api/magnebot.md)  (lower-level API)
 

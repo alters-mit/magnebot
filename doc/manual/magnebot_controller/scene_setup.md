@@ -13,7 +13,7 @@ m = MagnebotController()
 m.init_scene()
 ```
 
-- `self.init_floorplan_scene(scene, layout, room)` will load an interior environment and populate with objects
+- `self.init_floorplan_scene(scene, layout, room)` will load an interior environment and populate with objects. 
 
 ```python
 from magnebot import MagnebotController
@@ -23,6 +23,10 @@ m.init_floorplan_scene(scene="1a", layout=0, room=0)
 ```
 
 Both actions will add a Magnebot, cache static data, and so on.
+
+[**Images of the floorplans can be found here.**](https://github.com/alters-mit/magnebot/tree/main/doc/images/floorplans) 
+
+[**Images of the floorplan rooms can be found here.**](https://github.com/alters-mit/magnebot/tree/main/doc/images/rooms) 
 
 ## Custom Scene Setup
 

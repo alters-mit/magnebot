@@ -63,21 +63,20 @@ class MagnebotController(Controller):
         
         | Value | Meaning |
         | --- | --- |
-        | -1 | This position is outside of the scene. |
-        | 0 | Unoccupied and navigable; the Magnebot can go here. |
-        | 1 | This position is occupied by an object(s) or a wall. |
-        | 2 | This position is free but not navigable (usually because there are objects in the way. |
+        | -1 | The cell is out of bounds of the scene or not navigable. |
+        | 0 | The cell is unoccupied; there is a floor at this position but there are no objects. |
+        | 1 | The cell is occupied by at least one object or a wall. |
         
         ```python
         from magnebot import MagnebotController
 
-        m = MagnebotController()
-        m.init_floorplan_scene(scene="1a", layout=0, room=0)
+        c = MagnebotController()
+        c.init_floorplan_scene(scene="1a", layout=0, room=0)
         x = 30
-        y = 16
-        print(m.occupancy_map[x][y]) # 0 (free and navigable position)
-        print(m.get_occupancy_position(x, y)) # (1.1157886505126946, 2.2528389358520506)
-        m.end()
+        z = 16
+        print(c.occupancy_map[x][z]) # 0 (free and navigable position)
+        print(c.get_occupancy_position(x, z)) # (1.1157886505126946, 2.2528389358520506)
+        c.end()
         ```
         
         Images of occupancy maps can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/occupancy_maps). The blue squares are free navigable positions. Images are named `[scene]_[layout].jpg` For example, the occupancy map image for scene "2a" layout 0 is: `2_0.jpg`.
@@ -474,6 +473,8 @@ class MagnebotController(Controller):
             position = TDWUtils.VECTOR3_ZERO
         if rotation is None:
             rotation = TDWUtils.VECTOR3_ZERO
+        if objects is None:
+            objects = []
 
         # Add the Magnebot.
         if self.magnebot is None:
