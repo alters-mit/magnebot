@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     # Get a point above the box.
     box_top = c.objects.transforms[c.box].position[:]
-    box_top[1] += c.objects.objects_static[c.box].size[1] + 0.2
+    box_top[1] += c.objects.objects_static[c.box].size[1] + 0.4
 
     # Drop each object.
     for arm, object_id in zip([Arm.left, Arm.right], [c.target_object_0, c.target_object_1]):

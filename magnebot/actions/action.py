@@ -252,10 +252,15 @@ class Action(ABC):
         commands = [{"$type": "set_prismatic_target",
                      "joint_id": static.arm_joints[ArmJoint.torso],
                      "target": 1,
+                     "id": static.robot_id},
+                    {"$type": "set_revolute_target",
+                     "joint_id": static.arm_joints[ArmJoint.column],
+                     "target": 0,
                      "id": static.robot_id}]
         # Reset every arm joint after the torso.
-        for joint_name in Action.JOINT_ORDER[arm]:
+        for joint_name in Action.JOINT_ORDER[arm][2:]:
             joint_id = static.arm_joints[joint_name]
+
             joint_type = static.joints[joint_id].joint_type
             if joint_type == JointType.revolute:
                 # Set the revolute joints to 0 except for the elbow, which should be held at a right angle.
