@@ -1,3 +1,4 @@
+from tdw.tdw_utils import TDWUtils
 from magnebot import MagnebotController, Arm, ActionStatus
 
 
@@ -9,38 +10,42 @@ class PickUpHeavy(MagnebotController):
     def __init__(self, port: int = 1071, screen_width: int = 1024, screen_height: int = 1024):
         super().__init__(port=port, screen_height=screen_height, screen_width=screen_width)
         self._debug = False
-        self.target_id: int = -1
+        self.target_id: int = self.get_unique_id()
 
     def init_scene(self) -> None:
-        self.target_id = self.get_unique_id()
-        self._object_init_commands.extend(self.get_add_physics_object(model_name="trunck",
-                                                                      object_id=self.target_id,
-                                                                      position={"x": 0.04, "y": 0, "z": 1.081}))
-        super().init_scene()
+        scene = [{"$type": "load_scene",
+                  "scene_name": "ProcGenScene"},
+                 TDWUtils.create_empty_room(12, 12)]
+        objects = self.get_add_physics_object(model_name="trunck",
+                                              object_id=self.target_id,
+                                              position={"x": 0.04, "y": 0, "z": 1.081})
+        self._init_scene(scene=scene,
+                         objects=objects,
+                         post_processing=self.get_default_post_processing_commands())
 
 
 if __name__ == "__main__":
-    m = PickUpHeavy()
-    m.init_scene()
-    m.grasp(target=m.target_id, arm=Arm.left)
-    m.reset_arm(arm=Arm.left)
+    c = PickUpHeavy()
+    c.init_scene()
+    c.grasp(target=c.target_id, arm=Arm.left)
+    c.reset_arm(arm=Arm.left)
 
     # Try to pick up a heavy object, start to tip over, and resolve the tipping.
-    status = m.move_by(-1)
+    status = c.move_by(-1)
     assert status != ActionStatus.success, status
-    m.drop(m.target_id, arm=Arm.left)
-    status = m.move_by(1)
+    c.drop(c.target_id, arm=Arm.left)
+    status = c.move_by(1)
     assert status == ActionStatus.success, status
-    status = m.move_by(-1)
+    status = c.move_by(-1)
     assert status == ActionStatus.success, status
 
     # Try to pick up something heavy, turn, and give up.
-    m.move_by(1)
-    status = m.grasp(target=m.target_id, arm=Arm.left)
+    c.move_by(1)
+    status = c.grasp(target=c.target_id, arm=Arm.left)
     assert status == ActionStatus.success, status
-    status = m.turn_by(45)
+    status = c.turn_by(45)
     assert status == ActionStatus.success, status
-    status = m.move_by(-1)
+    status = c.move_by(-1)
     assert status != ActionStatus.success, status
-    m.reset_position()
-    m.end()
+    c.reset_position()
+    c.end()

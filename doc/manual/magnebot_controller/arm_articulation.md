@@ -108,3 +108,9 @@ The `arrived_at` parameter in the `reach_for()` action determines minimum distan
 **Next: [Grasp action](grasp.md)**
 
 [Return to the README](../../../README.md)
+
+***
+
+Examples controllers:
+
+- [reach_for.py](https://github.com/alters-mit/magnebot/blob/main/controllers/examples/magnebot_controller/reach_for.py) Reach for a target position with different orientation parameters.

@@ -77,14 +77,15 @@ Output:
 from tdw.tdw_utils import TDWUtils
 from magnebot import MagnebotController
 
+
 class MyController(MagnebotController):
     def init_scene(self):
         scene = [{"$type": "load_scene",
                   "scene_name": "ProcGenScene"},
                  TDWUtils.create_empty_room(12, 12)]
         objects = self.get_add_physics_object(model_name="rh10",
-                                        position={"x": 0.04, "y": 0, "z": 1.081},
-                                        object_id=self.get_unique_id())
+                                              position={"x": 0.04, "y": 0, "z": 1.081},
+                                              object_id=self.get_unique_id())
         self._init_scene(scene=scene,
                          objects=objects,
                          position={"x": 1, "y": 0, "z": -3},
@@ -96,11 +97,13 @@ class MyController(MagnebotController):
         status = self.move_to(object_id, arrived_at=0.3, aligned_at=1, arrived_offset=arrived_offset)
         print(status)
 
+
 if __name__ == "__main__":
     c = MyController()
     c.run(arrived_offset=0)
     c.run(arrived_offset=0.3)
     c.end()
+
 ```
 
 Output:
@@ -162,6 +165,12 @@ c.magnebot.collision_detection.walls = True
 c.end()
 ```
 
+- If `collision_detection.walls == True`, the Magnebot will stop moving as soon as it collides with a wall.
+- If `collision_detection.floor == True`, the Magnebot will stop moving as soon as it collides with the floor. *This should almost always be False!*
+- If `collision_detection.objects == True`, the Magnebot will stop moving as soon as it collides with any object.
+- `collision_detection.exclude_objects` is a list of object IDs. If `collision_detection.objects == True` the Magnebot will continue to try to move if it collides with any objects in `exclude_objects`.
+- `collision_detection.include_objects` is a list of object IDs.  If `collision_detection.objects == False` the Magnebot will stop moving if it collides with any objects in `include_objects`. 
+
 **DO NOT set `collision_detection` such that the Magnebot can repeatedly collide with obstacles.** If the Magnebot repeatedly collides with an object, it can cause the build to crash. This is a bug in the underlying Unity physics engine. In real life, such behavior would snap off a wheel, an arm joint, or otherwise break the robot. Do NOT repeatedly send the Magnebot in impossible directions.
 
 ***
@@ -169,3 +178,10 @@ c.end()
 **Next: [Arm articulation](arm_articulation.md)**
 
 [Return to the README](../../../README.md)
+
+***
+
+Examples controllers:
+
+- [collision_detection.py](https://github.com/alters-mit/magnebot/blob/main/controllers/examples/magnebot_controller/move_by.py) Show the difference between arrived_offset values and collision detection settings.
+- [simple_navigation.py](https://github.com/alters-mit/magnebot/blob/main/controllers/examples/magnebot_controller/simple_navigation.py) Use collision detection and movement commands for a VERY simple navigation system.

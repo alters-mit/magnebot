@@ -1,6 +1,5 @@
 from enum import Enum
 from tqdm import tqdm
-from tdw.add_ons.third_person_camera import ThirdPersonCamera
 from magnebot import MagnebotController, ActionStatus
 
 
@@ -21,12 +20,6 @@ class SimpleNavigation(MagnebotController):
 
     def run(self) -> None:
         self.init_floorplan_scene(scene="1a", layout=1, room=1)
-        # Add a camera for debugging.
-        camera = ThirdPersonCamera(avatar_id="a",
-                                   position={"x": 1.43, "y": 1.87, "z": 0.77},
-                                   look_at=0,
-                                   follow_object=0)
-        self.add_ons.append(camera)
         previous_action: MoveAction = MoveAction.none
         num_actions: int = 1000
         pbar = tqdm(total=num_actions)
@@ -57,5 +50,5 @@ class SimpleNavigation(MagnebotController):
 
 
 if __name__ == "__main__":
-    m = SimpleNavigation(random_seed=0)
-    m.run()
+    c = SimpleNavigation(random_seed=0)
+    c.run()

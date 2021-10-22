@@ -20,17 +20,18 @@ Static object data is stored in `self.objects.objects_static`:
 from tdw.tdw_utils import TDWUtils
 from magnebot import MagnebotController
 
+
 class MyController(MagnebotController):
     def init_scene(self):
         scene = [{"$type": "load_scene",
                   "scene_name": "ProcGenScene"},
                  TDWUtils.create_empty_room(12, 12)]
-        self._object_init_commands.extend(
-            self.get_add_physics_object(model_name="cabinet_36_wood_beach_honey",
-                                        position={"x": 0.04, "y": 0, "z": 1.081},
-                                        kinematic=True,
-                                        object_id=self.get_unique_id()))
+        objects = self.get_add_physics_object(model_name="cabinet_36_wood_beach_honey",
+                                              position={"x": 0.04, "y": 0, "z": 1.081},
+                                              kinematic=True,
+                                              object_id=self.get_unique_id())
         self._init_scene(scene=scene,
+                         objects=objects,
                          position={"x": 1, "y": 0, "z": -3},
                          rotation={"x": 0, "y": 46, "z": 0})
 
@@ -57,12 +58,12 @@ class MyController(MagnebotController):
         scene = [{"$type": "load_scene",
                   "scene_name": "ProcGenScene"},
                  TDWUtils.create_empty_room(12, 12)]
-        self._object_init_commands.extend(
-            self.get_add_physics_object(model_name="cabinet_36_wood_beach_honey",
-                                        position={"x": 0.04, "y": 0, "z": 1.081},
-                                        kinematic=True,
-                                        object_id=self.get_unique_id()))
+        objects = self.get_add_physics_object(model_name="cabinet_36_wood_beach_honey",
+                                              position={"x": 0.04, "y": 0, "z": 1.081},
+                                              kinematic=True,
+                                              object_id=self.get_unique_id())
         self._init_scene(scene=scene,
+                         objects=objects,
                          position={"x": 1, "y": 0, "z": -3},
                          rotation={"x": 0, "y": 46, "z": 0})
 
@@ -169,3 +170,9 @@ Raw image data is stored in `self.magnebot.dynamic.images`, a dictionary where k
 **Next: [Actions](actions.md)**
 
 [Return to the README](../../../README.md)
+
+***
+
+Example controllers:
+
+- [output_data.py](https://github.com/alters-mit/magnebot/blob/main/controllers/examples/magnebot_controller/output_data.py) Print static object data, static Magnebot data, dynamic object data, and dynamic Magnebot data.

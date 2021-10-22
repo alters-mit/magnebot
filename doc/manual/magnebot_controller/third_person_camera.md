@@ -40,7 +40,13 @@ Result:
 
 ***
 
-**Next: [Occupancy maps](occupancy_maps.md)**
+**Next: [Occupancy maps](occupancy_map.md)**
 
 [Return to the README](../../../README.md)
 
+***
+
+Examples controllers:
+
+- [third_person_camera.py](https://github.com/alters-mit/magnebot/blob/main/controllers/examples/magnebot_controller/third_person_camera.py) A simple example of a third-person camera.
+- [social_image.py](https://github.com/alters-mit/magnebot/blob/main/controllers/examples/magnebot_controller/social_image.py) Generate the social image for this repo.

@@ -23,3 +23,9 @@ The `MagnebotController` offers a higher-level API than the `Magnebot` agent wit
 
 [Return to the README](../../../README.md)
 
+***
+
+Example controllers:
+
+- [move_by.py](https://github.com/alters-mit/magnebot/blob/main/controllers/examples/magnebot_controller/move_by.py) Move the Magnebot forward by 2 meters.
+

@@ -250,6 +250,8 @@ class Magnebot(RobotBase):
         self.action = None
         self._previous_action = None
         self.camera_rpy: np.array = np.array([0, 0, 0])
+        self.collision_detection = CollisionDetection()
+        self._previous_resp.clear()
         commands = super().get_initialization_commands()
         commands.extend([{"$type": "send_magnebots",
                          "frequency": "always"},

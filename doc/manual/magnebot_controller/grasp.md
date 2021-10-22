@@ -57,6 +57,14 @@ Like `reach_for(target, arm)`, `grasp(target, arm)` has optional `target_orienta
 
 ***
 
-**Next: [Camera rotation](camera.md)**
+**Next: [Camera rotation](camera_rotation.md)**
 
 [Return to the README](../../../README.md)
+
+***
+
+Examples controllers:
+
+- [reach_high.py](https://github.com/alters-mit/magnebot/blob/main/controllers/examples/magnebot_controller/reach_high.py) Grasp an object on a shelf. Includes some low-level TDW commands.
+- [put_in_container.py](https://github.com/alters-mit/magnebot/blob/main/controllers/examples/magnebot_controller/put_in_container.py) Pick up multiple objects in the scene and put them in a container.
+- [pick_up.py](https://github.com/alters-mit/magnebot/blob/main/controllers/examples/magnebot_controller/put_in_container.py) In a floorplan scene, move to an object, pick it up, move somewhere else, and drop the object.

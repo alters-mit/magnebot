@@ -512,4 +512,5 @@ class MagnebotController(Controller):
     def _do_action(self) -> ActionStatus:
         while self.magnebot.action.status == ActionStatus.ongoing:
             self.communicate([])
+        self.communicate([])
         return self.magnebot.action.status

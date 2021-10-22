@@ -48,6 +48,7 @@ c.end()
 
 - [Changelog](https://github.com/alters-mit/magnebot/blob/main/doc/changelog.md)
 - [Troubleshooting and debugging](https://github.com/alters-mit/magnebot/blob/main/doc/troubleshooting.md)
+- Performance benchmark
 
 ## TDW Documentation
 

@@ -9,8 +9,10 @@ By default, the [`MagnebotController`](../../api/magnebot_controller.md) has two
 ```python
 from magnebot import MagnebotController
 
-m = MagnebotController()
-m.init_scene()
+c = MagnebotController()
+c.init_scene()
+print(c.magnebot.dynamic.transform.position)
+c.end()
 ```
 
 - `self.init_floorplan_scene(scene, layout, room)` will load an interior environment and populate with objects. 
@@ -18,8 +20,10 @@ m.init_scene()
 ```python
 from magnebot import MagnebotController
 
-m = MagnebotController()
-m.init_floorplan_scene(scene="1a", layout=0, room=0)
+c = MagnebotController()
+c.init_floorplan_scene(scene="1a", layout=0, room=0)
+print(c.magnebot.dynamic.transform.position)
+c.end()
 ```
 
 Both actions will add a Magnebot, cache static data, and so on.
@@ -124,18 +128,17 @@ This example creates a simple 12x12 meter test scene and adds a rocking horse ob
 from tdw.tdw_utils import TDWUtils
 from magnebot import MagnebotController
 
+
 class MyController(MagnebotController):
     def init_scene(self):
         scene = [{"$type": "load_scene",
                   "scene_name": "ProcGenScene"},
                  TDWUtils.create_empty_room(12, 12)]
-        self._object_init_commands.extend(
-            self.get_add_physics_object(model_name="rh10",
-                                        position={"x": 0.04, "y": 0, "z": 1.081},
-                                        object_id=self.get_unique_id()))
-        self._init_scene(scene=scene,
-                         position={"x": 1, "y": 0, "z": -3},
-                         rotation={"x": 0, "y": 46, "z": 0})
+        objects = []
+        objects.extend(self.get_add_physics_object(model_name="rh10",
+                                                   position={"x": 0.04, "y": 0, "z": 1.081},
+                                                   object_id=self.get_unique_id()))
+        self._init_scene(scene=scene, objects=objects)
 
 
 if __name__ == "__main__":
@@ -175,3 +178,9 @@ if __name__ == "__main__":
 **Next: [Output data](output_data.md)**
 
 [Return to the README](../../../README.md)
+
+***
+
+Example controllers:
+
+- [custom_scene_setup.py](https://github.com/alters-mit/magnebot/blob/main/controllers/examples/magnebot_controller/custom_scene_setup.py) Define a custom scene setup.

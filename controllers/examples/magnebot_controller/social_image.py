@@ -9,13 +9,13 @@ Generate the image used for the GitHub social preview card.
 """
 
 if __name__ == "__main__":
-    m = MagnebotController(screen_width=1024, screen_height=1024, skip_frames=0)
-    m.init_floorplan_scene(scene="2b", layout=1, room=1)
+    c = MagnebotController(screen_width=1024, screen_height=1024, skip_frames=0)
+    c.init_floorplan_scene(scene="2b", layout=1, room=1)
     camera = ThirdPersonCamera(position={"x": -9.39, "y": 0.85, "z": 2.18},
                                look_at=0,
                                avatar_id="c")
-    m.add_ons.append(camera)
-    resp = m.communicate([{"$type": "set_img_pass_encoding",
+    c.add_ons.append(camera)
+    resp = c.communicate([{"$type": "set_img_pass_encoding",
                            "value": False},
                           {"$type": "set_pass_masks",
                            "pass_masks": ["_img"],
@@ -27,4 +27,4 @@ if __name__ == "__main__":
                          filename="social",
                          output_directory=str(Path("../../").resolve()),
                          append_pass=False)
-    m.end()
+    c.end()
