@@ -79,8 +79,8 @@ The [`MagnebotController`](doc/api/magnebot_controller.md) offers a simplified A
 [`Magnebot`](doc/api/magnebot.md) is a TDW add-on that must be added to a TDW controller to be usable. `Magnebot` can be used in multi-agent simulations, but it requires a more extensive understanding of TDW than `MagnebotController`.
 
 - Overview
-- Scene setup
-- Output data
+- [Scene setup](doc/manual/magnebot/scene_setup.md)
+- [Output data](doc/manual/magnebot/output_data.md)
 - Actions
 - Moving, turning, and collision detection
 - Arm articulation
