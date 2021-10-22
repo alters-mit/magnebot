@@ -6,6 +6,8 @@ The Magnebot can be loaded into a [wide variety of scenes populated by interacta
 
 At a low level, the Magnebot is driven by robotics commands such as set_revolute_target, which will turn a revolute drive. The high-level API combines the low-level commands into "actions", such as `grasp(target_object)` or `move_by(distance)`.
 
+The Magnebot API supports both single-agent and multi-agent simulations.
+
 <img src="https://raw.githubusercontent.com/alters-mit/magnebot/main/doc/images/reach_high.gif" />
 
 # Requirements
@@ -42,12 +44,12 @@ c.end()
 
 # Manual
 
-## 1. General
+## General
 
 - [Changelog](https://github.com/alters-mit/magnebot/blob/main/doc/changelog.md)
 - [Troubleshooting and debugging](https://github.com/alters-mit/magnebot/blob/main/doc/troubleshooting.md)
 
-## 2. TDW Documentation
+## TDW Documentation
 
 Before using Magnebot, we recommend you read TDW's documentation to familiarize yourself with some of the underlying concepts in this API:
 
@@ -56,14 +58,11 @@ Before using Magnebot, we recommend you read TDW's documentation to familiarize 
 - Objects and scenes
 - Robots
 
-## 3. Magnebot Simulation Modes
+## `MagnebotController` (single-agent, high-level API)
 
-The Magnebot API has three simulation modes, each with certain benefits and certain trade-offs:
+The [`MagnebotController`](doc/api/magnebot_controller.md) offers a simplified API for single-agent simulations. Actions are non-interruptible; `self.move_by(2)` will simulate motion until the action ends (i.e. when the Magnebot has moved forward by 2 meters). This API mode has been optimized for ease of use and simulation speed.
 
-### 3.1 [`MagnebotController`](doc/api/magnebot_controller.md) (single-agent, simple API)
-
-[`MagnebotController`](doc/api/magnebot_controller.md) offers an easy to use API. Each action call ends when the action is totally done; for example, `move_by(2)` will iterate through physics steps until the Magnebot has moved 2 meters or until it otherwise needs to stop, such as on a collision. `MagnebotController` supports only single-agent simulations. Actions can't be interrupted.
-
+- [Overview](doc/manual/magnebot_controller/overview.md)
 - [Scene setup](doc/manual/magnebot_controller/scene_setup.md)
 - [Output data](doc/manual/magnebot_controller/output_data.md)
 - [Actions](doc/manual/magnebot_controller/actions.md)
@@ -74,28 +73,22 @@ The Magnebot API has three simulation modes, each with certain benefits and cert
 - [Third-person cameras](doc/manual/magnebot_controller/third_person_camera.md)
 - [Occupancy maps](doc/manual/magnebot_controller/third_person_camera.md)
 
-### 3.2 [`Magnebot` (single-agent)](doc/api/magnebot.md)  (lower-level API)
+## `Magnebot` (*n*-agent, lower-level API)
 
-[`Magnebot`](doc/api/magnebot.md) is a TDW add-on. It is used by the `MagnebotController`. By programming directly with a `Magnebot`, you can add it to any TDW controller, thereby allowing for more varied simulation setups and for actions to be interrupted. The trade-off is that this requires more advanced knowledge of TDW.
+[`Magnebot`](doc/api/magnebot.md) is a TDW add-on that must be added to a TDW controller to be usable. `Magnebot` can be used in multi-agent simulations, but it requires a more extensive understanding of TDW than `MagnebotController`.
 
+- Overview
 - Scene setup
-- Reset a scene
 - Output data
 - Actions
 - Moving, turning, and collision detection
 - Arm articulation
 - Grasping
 - Camera rotation
-- Occupancy map
 - Third-person cameras
+- Occupancy map
 
-### 3.3 [`Magnebot` (multi-agent)](doc/api/magnebot.md)  (lower-level API)
-
-It is possible add multiple [`Magnebot`)](doc/api/magnebot.md) agents to a scene. It is also possible add a `Magnebot` and any other TDW agent, such as a robot.
-
-- Multi-agent simulations
-
-## 4. Custom actions
+## Actions
 
 It is possible to define custom Magnebot actions by extending the [`Action`](doc/api/actions/action.md) class.
 
@@ -104,13 +97,16 @@ It is possible to define custom Magnebot actions by extending the [`Action`](doc
 - IK (arm articulation) actions
 - Camera actions
 
+## Low-level API
+
+- [Low-level API controls](doc/api/low_level.md)
+
 ***
 
 # API
 
 - [`MagnebotController`](doc/api/magnebot_controller.md)
 - [`Magnebot`](doc/api/magnebot.md)
-- [Low-level API controls](doc/api/low_level.md)
 - [Other API documentation](doc/api)
 
 ***
