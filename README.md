@@ -54,10 +54,10 @@ c.end()
 
 Before using Magnebot, we recommend you read TDW's documentation to familiarize yourself with some of the underlying concepts in this API:
 
-- Setup
-- Core Concepts
-- Objects and scenes
-- Robots
+- [Setup](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/setup/install.md)
+- [Core Concepts](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/core_concepts/controller.md)
+- [Objects and scenes](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/objects_and_scenes/overview.md)
+- [Robots](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/robots/overview.md)
 
 ## `MagnebotController` (single-agent, high-level API)
 
@@ -72,7 +72,7 @@ The [`MagnebotController`](doc/api/magnebot_controller.md) offers a simplified A
 - [Grasp action](doc/manual/magnebot_controller/grasp.md)
 - [Camera rotation](doc/manual/magnebot_controller/camera_rotation.md)
 - [Third-person cameras](doc/manual/magnebot_controller/third_person_camera.md)
-- [Occupancy maps](doc/manual/magnebot_controller/third_person_camera.md)
+- [Occupancy maps](doc/manual/magnebot_controller/occupancy_map.md)
 
 ## `Magnebot` (*n*-agent, lower-level API)
 
@@ -84,10 +84,10 @@ The [`MagnebotController`](doc/api/magnebot_controller.md) offers a simplified A
 - [Actions](doc/manual/magnebot/actions.md)
 - [Moving, turning, and collision detection](doc/manual/magnebot/movement.md)
 - [Arm articulation](doc/manual/magnebot/arm_articulation.md)
-- Grasping
+- [Grasp action](doc/manual/magnebot/grasp.md)
 - [Camera rotation](doc/manual/magnebot/camera_rotation.md)
 - [Third-person cameras](doc/manual/magnebot/third_person_camera.md)
-- Occupancy map
+- [Occupancy maps](doc/manual/magnebot/occupancy_map.md)
 - Multi-agent simulations
 
 ## Actions
