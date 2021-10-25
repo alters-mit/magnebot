@@ -96,7 +96,7 @@ It is possible to define custom Magnebot actions by extending the [`Action`](doc
 
 - [Overview](doc/manual/actions/overview.md)
 - [Move and turn actions](doc/manual/actions/movement.md)
-- Arm articulation actions
+- [Arm articulation actions](doc/manual/actions/arm_articulation.md)
 - Inverse kinematics (IK) actions
 - Camera actions
 
