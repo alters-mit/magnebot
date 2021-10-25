@@ -28,7 +28,10 @@ class MoveBy(WheelMotion):
         :param previous: The previous action, if any.
         """
 
-        self._distance: float = distance
+        """:field
+        The target distance.
+        """
+        self.distance: float = distance
         self._arrived_at: float = arrived_at
         super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous)
         # Get the initial state.
@@ -76,7 +79,7 @@ class MoveBy(WheelMotion):
                         overshot = True
                         self._initial_position_arr = np.array(p1[:])
                         self._initial_position_v3 = TDWUtils.array_to_vector3(self._initial_position_arr)
-                        self._target_position_arr = dynamic.transform.position + (dynamic.transform.forward * self._distance)
+                        self._target_position_arr = dynamic.transform.position + (dynamic.transform.forward * self.distance)
                         self._target_position_v3 = TDWUtils.array_to_vector3(self._target_position_arr)
                         d = np.linalg.norm(p1 - self._target_position_arr)
                 # Check the position of the Magnebot between frames and adjust the wheels accordingly.
@@ -107,7 +110,7 @@ class MoveBy(WheelMotion):
                     if d < 0.5:
                         commands.extend(self._set_brake_wheel_drives(static=static))
                         self._minimum_friction = BRAKE_FRICTION
-                    self._spin = (d / WHEEL_CIRCUMFERENCE) * 360 * (1 if self._distance > 0 else -1)
+                    self._spin = (d / WHEEL_CIRCUMFERENCE) * 360 * (1 if self.distance > 0 else -1)
                     # If this isn't an overshoot, multiply the spin by a magic number.
                     if not overshot:
                         self._spin *= 0.5
@@ -121,7 +124,7 @@ class MoveBy(WheelMotion):
 
     def _previous_was_same(self, previous: Action) -> bool:
         if isinstance(previous, MoveBy):
-            return (previous._distance > 0 and self._distance > 0) or (previous._distance < 0 and self._distance < 0)
+            return (previous.distance > 0 and self.distance > 0) or (previous.distance < 0 and self.distance < 0)
         else:
             return False
 
