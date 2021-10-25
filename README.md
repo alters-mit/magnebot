@@ -86,7 +86,7 @@ The [`MagnebotController`](doc/api/magnebot_controller.md) offers a simplified A
 - [Arm articulation](doc/manual/magnebot/arm_articulation.md)
 - Grasping
 - [Camera rotation](doc/manual/magnebot/camera_rotation.md)
-- Third-person cameras
+- [Third-person cameras](doc/manual/magnebot/third_person_camera.md)
 - Occupancy map
 - Multi-agent simulations
 
