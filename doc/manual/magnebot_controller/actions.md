@@ -4,7 +4,7 @@
 
 An **action** in the [`MagnebotController`](../../api/magnebot_controller.md) is a function that causes the Magnebot to do something. All actions advance the simulation by at least one frame. All actions involving motion such as movement or arm articulation advance the simulation by multiple frames.
 
-The Magnebot API action space is:
+The `MagnebotController` action space is:
 
 - `turn_by(angle)`
 - `turn_to(target)`

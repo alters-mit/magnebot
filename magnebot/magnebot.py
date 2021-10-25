@@ -247,11 +247,6 @@ class Magnebot(RobotBase):
         """
 
         MagnebotDynamic.FRAME_COUNT = 0
-        self.action = None
-        self._previous_action = None
-        self.camera_rpy: np.array = np.array([0, 0, 0])
-        self.collision_detection = CollisionDetection()
-        self._previous_resp.clear()
         commands = super().get_initialization_commands()
         commands.extend([{"$type": "send_magnebots",
                          "frequency": "always"},
@@ -473,6 +468,14 @@ class Magnebot(RobotBase):
         self.action = ResetCamera()
         # Reset the camera RPY angles.
         self.camera_rpy = np.array([0, 0, 0])
+
+    def reset(self, position: Dict[str, float] = None, rotation: Dict[str, float] = None) -> None:
+        super().reset(position=position, rotation=rotation)
+        self.action = None
+        self._previous_action = None
+        self.camera_rpy: np.array = np.array([0, 0, 0])
+        self.collision_detection = CollisionDetection()
+        self._previous_resp.clear()
 
     def _cache_static_data(self, resp: List[bytes]) -> None:
         """

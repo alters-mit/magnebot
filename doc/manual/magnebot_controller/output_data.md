@@ -158,12 +158,15 @@ for arm in c.magnebot.static.magnets:
 c.end()
 ```
 
+### Images
+
 Raw image data is stored in `self.magnebot.dynamic.images`, a dictionary where key = pass mask (`_img`, `_id`, or `_depth`) and value = raw numpy image array.
 
 - To save the images to disk, call `c.magnebot.dynamic.save_images(path)`.
 - To get PIL images, call `c.magnebot.dynamic.get_pil_images()`
 - To get depth values, call `c.magnebot.dynamic.get_depth_values()`
 - To get a point cloud, call `c.magnebot.dynamic.get_point_cloud()`
+- To get a list of objects that are currently visible to the Magnebot, call `c.magnebot.get_visible_objects()`
 
 ***
 

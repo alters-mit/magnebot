@@ -115,7 +115,7 @@ ActionStatus.success
 
 ## Tipping over
 
-While moving or turning, the Magnebot might start to tip over. This  can happen if the Magnebot is holding a heavy object, if its wheels roll over a ramp-like surface, etc. If this happens, the action will  immediately halt, the Magnebot will drop any objects with a mass greater than 8, and the action will return `ActionStatus.tipping`.
+While moving or turning, the Magnebot might start to tip over. This  can happen if the Magnebot is holding a heavy object, if its wheels roll over a ramp-like surface, etc. If this happens, the action will  immediately halt and return `ActionStatus.tipping`.
 
 You can correct for tipping by reversing the action. For example, if `move_by(1)` returned `ActionStatus.tipping` then it is likely that `move_by(-1)` will correct the angle.
 
@@ -183,5 +183,5 @@ c.end()
 
 Examples controllers:
 
-- [collision_detection.py](https://github.com/alters-mit/magnebot/blob/main/controllers/examples/magnebot_controller/move_by.py) Show the difference between arrived_offset values and collision detection settings.
+- [collision_detection.py](https://github.com/alters-mit/magnebot/blob/main/controllers/examples/magnebot_controller/collision_detection.py) Show the difference between arrived_offset values and collision detection settings.
 - [simple_navigation.py](https://github.com/alters-mit/magnebot/blob/main/controllers/examples/magnebot_controller/simple_navigation.py) Use collision detection and movement commands for a VERY simple navigation system.

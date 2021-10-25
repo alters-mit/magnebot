@@ -100,6 +100,8 @@ for arm in magnebot.dynamic.held:
 c.communicate({"$type": "terminate"})
 ```
 
+### Images
+
 Raw image data is stored in `magnebot.dynamic.images`, a dictionary where key = pass mask (`_img`, `_id`, or `_depth`) and value = raw numpy image array.
 
 - To save the images to disk, call `magnebot.dynamic.save_images(path)`.
