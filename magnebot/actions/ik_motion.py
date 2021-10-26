@@ -15,7 +15,6 @@ from magnebot.ik.orientation import Orientation, ORIENTATIONS
 from magnebot.action_status import ActionStatus
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
-from magnebot.image_frequency import ImageFrequency
 from magnebot.actions.arm_motion import ArmMotion
 from magnebot.paths import IK_ORIENTATIONS_LEFT_PATH, IK_ORIENTATIONS_RIGHT_PATH, IK_POSITIONS_PATH
 from magnebot.constants import TORSO_MAX_Y, TORSO_MIN_Y, COLUMN_Y, DEFAULT_TORSO_Y
@@ -57,7 +56,6 @@ class IKMotion(ArmMotion, ABC):
         has_tipped, is_tipping = self._is_tipping(dynamic=dynamic)
         if has_tipped or is_tipping:
             self.status = ActionStatus.tipping
-        self._arm_is_articulating: bool = False
         self._auto_orientation = orientation_mode == OrientationMode.auto and target_orientation == TargetOrientation.auto
         # If orientation modes or auto, keep the list of possible orientations empty for now. When the position is set, the list will be filled.
         if self._auto_orientation:
@@ -69,12 +67,6 @@ class IKMotion(ArmMotion, ABC):
         self._orientation_index: int = 0
         self._arm_articulation_commands: List[List[dict]] = list()
         self._slide_torso: bool = False
-
-    def get_end_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
-                         image_frequency: ImageFrequency) -> List[dict]:
-        commands = super().get_end_commands(resp=resp, static=static, dynamic=dynamic, image_frequency=image_frequency)
-        commands.extend(self._get_stop_arm_commands(arm=self._arm, static=static, dynamic=dynamic))
-        return commands
 
     def _set_start_arm_articulation_commands(self, static: MagnebotStatic, dynamic: MagnebotDynamic, arrived_at: float = 0.125) -> None:
         """
@@ -165,7 +157,7 @@ class IKMotion(ArmMotion, ABC):
         :param static: [The static Magnebot data.](../magnebot_static.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
 
-        :return: A list of commands to continue or stop the motion,
+        :return: A list of commands to continue or stop the motion.
         """
 
         if self.status != ActionStatus.ongoing:
@@ -282,8 +274,6 @@ class IKMotion(ArmMotion, ABC):
             # Increment to the next joint in the order.
             joint_order_index += 1
         return commands
-
-
 
     @staticmethod
     def _get_ik_links(arm: Arm) -> List[Link]:

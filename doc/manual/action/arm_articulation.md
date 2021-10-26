@@ -7,7 +7,9 @@ Arm articulation actions are handled by one of two subclasses:
 - [`ArmMotion`](../../api/actions/arm_motion.md), a subclass of [`Action`](../../api/actions/action.md). `Drop` and `ResetArm` are subclasses of `ArmMotion`.
 - [`IKMotion`](../../api/actions/ik_motion.md), a subclass of `ArmMotion`. `ReachFor` and `Grasp` are subclasses of `IKMotion`.
 
-`ArmMotion` adds the following functionality:
+`ArmMotion` adds the following hidden fields (these are meant to be accessible only within `ArmMotion` and subclasses of `ArmMotion`):
+
+`ArmMotion` modifies the following functions:
 
 | Function                      | Addition                                                     |
 | ----------------------------- | ------------------------------------------------------------ |

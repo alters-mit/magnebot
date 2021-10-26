@@ -1,17 +1,21 @@
 from enum import Enum
 from typing import List
 import numpy as np
-from tdw.output_data import Bounds
+from tdw.controller import Controller
+from tdw.tdw_utils import TDWUtils
+from tdw.add_ons.third_person_camera import ThirdPersonCamera
+from tdw.output_data import OutputData, Transforms, Bounds
 from magnebot import Magnebot, ActionStatus, Arm, ArmJoint, ImageFrequency
-from magnebot.util import get_data
 from magnebot.ik.orientation_mode import OrientationMode
 from magnebot.ik.target_orientation import TargetOrientation
 from magnebot.actions.ik_motion import IKMotion
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.magnebot_static import MagnebotStatic
-from tdw.controller import Controller
-from tdw.tdw_utils import TDWUtils
-from tdw.add_ons.third_person_camera import ThirdPersonCamera
+
+
+"""
+Define a Push IK arm articulation action and implement it in a controller.
+"""
 
 
 class PushState(Enum):
@@ -33,6 +37,7 @@ class Push(IKMotion):
 
         # This will be set during get_ongoing_commands()
         self.ik_target_position: np.array = np.array([0, 0, 0])
+        self.initial_object_centroid: np.array = np.array([0, 0, 0])
         self.initial_object_position: np.array = np.array([0, 0, 0])
 
         super().__init__(arm=arm,
@@ -48,16 +53,24 @@ class Push(IKMotion):
                                                        image_frequency=image_frequency)
         # Request bounds data.
         commands.append({"$type": "send_bounds",
-                         "frequency": "always"})
+                         "frequency": "once"})
         return commands
 
     def get_ongoing_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
         # Use the bounds data to get the position of the object.
         if self.push_state == PushState.getting_bounds:
-            # Get the initial position of the object.
-            target_position = self._get_object_position(resp=resp)
+            # Get the initial centroid of the object and its initial position.
+            for i in range(len(resp) - 1):
+                r_id = OutputData.get_data_type_id(resp[i])
+                if r_id == "boun":
+                    bounds = Bounds(resp[i])
+                    for j in range(bounds.get_num()):
+                        if bounds.get_id(j) == self.target:
+                            self.initial_object_centroid = np.array(bounds.get_center(j))
+                            break
+            self.initial_object_position = self._get_object_position(resp=resp)
             # Slide the torso up and above the target object.
-            torso_position = target_position[1] + 0.1
+            torso_position = self.initial_object_centroid[1] + 0.1
             # Convert the torso position from meters to prismatic joint position.
             torso_position = self._y_position_to_torso_position(torso_position)
             # Start sliding the torso.
@@ -73,12 +86,11 @@ class Push(IKMotion):
                 return []
             # Push the object.
             else:
-                self.initial_object_position = self._get_object_position(resp=resp)
                 magnet_position = dynamic.joints[static.magnets[self.arm]].position
                 # Get a position opposite the center of the object from the magnet.
-                v = magnet_position - self.initial_object_position
+                v = magnet_position - self.initial_object_centroid
                 v = v / np.linalg.norm(v)
-                target_position = self.initial_object_position - (v * 0.1)
+                target_position = self.initial_object_centroid - (v * 0.1)
                 # Convert the position to relative coordinates.
                 self.ik_target_position = self._absolute_to_relative(position=target_position, dynamic=dynamic)
                 # Start the IK motion.
@@ -91,19 +103,15 @@ class Push(IKMotion):
         else:
             raise Exception(f"Not defined: {self.push_state}")
 
-    def get_end_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
-                         image_frequency: ImageFrequency) -> List[dict]:
-        commands = super().get_end_commands(resp=resp, static=static, dynamic=dynamic,
-                                            image_frequency=image_frequency)
-        commands.append({"$type": "send_bounds",
-                         "frequency": "never"})
-        return commands
-
     def _get_object_position(self, resp: List[bytes]) -> np.array:
-        bounds = get_data(resp=resp, d_type=Bounds)
-        for i in range(bounds.get_num()):
-            if bounds.get_id(i) == self.target:
-                return np.array(bounds.get_center(i))
+        for i in range(len(resp) - 1):
+            r_id = OutputData.get_data_type_id(resp[i])
+            if r_id == "tran":
+                transforms = Transforms(resp[i])
+                for j in range(transforms.get_num()):
+                    if transforms.get_id(j) == self.target:
+                        return np.array(transforms.get_position(j))
+        raise Exception()
 
     def _get_ik_target_position(self) -> np.array:
         return self.ik_target_position
@@ -116,7 +124,7 @@ class Push(IKMotion):
         return ActionStatus.failed_to_move
 
 
-class CustomActionController(Controller):
+class PushController(Controller):
     def __init__(self, port: int = 1071, check_version: bool = True, launch_build: bool = True):
         super().__init__(port=port, check_version=check_version, launch_build=launch_build)
         self.magnebot: Magnebot = Magnebot()
@@ -171,5 +179,5 @@ class CustomActionController(Controller):
 
 
 if __name__ == "__main__":
-    c = CustomActionController()
+    c = PushController()
     c.run()

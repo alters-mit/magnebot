@@ -2,11 +2,20 @@
 
 # Move and turn actions
 
-Move and turn actions are relatively difficult to write because the default actions (`TurnBy`, `TurnTo`, `MoveBy`, and `MoveTo`) have been carefully optimized and use specialized commands to monitor the state of the Magnebot.
+In this document, we'll define a relatively simple action: An improved version of `ApplyForceToWheels`, as seen in [the previous document](overview.md). 
 
-In this document, we'll define a relatively simple action: An improved version of `ApplyForceToWheels`, as seen in [the previous document](overview.md). We'll use [`WheelMotion`](../../api/actions/wheel_motion.md) instead of [`Action`](../../api/actions/action.md).
+The behaviors of the default movement actions ([`TurnBy`](../../api/actions/turn_by.md), [`TurnTo`](../../api/actions/turn_to.md), [`MoveBy`](../../api/actions/move_by.md), and [`MoveTo`](../../api/actions/move_to.md)) are difficult to replicate or augment; these actions have been carefully optimized and use specialized commands to monitor the state of the Magnebot.
 
-`WheelMotion` adds the following functionality:
+To create `ApplyForceToWheels`, we'll make a subclass of [`WheelMotion`](../../api/actions/wheel_motion.md) instead of [`Action`](../../api/actions/action.md). 
+
+`WheelMotion` adds the following hidden fields (these are meant to be accessible only within `WheelMotion` and subclasses of `WheelMotion`):
+
+| Field                                                        | Description                                                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| [`self.__collision_detection`](../../api/collision_detection.md) | Collision detection rules                                    |
+| `self._resetting`                                            | If True, the Magnebot is currently resetting the position of its torso and column (prior to starting to spin the wheels) |
+
+`WheelMotion` modifies the following functions:
 
 | Function                      | Addition                                                     |
 | ----------------------------- | ------------------------------------------------------------ |

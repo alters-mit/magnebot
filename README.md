@@ -97,7 +97,7 @@ It is possible to define custom Magnebot actions by extending the [`Action`](doc
 - [Overview](doc/manual/actions/overview.md)
 - [Move and turn actions](doc/manual/actions/movement.md)
 - [Arm articulation actions](doc/manual/actions/arm_articulation.md)
-- Inverse kinematics (IK) actions
+- [Inverse kinematics (IK) actions](doc/manual/actions/ik.md)
 - Camera actions
 
 ## Low-level API
@@ -117,14 +117,6 @@ It is possible to define custom Magnebot actions by extending the [`Action`](doc
 ## Example controllers
 
 **TODO**
-
-
-
-- **[Magnebot API](https://github.com/alters-mit/magnebot/blob/main/doc/api/magnebot_controller.md)**
-- [**APIs for other classes in the Magnebot module**](https://github.com/alters-mit/magnebot/tree/main/doc/api)
-- **[How to define custom APIs](https://github.com/alters-mit/magnebot/blob/main/doc/custom_apis.md)**
-  - [Scene setup](https://github.com/alters-mit/magnebot/blob/main/doc/scene.md)
-  - [Arm articulation](https://github.com/alters-mit/magnebot/blob/main/doc/arm_articulation.md)
 
 # Examples
 
