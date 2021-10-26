@@ -30,4 +30,3 @@ magnebot.move_by(1)
 while robot.joints_are_moving() or magnebot.action.status == ActionStatus.ongoing:
     c.communicate([])
 c.communicate({"$type": "terminate"})
-

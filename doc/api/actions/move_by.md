@@ -22,6 +22,8 @@ Move the Magnebot forward or backward by a given distance.
 
 - `done` If True, this action is done and won't send any more commands.
 
+- `distance` The target distance.
+
 ***
 
 ## Functions

@@ -219,7 +219,7 @@ c.communicate({"$type": "terminate"})
 
 ### Movement
 
-These functions move or turn the Magnebot. [Read this for more information about movement and collision detection.](../movement.md)
+These functions move or turn the Magnebot. [Read this for more information about movement and collision detection.](../manual/magnebot/movement.md)
 
 #### turn_by
 
@@ -304,7 +304,7 @@ These functions move and bend the joints of the Magnebots's arms.
 
 During an arm articulation action, the Magnebot is always "immovable", meaning that its wheels are locked and it isn't possible for its root object to move or rotate.
 
-For more information regarding how arm articulation works, [read this](../arm_articulation.md).
+For more information regarding how arm articulation works, [read this](../manual/magnebot/arm_articulation.md).
 
 #### reach_for
 
@@ -321,8 +321,8 @@ The Magnebot may try to reach for the target multiple times, trying different IK
 | arm |  Arm |  | [The arm that will reach for the target.](arm.md) |
 | absolute |  bool  | True | If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot. |
 | arrived_at |  float  | 0.125 | If the magnet is this distance or less from `target`, then the action is successful. |
-| orientation_mode |  OrientationMode  | OrientationMode.auto | [The orientation mode.](../arm_articulation.md) |
-| target_orientation |  TargetOrientation  | TargetOrientation.auto | [The target orientation.](../arm_articulation.md) |
+| orientation_mode |  OrientationMode  | OrientationMode.auto | [The orientation mode.](ik/orientation_mode.md) |
+| target_orientation |  TargetOrientation  | TargetOrientation.auto | [The target orientation.](ik/target_orientation.md) |
 
 #### grasp
 
@@ -337,8 +337,8 @@ The action ends when either the Magnebot grasps the object, can't grasp it, or f
 | --- | --- | --- | --- |
 | target |  int |  | The ID of the target object. |
 | arm |  Arm |  | [The arm that will reach for and grasp the target.](arm.md) |
-| orientation_mode |  OrientationMode  | OrientationMode.auto | [The orientation mode.](../arm_articulation.md) |
-| target_orientation |  TargetOrientation  | TargetOrientation.auto | [The target orientation.](../arm_articulation.md) |
+| orientation_mode |  OrientationMode  | OrientationMode.auto | [The orientation mode.](ik/orientation_mode.md) |
+| target_orientation |  TargetOrientation  | TargetOrientation.auto | [The target orientation.](ik/target_orientation.md) |
 
 #### drop
 
@@ -430,9 +430,20 @@ This function is called automatically by the controller; you don't need to call 
 | --- | --- | --- | --- |
 | resp |  List[bytes] |  | The response from the build. |
 
-***
+#### reset
 
-#### joints_are_moving
+**`self.reset()`**
+
+**`self.reset(position=None, rotation=None)`**
+
+Reset the robot.
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| position |  Dict[str, float] | None | The position of the robot. |
+| rotation |  Dict[str, float] | None | The rotation of the robot. |
+
+### joints_are_moving
 
 **`self.joints_are_moving()`**
 

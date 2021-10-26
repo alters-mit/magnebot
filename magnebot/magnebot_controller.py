@@ -100,7 +100,8 @@ class MagnebotController(Controller):
                            "width": screen_width,
                            "height": screen_height}])
         # Skip a set number of frames per communicate() call.
-        self.add_ons.append(StepPhysics(skip_frames))
+        self._step_physics: StepPhysics = StepPhysics(skip_frames)
+        self.add_ons.append(self._step_physics)
         self._check_pypi_version: bool = check_pypi_version
         # The scene bounds. This is used along with the occupancy map to get (x, z) worldspace positions.
         self._scene_bounds: Optional[SceneBounds] = None
@@ -286,8 +287,8 @@ class MagnebotController(Controller):
         :param arm: [The arm that will reach for the target.](arm.md)
         :param absolute: If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot.
         :param arrived_at: If the magnet is this distance or less from `target`, then the action is successful.
-        :param orientation_mode: [The orientation mode.](../arm_articulation.md)
-        :param target_orientation: [The target orientation.](../arm_articulation.md)
+        :param orientation_mode: [The orientation mode.](ik/orientation_mode.md)
+        :param target_orientation: [The target orientation.](ik/target_orientation.md)
 
         :return: An `ActionStatus` indicating whether the Magnebot's magnet reached the target position and if not, why.
         """
@@ -304,8 +305,8 @@ class MagnebotController(Controller):
 
         :param target: The ID of the target object.
         :param arm: [The arm that will reach for and grasp the target.](arm.md)
-        :param orientation_mode: [The orientation mode.](../arm_articulation.md)
-        :param target_orientation: [The target orientation.](../arm_articulation.md)
+        :param orientation_mode: [The orientation mode.](ik/orientation_mode.md)
+        :param target_orientation: [The target orientation.](ik/target_orientation.md)
 
         :return: An `ActionStatus` indicating whether the Magnebot succeeded in grasping the object and if not, why.
         """

@@ -382,8 +382,8 @@ class Magnebot(RobotBase):
         :param arm: [The arm that will reach for the target.](arm.md)
         :param absolute: If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot.
         :param arrived_at: If the magnet is this distance or less from `target`, then the action is successful.
-        :param orientation_mode: [The orientation mode.](../arm_articulation.md)
-        :param target_orientation: [The target orientation.](../arm_articulation.md)
+        :param orientation_mode: [The orientation mode.](ik/orientation_mode.md)
+        :param target_orientation: [The target orientation.](ik/target_orientation.md)
         """
 
         if isinstance(target, dict):
@@ -400,8 +400,8 @@ class Magnebot(RobotBase):
 
         :param target: The ID of the target object.
         :param arm: [The arm that will reach for and grasp the target.](arm.md)
-        :param orientation_mode: [The orientation mode.](../arm_articulation.md)
-        :param target_orientation: [The target orientation.](../arm_articulation.md)
+        :param orientation_mode: [The orientation mode.](ik/orientation_mode.md)
+        :param target_orientation: [The target orientation.](ik/target_orientation.md)
         """
 
         self.action = Grasp(target=target, arm=arm, orientation_mode=orientation_mode,

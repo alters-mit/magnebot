@@ -35,8 +35,8 @@ The action ends when either the Magnebot grasps the object, can't grasp it, or f
 | --- | --- | --- | --- |
 | target |  int |  | The ID of the target object. |
 | arm |  Arm |  | [The arm used for this action.](../arm.md) |
-| orientation_mode |  OrientationMode |  | [The orientation mode.](../../arm_articulation.md) |
-| target_orientation |  TargetOrientation |  | [The target orientation.](../../arm_articulation.md) |
+| orientation_mode |  OrientationMode |  | [The orientation mode.](../ik/orientation_mode.md) |
+| target_orientation |  TargetOrientation |  | [The target orientation.](../ik/target_orientation.md) |
 | dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |
 
 #### get_initialization_commands

@@ -2,7 +2,7 @@
 
 `from magnebot.stop import Stop`
 
-Stop the Magnebot's wheels at their current positions.
+Stop the Magnebot's wheels and joints at their current positions.
 
 ***
 

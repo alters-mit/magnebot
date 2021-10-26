@@ -46,9 +46,9 @@ c.end()
 
 ## General
 
-- [Changelog](https://github.com/alters-mit/magnebot/blob/main/doc/changelog.md)
-- [Troubleshooting and debugging](https://github.com/alters-mit/magnebot/blob/main/doc/troubleshooting.md)
-- Performance benchmark
+- [Changelog](doc/changelog.md)
+- Troubleshooting and debugging(https://github.com/alters-mit/magnebot/blob/main/doc/troubleshooting.md)
+- [Performance benchmark](doc/benchmark.md)
 
 ## TDW Documentation
 
@@ -98,11 +98,7 @@ It is possible to define custom Magnebot actions by extending the [`Action`](doc
 - [Move and turn actions](doc/manual/actions/movement.md)
 - [Arm articulation actions](doc/manual/actions/arm_articulation.md)
 - [Inverse kinematics (IK) actions](doc/manual/actions/ik.md)
-- Camera actions
-
-## Low-level API
-
-- [Low-level API controls](doc/api/low_level.md)
+- [Camera actions](doc/manual/actions/camera.md)
 
 ***
 
@@ -114,25 +110,18 @@ It is possible to define custom Magnebot actions by extending the [`Action`](doc
 
 ***
 
-## Example controllers
-
-**TODO**
-
 # Examples
 
 [Example controllers](https://github.com/alters-mit/magnebot/tree/main/controllers/examples) show actual examples for an actual use-case.
-
-| Controller      | Description                                                  |
-| --------------- | ------------------------------------------------------------ |
-| `pick_up.py`    | A simple example of how to pick up an object in the scene. You should try and review this example first. |
-| `custom_api.py` | An example of how to create a custom scene and a custom action. This is meant for more advanced users. |
 
 #### Other controllers in this repo
 
 - [Promo controllers](https://github.com/alters-mit/magnebot/tree/main/controllers/promos) are meant to be use to generate promo videos or images; they include low-level TDW commands that you won't need to ordinarily use.
 - [Test controllers](https://github.com/alters-mit/magnebot/tree/main/controllers/tests) load the Magnebot into an empty room and test basic functionality.
 
-# API Hierarchy
+***
+
+# Higher-level APIs
 
 The Magnebot API relies on the `tdw` Python module.  Every action in this API uses combinations of low-level TDW commands and output data, typically across multiple simulation steps.
 
@@ -143,8 +132,3 @@ This API is designed to be used as-is or as the base for an API with higher-leve
 | API                                                          | Description                                                  |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | [Transport Challenge](https://github.com/alters-mit/transport_challenge) | Transport objects from room to room using containers as tools. |
-
-# Backend
-
-- [`OccupancyMapper`](https://github.com/alters-mit/magnebot/blob/main/util/occupancy_mapper.py) generates occupancy maps for each scene+layout combination, as well as floorplan and room images.
-- [`doc_gen.py`](https://github.com/alters-mit/magnebot/blob/main/util/doc_gen.py) generates API documentation using [`py-md-doc`](https://pypi.org/project/py-md-doc/).

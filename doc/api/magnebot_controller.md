@@ -33,21 +33,20 @@ Each element is an integer describing the occupancy at that position.
 
 | Value | Meaning |
 | --- | --- |
-| -1 | This position is outside of the scene. |
-| 0 | Unoccupied and navigable; the Magnebot can go here. |
-| 1 | This position is occupied by an object(s) or a wall. |
-| 2 | This position is free but not navigable (usually because there are objects in the way. |
+| -1 | The cell is out of bounds of the scene or not navigable. |
+| 0 | The cell is unoccupied; there is a floor at this position but there are no objects. |
+| 1 | The cell is occupied by at least one object or a wall. |
 
 ```python
 from magnebot import MagnebotController
 
-m = MagnebotController()
-m.init_floorplan_scene(scene="1a", layout=0, room=0)
+c = MagnebotController()
+c.init_floorplan_scene(scene="1a", layout=0, room=0)
 x = 30
-y = 16
-print(m.occupancy_map[x][y]) # 0 (free and navigable position)
-print(m.get_occupancy_position(x, y)) # (1.1157886505126946, 2.2528389358520506)
-m.end()
+z = 16
+print(c.occupancy_map[x][z]) # 0 (free and navigable position)
+print(c.get_occupancy_position(x, z)) # (1.1157886505126946, 2.2528389358520506)
+c.end()
 ```
 
 Images of occupancy maps can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/occupancy_maps). The blue squares are free navigable positions. Images are named `[scene]_[layout].jpg` For example, the occupancy map image for scene "2a" layout 0 is: `2_0.jpg`.
@@ -178,7 +177,7 @@ _Returns:_  An `ActionStatus` (always success).
 
 ### Movement
 
-These functions move or turn the Magnebot. [Read this for more information about movement and collision detection.](../movement.md)
+These functions move or turn the Magnebot. [Read this for more information about movement and collision detection.](../manual/magnebot_controller/movement.md)
 
 #### turn_by
 
@@ -271,7 +270,7 @@ These functions move and bend the joints of the Magnebots's arms.
 
 During an arm articulation action, the Magnebot is always "immovable", meaning that its wheels are locked and it isn't possible for its root object to move or rotate.
 
-For more information regarding how arm articulation works, [read this](../arm_articulation.md).
+For more information regarding how arm articulation works, [read this](../manual/magnebot_controller/arm_articulation.md).
 
 #### reach_for
 
@@ -289,8 +288,8 @@ The Magnebot may try to reach for the target multiple times, trying different IK
 | arm |  Arm |  | [The arm that will reach for the target.](arm.md) |
 | absolute |  bool  | True | If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot. |
 | arrived_at |  float  | 0.125 | If the magnet is this distance or less from `target`, then the action is successful. |
-| orientation_mode |  OrientationMode  | OrientationMode.auto | [The orientation mode.](../arm_articulation.md) |
-| target_orientation |  TargetOrientation  | TargetOrientation.auto | [The target orientation.](../arm_articulation.md) |
+| orientation_mode |  OrientationMode  | OrientationMode.auto | [The orientation mode.](ik/orientation_mode.md) |
+| target_orientation |  TargetOrientation  | TargetOrientation.auto | [The target orientation.](ik/target_orientation.md) |
 
 _Returns:_  An `ActionStatus` indicating whether the Magnebot's magnet reached the target position and if not, why.
 
@@ -308,8 +307,8 @@ The action ends when either the Magnebot grasps the object, can't grasp it, or f
 | --- | --- | --- | --- |
 | target |  int |  | The ID of the target object. |
 | arm |  Arm |  | [The arm that will reach for and grasp the target.](arm.md) |
-| orientation_mode |  OrientationMode  | OrientationMode.auto | [The orientation mode.](../arm_articulation.md) |
-| target_orientation |  TargetOrientation  | TargetOrientation.auto | [The target orientation.](../arm_articulation.md) |
+| orientation_mode |  OrientationMode  | OrientationMode.auto | [The orientation mode.](ik/orientation_mode.md) |
+| target_orientation |  TargetOrientation  | TargetOrientation.auto | [The target orientation.](ik/target_orientation.md) |
 
 _Returns:_  An `ActionStatus` indicating whether the Magnebot succeeded in grasping the object and if not, why.
 

@@ -2,7 +2,7 @@
 
 # Moving, turning, and collision detection
 
-There are four movement actions in the [`Magnebot`](../../api/magnebotr.md) that all all share basic functionality: `turn_by(angle)`, `turn_to(target)`, `move_by(distance)`, and `move_to(target)`. All of these actions set target angles for the Magnebot's wheels in order to move or turn the Magnebot.
+There are four movement actions in the [`Magnebot`](../../api/magnebot.md) that all all share basic functionality: `turn_by(angle)`, `turn_to(target)`, `move_by(distance)`, and `move_to(target)`. All of these actions set target angles for the Magnebot's wheels in order to move or turn the Magnebot.
 
 ## Directions
 

@@ -28,19 +28,23 @@ class Convex(MagnebotController):
         d_theta = 360 / num_objects
         theta = d_theta / 2
         pos = np.array([3, 0, 0])
+        scene = [{"$type": "load_scene",
+                  "scene_name": "ProcGenScene"},
+                 TDWUtils.create_empty_room(12, 12)]
+        objects = []
         for j in range(num_objects):
             object_position = TDWUtils.rotate_position_around(origin=origin, position=pos, angle=theta)
             object_position[1] = 2
             name = self.rng.choice(Convex.MODELS)
-            self._object_init_commands.extend(self.get_add_physics_object(model_name=name,
-                                                                          object_id=self.get_unique_id(),
-                                                                          position=TDWUtils.array_to_vector3(
-                                                                              object_position),
-                                                                          rotation={"x": self.rng.uniform(-180, 180),
-                                                                                    "y": self.rng.uniform(-180, 180),
-                                                                                    "z": self.rng.uniform(-180, 180)}))
+            objects.extend(self.get_add_physics_object(model_name=name,
+                                                       object_id=self.get_unique_id(),
+                                                       position=TDWUtils.array_to_vector3(
+                                                           object_position),
+                                                       rotation={"x": self.rng.uniform(-180, 180),
+                                                                 "y": self.rng.uniform(-180, 180),
+                                                                 "z": self.rng.uniform(-180, 180)}))
             theta += d_theta
-        super().init_scene()
+        self._init_scene(scene=scene, objects=objects)
 
     def run(self, random_seed: int = None) -> Tuple[int, int, List[str]]:
         if random_seed is None:

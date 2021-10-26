@@ -9,6 +9,10 @@ Arm articulation actions are handled by one of two subclasses:
 
 `ArmMotion` adds the following hidden fields (these are meant to be accessible only within `ArmMotion` and subclasses of `ArmMotion`):
 
+| Field                           | Description               |
+| ------------------------------- | ------------------------- |
+| [`self._arm`](../../api/arm.md) | The arm doing the motion. |
+
 `ArmMotion` modifies the following functions:
 
 | Function                      | Addition                                                     |

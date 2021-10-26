@@ -23,8 +23,8 @@ class ReachFor(IKMotion):
         :param absolute: If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot.
         :param arrived_at: If the magnet is this distance or less from `target`, then the action is successful.
         :param arm: [The arm used for this action.](../arm.md)
-        :param orientation_mode: [The orientation mode.](../../arm_articulation.md)
-        :param target_orientation: [The target orientation.](../../arm_articulation.md)
+        :param orientation_mode: [The orientation mode.](../ik/orientation_mode.md)
+        :param target_orientation: [The target orientation.](../ik/target_orientation.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
         """
 

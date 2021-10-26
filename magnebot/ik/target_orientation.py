@@ -4,8 +4,6 @@ from enum import Enum
 class TargetOrientation(Enum):
     """
     A target orientation vector for an IK solution.
-
-    For more information, [read this](../../arm_articulation.md).
     """
 
     none = None  # Default orientation.
