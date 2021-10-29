@@ -47,7 +47,7 @@ c.end()
 ## General
 
 - [Changelog](doc/changelog.md)
-- Troubleshooting and debugging(https://github.com/alters-mit/magnebot/blob/main/doc/troubleshooting.md)
+- [Troubleshooting and debugging](doc/troubleshooting.md)
 - [Performance benchmark](doc/benchmark.md)
 
 ## TDW Documentation
@@ -88,7 +88,7 @@ The [`MagnebotController`](doc/api/magnebot_controller.md) offers a simplified A
 - [Camera rotation](doc/manual/magnebot/camera_rotation.md)
 - [Third-person cameras](doc/manual/magnebot/third_person_camera.md)
 - [Occupancy maps](doc/manual/magnebot/occupancy_map.md)
-- Multi-agent simulations
+- [Multi-agent simulations](doc/manual/magnebot/multi_agent.md)
 
 ## Actions
 
@@ -114,7 +114,7 @@ It is possible to define custom Magnebot actions by extending the [`Action`](doc
 
 [Example controllers](https://github.com/alters-mit/magnebot/tree/main/controllers/examples) show actual examples for an actual use-case.
 
-#### Other controllers in this repo
+Other controllers in this repo:
 
 - [Promo controllers](https://github.com/alters-mit/magnebot/tree/main/controllers/promos) are meant to be use to generate promo videos or images; they include low-level TDW commands that you won't need to ordinarily use.
 - [Test controllers](https://github.com/alters-mit/magnebot/tree/main/controllers/tests) load the Magnebot into an empty room and test basic functionality.
@@ -125,7 +125,7 @@ It is possible to define custom Magnebot actions by extending the [`Action`](doc
 
 The Magnebot API relies on the `tdw` Python module.  Every action in this API uses combinations of low-level TDW commands and output data, typically across multiple simulation steps.
 
-This API is designed to be used as-is or as the base for an API with higher-level actions, such as the [Transport Challenge](https://github.com/alters-mit/transport_challenge). To learn how to write your own API extension, [read this](https://github.com/alters-mit/magnebot/blob/main/doc/custom_apis.md).
+This API is designed to be used as-is or as the base for an API with higher-level actions, such as the [Transport Challenge](https://github.com/alters-mit/transport_challenge). 
 
 <img src="https://raw.githubusercontent.com/alters-mit/magnebot/main/doc/images/api_hierarchy.png" style="zoom:67%;" />
 

@@ -1,9 +1,12 @@
+import re
 from pathlib import Path
 from setuptools import setup, find_packages
 
 readme = Path('README.md').read_text(encoding='utf-8')
 readme = readme.replace('"https://raw.githubusercontent.com/alters-mit/magnebot/main/doc/images/reach_high.gif"',
                         '"https://github.com/alters-mit/magnebot/raw/main/social.jpg"')
+# Replace relative markdown links with absolute https links.
+readme = re.sub(r'\[(.*?)\]\(doc/(.*?)\)', r'[\1][https://github.com/alters-mit/magnebot/blob/main/doc/\2]', readme)
 
 setup(
     name='magnebot',

@@ -4,11 +4,9 @@ from tdw.add_ons.robot import Robot
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
 from magnebot import Magnebot, ImageFrequency, ActionStatus
 
-
 """
 Add two agents: A robot and a Magnebot. They will move concurrently.
 """
-
 
 c = Controller()
 robot: Robot = Robot(robot_id=c.get_unique_id(), name="ur5", position={"x": -0.4, "y": 0, "z": 2.6})
