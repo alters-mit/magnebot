@@ -84,7 +84,7 @@ c.init_scene()
   - The Magnebot tried to grasp an object but there was an obstacle in the way.
   - The Magnebot tried to move forward but got caught on furniture.
   - The Magnebot tried to put an object in a container but the object bounced out.
-- **Solution:** *You* will need to develop solutions to handle cases like this. You can use the [`ActionStatus`](action_status.md) return values to figure out why a task failed and [`SceneState`](scene_state.md) to get the current state of the simulation.
+- **Solution:** *You* will need to develop solutions to handle cases like this.
 
 **The Magnebot tipped over**
 
