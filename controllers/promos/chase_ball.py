@@ -7,7 +7,8 @@ from tdw.add_ons.object_manager import ObjectManager
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
 from tdw.add_ons.image_capture import ImageCapture
 from tdw.backend.paths import EXAMPLE_CONTROLLER_OUTPUT_PATH
-from magnebot import Magnebot, Arm, ActionStatus, ImageFrequency, MagnebotController
+from magnebot import Magnebot, Arm, ActionStatus, ImageFrequency
+from magnebot.util import get_default_post_processing_commands
 
 
 class State(Enum):
@@ -69,7 +70,7 @@ class ChaseBall(Controller):
                      "angle": 30,
                      "axis": "pitch"}]
         # Add post-processing.
-        commands.extend(MagnebotController.get_default_post_processing_commands())
+        commands.extend(get_default_post_processing_commands())
         commands.extend(self.get_add_physics_object(model_name="prim_sphere",
                                                     library="models_special.json",
                                                     object_id=self.ball_id,

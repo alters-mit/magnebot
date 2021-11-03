@@ -1,6 +1,7 @@
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
 from magnebot import MagnebotController, Arm, ActionStatus
+from magnebot.util import get_default_post_processing_commands
 
 
 class ReachHigh(MagnebotController):
@@ -28,7 +29,7 @@ class ReachHigh(MagnebotController):
                   "scale": {"x": 8, "y": 8}}]
         self._init_scene(scene=scene,
                          objects=objects,
-                         post_processing=self.get_default_post_processing_commands())
+                         post_processing=get_default_post_processing_commands())
 
 
 if __name__ == "__main__":

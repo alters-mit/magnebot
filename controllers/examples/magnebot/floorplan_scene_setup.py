@@ -3,8 +3,9 @@ from tdw.controller import Controller
 from tdw.add_ons.step_physics import StepPhysics
 from tdw.add_ons.object_manager import ObjectManager
 from tdw.add_ons.floorplan import Floorplan
-from magnebot import Magnebot, MagnebotController
+from magnebot import Magnebot
 from magnebot.paths import SPAWN_POSITIONS_PATH
+from magnebot.util import get_default_post_processing_commands
 
 
 """
@@ -26,7 +27,7 @@ floorplan = Floorplan()
 floorplan.init_scene(scene=scene, layout=layout)
 c.add_ons.extend([floorplan, magnebot, objects, step_physics])
 
-c.communicate(MagnebotController.get_default_post_processing_commands())
+c.communicate(get_default_post_processing_commands())
 
 print(magnebot.dynamic.transform.position)
 for object_id in objects.transforms:

@@ -1,5 +1,6 @@
 from tdw.tdw_utils import TDWUtils
 from magnebot import MagnebotController, Arm, ActionStatus
+from magnebot.util import get_default_post_processing_commands
 
 
 class PickUpHeavy(MagnebotController):
@@ -21,7 +22,7 @@ class PickUpHeavy(MagnebotController):
                                               position={"x": 0.04, "y": 0, "z": 1.081})
         self._init_scene(scene=scene,
                          objects=objects,
-                         post_processing=self.get_default_post_processing_commands())
+                         post_processing=get_default_post_processing_commands())
 
 
 if __name__ == "__main__":

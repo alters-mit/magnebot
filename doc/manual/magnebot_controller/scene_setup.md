@@ -92,11 +92,12 @@ if __name__ == "__main__":
 
 ### The `post_processing` parameter
 
-Add a list of post-processing commands here. You can use default commands via `self._get_post_processing_commands()`:
+Add a list of post-processing commands here. You can use default commands via `magnebot.util.get_default_post_processing_commands()`:
 
 ```python
 from tdw.tdw_utils import TDWUtils
 from magnebot import MagnebotController
+from magnebot.util import get_default_post_processing_commands
 
 class MyMagnebot(MagnebotController):
     def init_scene(self):
@@ -104,7 +105,7 @@ class MyMagnebot(MagnebotController):
                   "scene_name": "ProcGenScene"},
                  TDWUtils.create_empty_room(12, 12)]
         self._init_scene(scene=scene,
-                         post_processing=MagnebotController.get_default_post_processing_commands())
+                         post_processing=get_default_post_processing_commands())
 
 
 if __name__ == "__main__":

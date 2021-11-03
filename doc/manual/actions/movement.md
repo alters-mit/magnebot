@@ -200,7 +200,7 @@ from magnebot.actions.wheel_motion import WheelMotion
 from magnebot.actions.action import Action
 from magnebot.actions.move_by import MoveBy
 from magnebot.magnebot import Magnebot
-from magnebot.magnebot_controller import MagnebotController
+from magnebot.util import get_default_post_processing_commands
 
 
 class ApplyForceToWheels(WheelMotion):
@@ -246,7 +246,7 @@ if __name__ == "__main__":
     commands = [{"$type": "load_scene",
                  "scene_name": "ProcGenScene"},
                 TDWUtils.create_empty_room(12, 12)]
-    commands.extend(MagnebotController.get_default_post_processing_commands())
+    commands.extend(get_default_post_processing_commands())
     c.communicate(commands)
     magnebot.apply_force_to_wheels(force=70)
     while magnebot.action.status == ActionStatus.ongoing:

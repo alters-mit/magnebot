@@ -3,7 +3,8 @@ from csv import DictReader
 from abc import ABC, abstractmethod
 from overrides import final
 import numpy as np
-from tdw.tdw_utils import TDWUtils, QuaternionUtils
+from tdw.tdw_utils import TDWUtils
+from tdw.quaternion_utils import QuaternionUtils
 from magnebot.turn_constants import TurnConstants
 from magnebot.action_status import ActionStatus
 from magnebot.actions.action import Action

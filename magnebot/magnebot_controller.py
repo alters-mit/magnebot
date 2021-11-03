@@ -17,6 +17,7 @@ from magnebot.image_frequency import ImageFrequency
 from magnebot.magnebot import Magnebot
 from magnebot.paths import SPAWN_POSITIONS_PATH, OCCUPANCY_MAPS_DIRECTORY
 from magnebot.constants import OCCUPANCY_CELL_SIZE
+from magnebot.util import get_default_post_processing_commands
 
 
 class MagnebotController(Controller):
@@ -213,7 +214,7 @@ class MagnebotController(Controller):
         self.occupancy_map = np.load(str(OCCUPANCY_MAPS_DIRECTORY.joinpath(f"{scene[0]}_{layout}.npy").resolve()))
         # Initialize the scene.
         return self._init_scene(scene=f.commands,
-                                post_processing=MagnebotController.get_default_post_processing_commands(),
+                                post_processing=get_default_post_processing_commands(),
                                 position=magnebot_position)
 
     def turn_by(self, angle: float, aligned_at: float = 1) -> ActionStatus:
@@ -435,25 +436,6 @@ class MagnebotController(Controller):
 
     def communicate(self, commands: Union[dict, List[dict]]) -> list:
         return super().communicate(commands=commands)
-
-    @staticmethod
-    def get_default_post_processing_commands() -> List[dict]:
-        """
-        :return: The default post-processing commands.
-        """
-
-        return [{"$type": "set_aperture",
-                 "aperture": 8.0},
-                {"$type": "set_focus_distance",
-                 "focus_distance": 2.25},
-                {"$type": "set_post_exposure",
-                 "post_exposure": 0.4},
-                {"$type": "set_ambient_occlusion_intensity",
-                 "intensity": 0.175},
-                {"$type": "set_ambient_occlusion_thickness_modifier",
-                 "thickness": 3.5},
-                {"$type": "set_shadow_strength",
-                 "strength": 1.0}]
 
     @final
     def _init_scene(self, scene: List[dict], post_processing: List[dict] = None, objects: List[dict] = None,

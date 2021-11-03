@@ -22,7 +22,8 @@ c.end()
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.step_physics import StepPhysics
-from magnebot import Magnebot, Arm, MagnebotController, ActionStatus
+from magnebot import Magnebot, Arm, ActionStatus
+from magnebot.util import get_default_post_processing_commands
 
 c = Controller()
 step_physics = StepPhysics(num_frames=10)
@@ -31,7 +32,7 @@ c.add_ons.extend([magnebot, step_physics])
 commands = [{"$type": "load_scene",
              "scene_name": "ProcGenScene"},
             TDWUtils.create_empty_room(12, 12)]
-commands.extend(MagnebotController.get_default_post_processing_commands())
+commands.extend(get_default_post_processing_commands())
 c.communicate(commands)
 magnebot.reach_for(target={"x": 0.3, "y": 0.5, "z": 0.4},
                    arm=Arm.left)
@@ -48,10 +49,11 @@ import numpy as np
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.step_physics import StepPhysics
-from magnebot import Magnebot, Arm, MagnebotController, ActionStatus
+from magnebot import Magnebot, Arm, ActionStatus
 from magnebot.actions.reach_for import ReachFor
 from magnebot.ik.orientation_mode import OrientationMode
 from magnebot.ik.target_orientation import TargetOrientation
+from magnebot.util import get_default_post_processing_commands
 
 c = Controller()
 step_physics = StepPhysics(num_frames=10)
@@ -60,7 +62,7 @@ c.add_ons.extend([magnebot, step_physics])
 commands = [{"$type": "load_scene",
              "scene_name": "ProcGenScene"},
             TDWUtils.create_empty_room(12, 12)]
-commands.extend(MagnebotController.get_default_post_processing_commands())
+commands.extend(get_default_post_processing_commands())
 c.communicate(commands)
 magnebot.action = ReachFor(target=np.array([0.3, 0.5, 0.4]),
                            arm=Arm.left,
@@ -292,7 +294,7 @@ from magnebot.image_frequency import ImageFrequency
 from magnebot.actions.action import Action
 from magnebot.action_status import ActionStatus
 from magnebot.magnebot import Magnebot
-from magnebot.magnebot_controller import MagnebotController
+from magnebot.util import get_default_post_processing_commands
 
 
 class SetScreenSize(Action):
@@ -374,7 +376,7 @@ if __name__ == "__main__":
     commands = [{"$type": "load_scene",
                  "scene_name": "ProcGenScene"},
                 TDWUtils.create_empty_room(12, 12)]
-    commands.extend(MagnebotController.get_default_post_processing_commands())
+    commands.extend(get_default_post_processing_commands())
     c.communicate(commands)
     # Set the screen size.
     magnebot.set_screen_size(width=256, height=256)

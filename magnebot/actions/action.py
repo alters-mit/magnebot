@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict
 from overrides import final
 import numpy as np
-from tdw.tdw_utils import TDWUtils, QuaternionUtils
+from tdw.tdw_utils import TDWUtils
+from tdw.quaternion_utils import QuaternionUtils
 from tdw.robot_data.joint_type import JointType
 from magnebot.arm import Arm
 from magnebot.arm_joint import ArmJoint

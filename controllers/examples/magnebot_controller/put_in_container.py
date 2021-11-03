@@ -2,6 +2,7 @@ from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
 from magnebot import MagnebotController, Arm
 from magnebot.action_status import ActionStatus
+from magnebot.util import get_default_post_processing_commands
 
 
 class PickUp(MagnebotController):
@@ -31,7 +32,7 @@ class PickUp(MagnebotController):
                                                    position={"x": 0.03, "y": 0, "z": -2.38}))
         self._init_scene(scene=scene,
                          objects=objects,
-                         post_processing=self.get_default_post_processing_commands())
+                         post_processing=get_default_post_processing_commands())
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 from tdw.tdw_utils import TDWUtils
 from magnebot import MagnebotController
+from magnebot.util import get_default_post_processing_commands
 
 
 class MyController(MagnebotController):
@@ -18,7 +19,8 @@ class MyController(MagnebotController):
         self._init_scene(scene=scene,
                          objects=objects,
                          position={"x": 1, "y": 0, "z": -3},
-                         rotation={"x": 0, "y": 46, "z": 0})
+                         rotation={"x": 0, "y": 46, "z": 0},
+                         post_processing=get_default_post_processing_commands())
 
 
 if __name__ == "__main__":

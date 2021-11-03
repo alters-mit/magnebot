@@ -2,6 +2,7 @@ from tdw.tdw_utils import TDWUtils
 from magnebot import Arm, ActionStatus, MagnebotController
 from magnebot.ik.orientation_mode import OrientationMode
 from magnebot.ik.target_orientation import TargetOrientation
+from magnebot.util import get_default_post_processing_commands
 
 
 class Grasp(MagnebotController):
@@ -23,7 +24,7 @@ class Grasp(MagnebotController):
                                               rotation={"x": -7.730941e+11, "y": 152.176, "z": 4.398})
         self._init_scene(scene=scene,
                          objects=objects,
-                         post_processing=self.get_default_post_processing_commands())
+                         post_processing=get_default_post_processing_commands())
         super().init_scene()
 
 

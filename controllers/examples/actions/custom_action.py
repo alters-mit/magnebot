@@ -7,11 +7,12 @@ from magnebot.image_frequency import ImageFrequency
 from magnebot.actions.action import Action
 from magnebot.action_status import ActionStatus
 from magnebot.magnebot import Magnebot
-from magnebot.magnebot_controller import MagnebotController
+from magnebot.util import get_default_post_processing_commands
 
 """
 Define two custom actions and a custom Magnebot agent.
 """
+
 
 class SetScreenSize(Action):
     def __init__(self, width: int, height: int):
@@ -92,7 +93,7 @@ if __name__ == "__main__":
     commands = [{"$type": "load_scene",
                  "scene_name": "ProcGenScene"},
                 TDWUtils.create_empty_room(12, 12)]
-    commands.extend(MagnebotController.get_default_post_processing_commands())
+    commands.extend(get_default_post_processing_commands())
     c.communicate(commands)
     # Set the screen size.
     magnebot.set_screen_size(width=256, height=256)

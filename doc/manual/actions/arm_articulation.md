@@ -103,7 +103,6 @@ from tdw.add_ons.third_person_camera import ThirdPersonCamera
 from tdw.add_ons.image_capture import ImageCapture
 from tdw.backend.paths import EXAMPLE_CONTROLLER_OUTPUT_PATH
 from magnebot.magnebot import Magnebot
-from magnebot.magnebot_controller import MagnebotController
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.arm import Arm
@@ -111,6 +110,7 @@ from magnebot.arm_joint import ArmJoint
 from magnebot.image_frequency import ImageFrequency
 from magnebot.action_status import ActionStatus
 from magnebot.actions.arm_motion import ArmMotion
+from magnebot.util import get_default_post_processing_commands
 
 
 class RaiseArm(ArmMotion):
@@ -164,7 +164,7 @@ if __name__ == "__main__":
     commands = [{"$type": "load_scene",
                  "scene_name": "ProcGenScene"},
                 TDWUtils.create_empty_room(12, 12)]
-    commands.extend(MagnebotController.get_default_post_processing_commands())
+    commands.extend(get_default_post_processing_commands())
     c.communicate(commands)
     magnebot.raise_arm(arm=Arm.right)
     while magnebot.action.status == ActionStatus.ongoing:

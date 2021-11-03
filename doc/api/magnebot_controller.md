@@ -422,14 +422,6 @@ This only works if you've loaded an occupancy map via `self.init_floorplan_scene
 
 _Returns:_  Tuple: (x coordinate; z coordinate) of the corresponding worldspace position.
 
-#### get_default_post_processing_commands
-
-**`MagnebotController(Controller).get_default_post_processing_commands()`**
-
-_This is a static function._
-
-_Returns:_  The default post-processing commands.
-
 ***
 
 ### Low-level

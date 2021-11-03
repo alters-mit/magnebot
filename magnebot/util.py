@@ -64,3 +64,22 @@ def check_version(module: str = "magnebot") -> None:
     if v_remote != v_local:
         print(f"You have {module} v{v_local} but version v{v_remote} is available. "
               f"To upgrade:\npip3 install {module} -U")
+
+
+def get_default_post_processing_commands() -> List[dict]:
+    """
+    :return: The default post-processing commands.
+    """
+
+    return [{"$type": "set_aperture",
+             "aperture": 8.0},
+            {"$type": "set_focus_distance",
+             "focus_distance": 2.25},
+            {"$type": "set_post_exposure",
+             "post_exposure": 0.4},
+            {"$type": "set_ambient_occlusion_intensity",
+             "intensity": 0.175},
+            {"$type": "set_ambient_occlusion_thickness_modifier",
+             "thickness": 3.5},
+            {"$type": "set_shadow_strength",
+             "strength": 1.0}]
