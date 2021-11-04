@@ -78,7 +78,7 @@ The [`MagnebotController`](doc/api/magnebot_controller.md) offers a simplified A
 
 [`Magnebot`](doc/api/magnebot.md) is a TDW add-on that must be added to a TDW controller to be usable. `Magnebot` can be used in multi-agent simulations, but it requires a more extensive understanding of TDW than `MagnebotController`.
 
-- Overview
+- [Overview](doc/manual/magnebot/overview.md)
 - [Scene setup](doc/manual/magnebot/scene_setup.md)
 - [Output data](doc/manual/magnebot/output_data.md)
 - [Actions](doc/manual/magnebot/actions.md)
@@ -132,3 +132,4 @@ This API is designed to be used as-is or as the base for an API with higher-leve
 | API                                                          | Description                                                  |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | [Transport Challenge](https://github.com/alters-mit/transport_challenge) | Transport objects from room to room using containers as tools. |
+| [Multimodal Challenge](https://github.com/alters-mit/multimodal_challenge) | Perceive objects in the scene using visual and audio input.  |
