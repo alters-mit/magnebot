@@ -27,7 +27,7 @@ In Magnebot 1.3.2:
 ```python
 from magnebot import Magnebot
 
-c = Magnebot()
+c = Magnebot(launch_build=True)
 c.init_scene()
 ```
 
@@ -36,7 +36,7 @@ In Magnebot 2.0.0:
 ```python
 from magnebot import MagnebotController
 
-c = MagnebotController()
+c = MagnebotController(launch_build=True)
 c.init_scene()
 ```
 
@@ -44,7 +44,7 @@ c.init_scene()
 
 This aligns the behavior in `MagnebotController` with the behavior in `Controller`. [Read this for more information.](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/core_concepts/launch_build.md)
 
-In Magnebot 1.3.2:
+Magnebot 1.3.2:
 
 ```python
 from magnebot import Magnebot
@@ -53,7 +53,7 @@ c = Magnebot()
 c.init_scene()
 ```
 
-In Magnebot 2.0.0:
+Magnebot 2.0.0:
 
 ```python
 from magnebot import MagnebotController
@@ -148,9 +148,22 @@ Moved `JointStatic` from `magnebot.joint_static.JointStatic` to [`tdw.robot_data
 | `self.state.get_depth_values()` | `self.magnebot.dynamic.get_depth_values()` |
 | `self.state.get_point_cloud()`  | `self.magnebot.dynamic.get_point_cloud()`  |
 
-**TODO examples**
+Magnebot 1.3.2:
 
-In Magnebot 2.0.0:
+```python
+from magnebot import Magnebot
+
+c = Magnebot()
+c.init_floorplan_scene(scene="1a", layout=0, room=0)
+for object_id in c.objects_static:
+    print(object_id,
+          c.objects_static[object_id].mass,
+          c.state.object_transforms[object_id].position)
+print(c.state.magnebot_transform.position)
+point_cloud = c.state.get_point_cloud()
+```
+
+Magnebot 2.0.0:
 
 ```python
 from magnebot import MagnebotController
@@ -169,9 +182,23 @@ point_cloud = c.magnebot.dynamic.get_point_cloud()
 
 Previously, collision detection output data was held in `self.colliding_object` and `self.colliding_walls`, while collision detection rules were set within the action functions. This has all been removed and reorganized. Now, collision data is stored in `self.magnebot.dynamic` and collision detection rules are stored in `self.magnebot.collision_detection`.
 
-**TODO v1 example**
+Magnebot 1.3.2:
 
-In Magnebot 2.0.0:
+```python
+from magnebot import Magnebot, ActionStatus
+from magnebot.collision_detection import CollisionDetection
+
+c = Magnebot()
+c.init_scene()
+status = c.move_by(8)
+assert status == ActionStatus.collision
+c.move_by(-2, stop_on_collision=CollisionDetection(objects=True, walls=False, previous_was_same=True))
+status = c.move_by(-2)
+assert status == ActionStatus.success
+c.end()
+```
+
+Magnebot 2.0.0:
 
 ```python
 from magnebot import MagnebotController, ActionStatus
