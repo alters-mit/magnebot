@@ -155,12 +155,19 @@ from magnebot import Magnebot
 
 c = Magnebot()
 c.init_floorplan_scene(scene="1a", layout=0, room=0)
+print("Objects")
 for object_id in c.objects_static:
     print(object_id,
           c.objects_static[object_id].mass,
           c.state.object_transforms[object_id].position)
+print("Magnebot")
 print(c.state.magnebot_transform.position)
+for arm_joint in c.magnebot_static.static.arm_joints:
+    joint_id = c.magnebot_static.arm_joints[arm_joint]
+    print(arm_joint, c.state.joint_angles[joint_id])
 point_cloud = c.state.get_point_cloud()
+print(point_cloud)
+c.end()
 ```
 
 Magnebot 2.0.0:
@@ -170,12 +177,19 @@ from magnebot import MagnebotController
 
 c = MagnebotController()
 c.init_floorplan_scene(scene="1a", layout=0, room=0)
+print("Objects")
 for object_id in c.objects.objects_static:
     print(object_id, 
           c.objects.objects_static[object_id].mass,
           c.objects.transforms[object_id].position)
+print("Magnebot")
 print(c.magnebot.dynamic.transform.position)
+for arm_joint in c.magnebot.static.arm_joints:
+    joint_id = c.magnebot.static.arm_joints[arm_joint]
+    print(arm_joint, c.magnebot.dynamic.joints[joint_id].angles)
 point_cloud = c.magnebot.dynamic.get_point_cloud()
+print(point_cloud)
+c.end()
 ```
 
 #### 5. Reorganized collision detection
