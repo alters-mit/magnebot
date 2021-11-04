@@ -1,5 +1,232 @@
 # Changelog
 
+## 2.0.0
+
+**This is a MAJOR update to the Magnebot API. Please read this changelog carefully.**
+
+To update:
+
+- `pip3 install tdw -U`
+- `pip3 install magnebot -U`
+- [Download the latest release of the TDW build](https://github.com/threedworld-mit/tdw/releases/latest/)
+
+### Changes to the Magnebot agent
+
+**The Magnebot agent is now handled as a separate [`Magnebot`](api/magnebot.md) class.** [Read this for more information.](manual/magnebot/overview.md) This *greatly* expands the usefulness of the Magnebot API:
+
+- The Magnebot API can now be added to *any* TDW controller
+- The Magnebot API now supports multi-agent simulations (including non-Magnebot agents)
+- The Magnebot agent's actions can be interrupted mid-motion
+
+### Changes to the controller
+
+#### 1. Renamed `Magnebot` to `MagnebotController`
+
+In Magnebot 1.3.2:
+
+```python
+from magnebot import Magnebot
+
+c = Magnebot()
+c.init_scene()
+```
+
+In Magnebot 2.0.0:
+
+```python
+from magnebot import MagnebotController
+
+c = MagnebotController()
+c.init_scene()
+```
+
+#### 2. By default, the build launches automatically
+
+This aligns the behavior in `MagnebotController` with the behavior in `Controller`. [Read this for more information.](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/core_concepts/launch_build.md)
+
+In Magnebot 1.3.2:
+
+```python
+from magnebot import Magnebot
+
+c = Magnebot()
+c.init_scene()
+```
+
+In Magnebot 2.0.0:
+
+```python
+from magnebot import MagnebotController
+
+c = MagnebotController(launch_build=False)
+c.init_scene()
+```
+
+#### 3. Other changes to the controller constructor
+
+- Removed `auto_save_images`
+- Removed `debug`
+- Removed `images_directory`
+- Removed `img_is_png`
+
+#### 4. Reorganized output data
+
+| Magnebot 1.3.2                  | Magnebot 2.0.0                                               |
+| ------------------------------- | ------------------------------------------------------------ |
+| `self.state.magnebot_transform` | `self.magnebot.dynamic.transform`                            |
+| `self.state.joint_positions`    | `self.magnebot.dynamic.joints`<br>See: `joints[joint_id].position` |
+| `self.state.joint_angles`       | `self.magnebot.dynamic.joints`<br>See: `joints[joint[id]].angles` |
+| `self.state.held`               | `self.magnebot.dynamic.held`                                 |
+| `self.state.object_transforms`  | `self.objects.transforms`                                    |
+| `self.state.projection_matrix`  | `self.magnebot.dynamic.projection_matrix`                    |
+| `self.state.camera_matrix`      | `self.magnebot.dynamic.camera_materix`                       |
+| `self.state.images`             | `self.magnebot.dynamic.images`                               |
+| `self.third_person_images`      | *Removed (see below)*                                        |
+|                                 | `self.magnebot.top`                                          |
+| `self.colliding_objects`        | `self.magnebot.dynamic.collisions_with_objects`              |
+| `self.colliding_with_wall`      | `self.magnebot.dynamic.collisions_with_environment` *A dictionary instead of a boolean* |
+|                                 | `self.magnebot.dynamic.collisions_with_self`                 |
+| `self.objects_static`           | `self.objects.objects_static`                                |
+| `self.magnebot_static`          | `self.magnebot.static`                                       |
+
+##### Static object data
+
+Moved `ObjectStatic` from `magnebot.object_static.ObjectStatic` to [`tdw.object_data.object_static.ObjectStatic`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/object_data/object_static.md).
+
+| Magnebot 1.3.2       | Magnebot 2.2.0       |
+| -------------------- | -------------------- |
+| `name`               | `name`               |
+| `object_id`          | `object_id`          |
+| `mass`               | `mass`               |
+| `segmentation_color` | `segmentation_color` |
+| `size`               | `size`               |
+|                      | `category`           |
+|                      | `kinematic`          |
+|                      | `dynamic_friction`   |
+|                      | `static_friction`    |
+|                      | `bounciness`         |
+
+##### Static Magnebot data
+
+[`MagnebotStatic`](api/magnebot_static.md) is now a subclass of [`RobotStatic`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/robot_static.md).
+
+| Magnebot 1.3.2 | Magnebot 2.2.0                                       |
+| -------------- | ---------------------------------------------------- |
+| `joints`       | `joints` (See **Static joint data** below)           |
+| `body_parts`   | `body_parts`                                         |
+| `arm_joints`   | `arm_joints`                                         |
+| `wheels`       | `wheels`                                             |
+| `magnets`      | `magnets`                                            |
+| `root`         | *Removed*                                            |
+|                | `robot_id` *The ID of the Magnebot*                  |
+|                | `joint_ids_by_name` *A dictionary of joint names*    |
+|                | `non_moving` *A dictionary of non-moving body parts* |
+|                | `immovable` *This is always False*                   |
+|                | `avatar_id` *The ID of the Magnebot's camera*        |
+
+##### Static joint data
+
+Moved `JointStatic` from `magnebot.joint_static.JointStatic` to [`tdw.robot_data.joint_static.JointStatic`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/joint_static.md).
+
+| Magnebot 1.3.2       | Magnebot 2.0.0                                               |
+| -------------------- | ------------------------------------------------------------ |
+| `id`                 | `joint_id`                                                   |
+| `mass`               | `mass`                                                       |
+| `segmentation_color` | `segmentation_color`                                         |
+| `name`               | `name`                                                       |
+| `drives`             | `drives`                                                     |
+| `joint_type`         | `joint_type` *Now a [`JointType`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/joint_type.md) value instead of a string* |
+|                      | `immovable`                                                  |
+|                      | `root`                                                       |
+|                      | `parent_id`                                                  |
+
+##### Image data functions
+
+| Magnebot 1.3.2                  | Magnebot 2.0.0                             |
+| ------------------------------- | ------------------------------------------ |
+| `self.state.get_pil_images()`   | `self.magnebot.dynamic.get_pil_images()`   |
+| `self.state.get_depth_values()` | `self.magnebot.dynamic.get_depth_values()` |
+| `self.state.get_point_cloud()`  | `self.magnebot.dynamic.get_point_cloud()`  |
+
+**TODO examples**
+
+In Magnebot 2.0.0:
+
+```python
+from magnebot import MagnebotController
+
+c = MagnebotController()
+c.init_floorplan_scene(scene="1a", layout=0, room=0)
+for object_id in c.objects.objects_static:
+    print(object_id, 
+          c.objects.objects_static[object_id].mass,
+          c.objects.transforms[object_id].position)
+print(c.magnebot.dynamic.transform.position)
+point_cloud = c.magnebot.dynamic.get_point_cloud()
+```
+
+#### 5. Reorganized collision detection
+
+Previously, collision detection output data was held in `self.colliding_object` and `self.colliding_walls`, while collision detection rules were set within the action functions. This has all been removed and reorganized. Now, collision data is stored in `self.magnebot.dynamic` and collision detection rules are stored in `self.magnebot.collision_detection`.
+
+**TODO v1 example**
+
+In Magnebot 2.0.0:
+
+```python
+from magnebot import MagnebotController, ActionStatus
+
+c = MagnebotController()
+c.init_scene()
+status = c.move_by(8)
+assert status == ActionStatus.collision
+c.magnebot.collision_detection.walls = False
+status = c.move_by(-2)
+assert status == ActionStatus.success
+c.end()
+```
+
+#### 6. Other changes to fields
+
+- Removed `self.auto_save_images`
+- Removed `self.images_directory`
+- Removed `self.camera_rpy`
+- Added `self.rng` Random number generator (previously was a hidden field `self._rng`)
+- Added `self.magnebot` The Magnebot agent (see above)
+- Added `self.objects` The [`ObjectManager`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/add_ons/object_manager.md).
+
+#### 7. Removed `self.add_third_person_camera()`
+
+[Read this for more information.](manual/magnebot_controller/third_person_camera.md)
+
+#### 8. Other changes to backend classes
+
+- Removed `magnebot.collision_action.CollisionAction`
+- Added [`magnebot.image_frequency.ImageFrequency`](api/image_frequency.md)
+- Added `Action` classes (see below).
+- Moved `Drive` from `magnebot.drive.Drive` to `tdw.robot_data.drive.Drive`
+- Moved `Transform` from `magnebot.transform.Transform` to `tdw.object_data.transform.Transform`
+
+### Changes to the Magnebot's actions
+
+**There shouldn't be any significant difference in the Magnebot's behavior since the 1.3.2 release.**
+
+Due to the entire API being refactored, there may be minor changes in Magnebot behavior. If you find any bugs or significant differences from Magnebot v1, let us know.
+
+The `Magnebot` agent has an additional `stop()` action that isn't implemented in `MagnebotController`.
+
+Actions are defined using [`Action`](api/actions/action.md) objects rather than functions. [Read this for more information.](manual/actions/overview.md)
+
+### Changes to the documentation
+
+Documentation has been split into "manual" and "API" sections. The "manual" section has documentation for `MagnebotController`, `Magnebot`, and `Action`.
+
+### Changes to the example controllers
+
+There are many more example controllers. Some examples were removed and some have been revised. There are example controllers for `MagnebotController`, `Magnebot` (single-agent), and `Magnebot` (multi-agent).
+
+***
+
 ## 1.3.2
 
 - Fixed: Crash when trying to add multiple third person cameras with `add_camera()` because the avatar ID is always `"c"`.

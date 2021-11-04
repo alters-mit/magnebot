@@ -27,20 +27,20 @@ class MagnebotController(Controller):
     ```python
     from magnebot import MagnebotController
 
-    m = MagnebotController()
-    m.init_scene()
-    m.move_by(2)
-    m.end()
+    c = MagnebotController()
+    c.init_scene()
+    c.move_by(2)
+    c.end()
     ```
 
     Differences between the `MagnebotController` and `Magnebot` agent:
 
     - The `MagnebotController` *is a [controller](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/controller.md)* and will send its own commands.
-    - In the `MagnebotController`, the agent's action will begin and end automatically. In the above example, `m.move_by(2)` will continuously advance the simulation until the Magnebot has moved 2 meters or stopped unexpectedly (i.e. due to a collision).
+    - In the `MagnebotController`, the agent's action will begin and end automatically. In the above example, `c.move_by(2)` will continuously advance the simulation until the Magnebot has moved 2 meters or stopped unexpectedly (i.e. due to a collision).
     - The `MagnebotController`, [physics frames are skipped per output data frame](skip_frames.md); see `skip_frames` in the constructor.
-    - Images are always returned at the end of every action. In the above example, [`m.dynamic.images`](magnebot_dynamic.md) will be updated at the end of `m.move_by(2)`.
+    - Images are always returned at the end of every action. In the above example, [`c.magnebot.dynamic.images`](magnebot_dynamic.md) will be updated at the end of `c.move_by(2)`.
     - The `MagnebotController` includes two functions that can initialize a scene optimized for the Magnebot.
-    - The `MagnebotController` adds an [`ObjectManager`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/add_ons/object_manager.md) and [`CollisionManager`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/add_ons/collision_manager.md).
+    - The `MagnebotController` adds an [`ObjectManager`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/add_ons/object_manager.md).
     """
 
     def __init__(self, port: int = 1071, launch_build: bool = True, screen_width: int = 256, screen_height: int = 256,
