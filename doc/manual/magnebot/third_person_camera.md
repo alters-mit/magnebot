@@ -4,7 +4,7 @@
 
 *For more information regarding TDW cameras and avatars, [read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/core_concepts/avatars.md).*
 
-*For more information regarding TDW camera controls, [read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/camera_controls/overview.md).*
+*For more information regarding TDW camera controls, [read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/camera/overview.md).*
 
 *For more information regarding TDW image output data, [read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/core_concepts/images.md).*
 

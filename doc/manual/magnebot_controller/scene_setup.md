@@ -84,7 +84,7 @@ if __name__ == "__main__":
     c.init_scene()
 ```
 
-[This is an example in the Magnebot API that adds a nice-looking floor to a test room.](https://github.com/alters-mit/magnebot/blob/main/controllers/promos/reach_high.py)  Most scene setup recipes that would work in TDW will work in the Magnebot API. The keys differences are that:
+Most scene setup recipes that would work in TDW will work in the Magnebot API. The keys differences are that:
 
 - All scene setup commands must be in the same list and sent as the `scene` parameter of `self._init_scene()`
 - Object initialization commands shouldn't be in the same list as scene initialization commands (see below)

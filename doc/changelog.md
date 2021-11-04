@@ -304,9 +304,9 @@ There are many more example controllers. Some examples were removed and some hav
 
 **This release introduces significant changes. Please read this changelog carefully.** Below is a brief summary:
 
-- `grasp()` and `reach_for()` are much faster and accurate. For more information, [read this.](arm_articulation.md)
-- Scene initialization has been split into `init_scene()` and `init_floorplan_scene()` and custom scene setup overall has been simplified. For more information, [read this.](scene.md)
-- Movement actions such as `move_by()` and `turn_to()` have the option of fine-tuning collision detection rules. For more information, [read this.](movement.md)
+- `grasp()` and `reach_for()` are much faster and accurate. For more information, [read this.](https://github.com/alters-mit/magnebot/blob/1.2.0/doc/arm_articulation.md)
+- Scene initialization has been split into `init_scene()` and `init_floorplan_scene()` and custom scene setup overall has been simplified. For more information, [read this.](https://github.com/alters-mit/magnebot/blob/1.2.0/doc/scene.md)
+- Movement actions such as `move_by()` and `turn_to()` have the option of fine-tuning collision detection rules. For more information, [read this.](https://github.com/alters-mit/magnebot/blob/1.2.0/doc/movement.md)
 
 **To upgrade to Magnebot 1.2.0, you must do the following:** 
 
@@ -540,7 +540,7 @@ There are many more example controllers. Some examples were removed and some hav
 
 ### `JointStatic`
 
-- Added field `drives`. Stores [drive data](api/drive.md).
+- Added field `drives`. Stores drive data.
 
 ### Test controllers
 

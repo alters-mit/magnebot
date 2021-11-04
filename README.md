@@ -12,12 +12,12 @@ The Magnebot API supports both single-agent and multi-agent simulations.
 
 # Requirements
 
-See [TDW requirements](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/core_concepts/install.md).
+See [TDW requirements](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/setup/install.md).
 
 # Installation 
 
 1. **`pip3 install magnebot`**
-2. (Linux servers only): [Download the latest TDW build](https://github.com/threedworld-mit/tdw/releases/latest) and unzip it. For more information on setting up a TDW build on a server, [read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/core_concepts/install.md). On a personal computer, the build will be downloaded and launched automatically.
+2. (Linux servers only): [Download the latest TDW build](https://github.com/threedworld-mit/tdw/releases/latest) and unzip it. For more information on setting up a TDW build on a server, [read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/setup/install.md). On a personal computer, the build will be downloaded and launched automatically.
 
 #### Test if your installation was successful
 

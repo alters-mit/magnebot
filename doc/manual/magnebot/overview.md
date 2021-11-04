@@ -66,5 +66,5 @@ Creating multi-agent simulations with `Magnebot` is as simple as adding multiple
 
 Example controllers:
 
-- [move_by.py](https://github.com/alters-mit/magnebot/blob/main/controllers/examples/magenbot/move_by.py) Move the Magnebot forward by 2 meters.
+- [move_by.py](https://github.com/alters-mit/magnebot/blob/main/controllers/examples/magnebot/move_by.py) Move the Magnebot forward by 2 meters.
 
