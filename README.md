@@ -42,6 +42,8 @@ c.end()
 2. `pip3 install magnebot -U`
 3. (Linux servers only): [Download the latest TDW build](https://github.com/threedworld-mit/tdw/releases/latest) and unzip it. On a personal computer, the build will automatically be upgraded the next time you create a TDW controller.
 
+**If you are upgrading from Magnebot 1.3.2 or earlier, be aware that there are many changes to the API in Magnebot 2.0.0 and newer. [Read the changelog for more information.](doc/changelog.md)**
+
 # Manual
 
 ## General
@@ -58,6 +60,7 @@ Before using Magnebot, we recommend you read TDW's documentation to familiarize 
 - [Core Concepts](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/core_concepts/controller.md)
 - [Objects and scenes](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/objects_and_scenes/overview.md)
 - [Robots](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/robots/overview.md)
+- [Multi-agent simulations](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/multi_agent/overview.md)
 
 ## `MagnebotController` (single-agent, high-level API)
 
