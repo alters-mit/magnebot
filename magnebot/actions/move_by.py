@@ -43,6 +43,8 @@ class MoveBy(WheelMotion):
         # Get the angle that we expect the wheels should turn to in order to move the Magnebot.
         self._spin: float = (distance / WHEEL_CIRCUMFERENCE) * 360
         self._max_attempts: int = int(np.abs(distance) * 5)
+        if self._max_attempts < 5:
+            self._max_attempts = 5
         self._attempts: int = 0
         self._move_frames: int = 0
         self._initial_distance: float = np.linalg.norm(self._target_position_arr - self._initial_position_arr)
