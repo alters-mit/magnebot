@@ -137,7 +137,7 @@ class ApplyForceToWheels(Action):
 
 ## `get_ongoing_commands`
 
-You must override `get_ongoing_commands(resp, static, dynamic)` or else there will be an error. This function returns commands that should be send per `communicate(commands)` call. Use this function to evaluate the status of the action.
+You must override `get_ongoing_commands(resp, static, dynamic)` or else there will be an error. This function returns commands that should be sent per `communicate(commands)` call. Use this function to evaluate the status of the action.
 
 - At the start of the action, if, after calling `get_initialization_commands()`, `self.status == ActionStatus.ongoing`, then the controller will receive initialization commands + ongoing commands. If `self.status != ActionStatus.ongoing`, the controller will receive an empty list.
 - Set `self.status` within `get_ongoing_commands` to end the action.
@@ -190,7 +190,7 @@ class ApplyForceToWheels(Action):
 
 You can optionally override `get_end_commands(resp, static, dynamic, image_frequency)` to send commands when an action begins. You should *always* call `commands = super().get_initialization_commands(resp, static, dynamic, image_frequency)` because this will add commands that should be at the end of *every* action.
 
-If, after `get_ongoing_commands()` is called, `action.status != ActionStatus.ongoing`, the commands returned `get_end_commands()` are sent to the controller *instead* of  the commands returned by `get_ongoing_commands()`.
+If, after `get_ongoing_commands()` is called, `action.status != ActionStatus.ongoing`, the commands returned by `get_end_commands()` are sent to the controller *instead* of  the commands returned by `get_ongoing_commands()`.
 
 In this example, we'll make the Magnebot immovable at the end of the action:
 
