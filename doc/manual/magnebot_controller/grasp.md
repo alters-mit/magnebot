@@ -11,7 +11,7 @@ This action has a few potentially unintuitive aspects:
 - A magnet can never lose its grip on an object unless the controller explicitly calls `drop(target, arm)`.
 - A magnet can hold any number of objects, provided that it has enough free surface area that it can still come in contact with the target object.
 - Although physically impossible, the `grasp(target, arm)` action *is* physically responsive. A heavy object will behave very differently than a light object. A magnet can *stick* to any object but the Magnebot might not be strong enough to actually *lift* every object. Likewise, the object does remain physically present in the scene; it is considered to be an extension of the magnet. Held objects can collide with other objects.
-- The `grasp(target, arm)` actions as soon as the magnet grasps the object. If you want the arm to also reset, call `reset_arm(arm)`.
+- The `grasp(target, arm)` action ends as soon as the magnet grasps the object. If you want the arm to also reset, call `reset_arm(arm)`.
 
 ![](../images/arm_articulation/grasp.gif)
 
