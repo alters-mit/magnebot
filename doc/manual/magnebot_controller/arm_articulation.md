@@ -90,7 +90,7 @@ You can explicitly set the `target_orientation` and `orientation_mode` parameter
 - You want to try different orientations to move the arm around an obstruction.
 - You want to use sequential IK actions without having to call `reset_arm()`.
 - You want to train the Magnebot using different orientations (which might be more accurate than the default `auto` approach).
-- You need to the Magnebot to pick up an object at a particular angle.
+- You need the Magnebot to pick up an object at a particular angle.
 
 Some guidelines regarding the orientation parameters:
 
