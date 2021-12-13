@@ -115,7 +115,7 @@ ActionStatus.success
 
 ## Tipping over
 
-While moving or turning, the Magnebot might start to tip over. This  can happen if the Magnebot is holding a heavy object, if its wheels roll over a ramp-like surface, etc. If this happens, the action will  immediately halt and return `ActionStatus.tipping`.
+While moving or turning, the Magnebot might start to tip over. This  can happen if the Magnebot is holding a heavy object, or if its wheels roll over a ramp-like surface, etc. If this happens, the action will  immediately halt and return `ActionStatus.tipping`.
 
 You can correct for tipping by reversing the action. For example, if `move_by(1)` returned `ActionStatus.tipping` then it is likely that `move_by(-1)` will correct the angle.
 
@@ -125,7 +125,7 @@ In the unlikely event that the Magnebot completely falls over, you can reset its
 
 By default, the Magnebot will stop moving or turning if:
 
-- The Magnebot will start moving if any of its joints, wheels, or magnets collides with any object or any other Magnebot.
+- Any of its joints, wheels, or magnets collides with any object or any other Magnebot.
 - If the previous action resulted in a collision and this action is the same "type". For example, if `move_by(8)` returns `ActionStatus.collision`, then `move_by(1)` will immediately return `ActionStatus.collision`; the Magnebot won't actually move on this second action.
 
 ```python
