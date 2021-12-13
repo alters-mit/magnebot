@@ -43,7 +43,7 @@ class Benchmark(MagnebotController):
         print("| Skipped frames | Time elapsed |\n| --- | --- |")
         for frames in [0, 5, 10, 15, 20]:
             self.init_scene()
-            self._step_physics.frames = frames
+            self._step_physics.num_frames = frames
             t = self._get_move_fps()
             print(f"| {frames} | {t} |")
 

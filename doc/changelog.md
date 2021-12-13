@@ -17,6 +17,7 @@ To update:
 - The Magnebot API can now be added to *any* TDW controller
 - The Magnebot API now supports multi-agent simulations (including non-Magnebot agents)
 - The Magnebot agent's actions can be interrupted mid-motion
+- Joint drive force limits have been adjusted (see below).
 
 ### Changes to the controller
 
@@ -265,6 +266,10 @@ Documentation has been split into "manual" and "API" sections. The "manual" sect
 ### Changes to the example controllers
 
 There are many more example controllers. Some examples were removed and some have been revised. There are example controllers for `MagnebotController`, `Magnebot` (single-agent), and `Magnebot` (multi-agent).
+
+### Known issues
+
+TDW 1.9.0 has been upgraded to Unity 2020.3.24. [As of Unity 2020.3.21](https://unity3d.com/unity/whats-new/2020.3.21), joint force limits use different measurement units. Unfortunately, the Unity documentation doesn't specify *what* the measurement units are. The force limits of the Magnebot's wheels, shoulders, elbows,  column, and wrists have been multiplied by 100 and the force limit of the torso prismatic joint has been multiplied by 1000; the resulting behavior seems to be nearly the same as previous behavior.
 
 ***
 

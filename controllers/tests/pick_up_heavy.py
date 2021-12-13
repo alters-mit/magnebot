@@ -36,16 +36,16 @@ if __name__ == "__main__":
     assert status != ActionStatus.success, status
     c.drop(c.target_id, arm=Arm.left)
     status = c.move_by(1)
-    assert status == ActionStatus.success, status
+    assert status == ActionStatus.tipping, status
     status = c.move_by(-1)
     assert status == ActionStatus.success, status
 
     # Try to pick up something heavy, turn, and give up.
-    c.move_by(1)
+    c.move_by(1.5)
     status = c.grasp(target=c.target_id, arm=Arm.left)
     assert status == ActionStatus.success, status
     status = c.turn_by(45)
-    assert status == ActionStatus.success, status
+    assert status == ActionStatus.failed_to_turn, status
     status = c.move_by(-1)
     assert status != ActionStatus.success, status
     c.reset_position()

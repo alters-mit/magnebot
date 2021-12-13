@@ -160,6 +160,8 @@ class ChaseBall(Controller):
                 # The Magnebot has backed away from the wall. Move towards the robot.
                 if self.magnebot.action.status != ActionStatus.ongoing:
                     self.state = State.moving_to_robot
+                    self.magnebot.collision_detection.objects = False
+                    self.magnebot.collision_detection.walls = False
                     self.magnebot.move_to(target={"x": -0.871, "y": 0, "z": 3}, arrived_offset=0.1)
             elif self.state == State.moving_to_robot:
                 # The Magnebot has arrived at the robot. Drop the object.

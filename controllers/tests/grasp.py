@@ -25,7 +25,6 @@ class Grasp(MagnebotController):
         self._init_scene(scene=scene,
                          objects=objects,
                          post_processing=get_default_post_processing_commands())
-        super().init_scene()
 
 
 if __name__ == "__main__":

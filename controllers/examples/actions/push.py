@@ -166,7 +166,9 @@ class PushController(Controller):
             self.communicate([])
         print(magnebot.action.status)
 
-        # Back away.
+        # Back away. Stop moving the camera.
+        camera.follow_object = None
+        camera.look_at_target = None
         magnebot.move_by(-0.5)
         while magnebot.action.status == ActionStatus.ongoing:
             self.communicate([])

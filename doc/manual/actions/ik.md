@@ -39,7 +39,7 @@ IK actions used the [`IKMotion`](../../api/actions/ik_motion.md) abstract class,
 
 | Function                                                     | Description                                                  |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| `_get_ik_orientations(target: np.array, arm: Arm)`           | Static. Returns a list of [`Orientation`](../../api/ik/orientation.md) settings. The first element in the list is always the best option. This is called internal |
+| `_get_ik_orientations(target: np.array, arm: Arm)`           | Static. Returns a list of [`Orientation`](../../api/ik/orientation.md) settings. The first element in the list is always the best option. This is called internally. |
 | `_get_ik_commands(angles: np.array, static: MagnebotStatic)` | Final (cannot be overridden). Converts a list of angles in degrees to joint commands. Returns None. |
 | `_get_ik_links(arm: Arm)`                                    | Static. Returns a list of IK links of an arm.                |
 
@@ -370,7 +370,7 @@ class Push(IKMotion):
 
 Finally, we'll define a `PushController`. Notice that unlike previous examples of how to implement actions, we're not defining a subclass of `Magnebot`. This is mostly for the sake of brevity; in this case, we can manually set the `Push` action.
 
-In this controller, the Magnebot will move towards the target object and push it.
+In this controller, the Magnebot will move towards the target object (a vase on top of a trunk) and push it.
 
 ```python
 from enum import Enum
@@ -530,11 +530,13 @@ class PushController(Controller):
             self.communicate([])
         print(magnebot.action.status)
 
-        # Back away.
+        # Back away. Stop moving the camera.
+        camera.follow_object = None
+        camera.look_at = None
         magnebot.move_by(-0.5)
         while magnebot.action.status == ActionStatus.ongoing:
             self.communicate([])
-        # Reset the arms.
+        # Reset the arms.  
         for arm in [Arm.left, Arm.right]:
             magnebot.reset_arm(arm=arm)
             while magnebot.action.status == ActionStatus.ongoing:
