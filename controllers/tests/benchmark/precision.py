@@ -1,9 +1,9 @@
 from typing import List
 from time import time
-from magnebot import Magnebot, ActionStatus
+from magnebot import MagnebotController, ActionStatus
 
 
-class Precision(Magnebot):
+class Precision(MagnebotController):
     """
     Test the precision of the Magnebot's moving and turning.
     """

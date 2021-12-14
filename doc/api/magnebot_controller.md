@@ -1,200 +1,52 @@
-# Magnebot
+# MagnebotController
 
-`from magnebot import Magnebot`
+`from magnebot import MagnebotController`
 
-[TDW controller](https://github.com/threedworld-mit/tdw) for Magnebots. This high-level API supports:
-
-- Creating a complex interior environment
-- Directional movement
-- Turning
-- Arm articulation via inverse kinematics (IK)
-- Grasping and dropping objects
-- Image rendering
-- Scene state metadata
-
-Unless otherwise stated, each of these functions is an "action" that the Magnebot can do. Each action advances the simulation by at least 1 physics frame, returns an [`ActionStatus`](action_status.md), and updates the `state` field.
+This is a simplified API for single-agent [Magnebot](magnebot.md) simulations.
 
 ```python
-from magnebot import Magnebot
+from magnebot import MagnebotController
 
-m = Magnebot()
-# Initializes the scene.
-status = m.init_floorplan_scene(scene="2a", layout=1)
-print(status) # ActionStatus.success
-
-# Prints the current position of the Magnebot.
-print(m.state.magnebot_transform.position)
+c = MagnebotController()
+c.init_scene()
+c.move_by(2)
+c.end()
 ```
 
-## Overview of API
+Differences between the `MagnebotController` and `Magnebot` agent:
 
-- [Frames](#frames)
-- [Parameter types](#parameter-types)
-- [Class Variables](#class-variables)
-- [Fields](#fields)
-- [Functions](#functions)
-
-| Function | Description |
-| --- | --- |
-| [\_\_init\_\_](#\_\_init\_\_) | |
-| [init_scene](#init_scene) | Initialize the Magnebot in an empty test room. |
-| [init_floorplan_scene](#init_floorplan_scene) | Initialize a scene, populate it with objects, and add the Magnebot. |
-| [turn_by](#turn_by) | Turn the Magnebot by an angle. |
-| [turn_to](#turn_to) | Turn the Magnebot to face a target object or position. |
-| [move_by](#move_by) | Move the Magnebot forward or backward by a given distance. |
-| [move_to](#move_to) | Move the Magnebot to a target object or position. |
-| [reset_position](#reset_position) | Reset the Magnebot so that it isn't tipping over. |
-| [reach_for](#reach_for) | Reach for a target position. |
-| [grasp](#grasp) | Try to grasp the target object with the arm. |
-| [drop](#drop) | Drop an object held by a magnet. |
-| [reset_arm](#reset_arm) | Reset an arm to its neutral position. |
-| [rotate_camera](#rotate_camera) | Rotate the Magnebot's camera by the (roll, pitch, yaw) axes. |
-| [reset_camera](#reset_camera) | Reset the rotation of the Magnebot's camera to its default angles. |
-| [add_camera](#add_camera) | Add a third person camera (i.e. a camera not attached to the any object) to the scene. |
-| [get_occupancy_position](#get_occupancy_position) | Converts the position `(i, j)` in the occupancy map to `(x, z)` worldspace coordinates. |
-| [get_visible_objects](#get_visible_objects) | Get all objects visible to the Magnebot in `self.state` using the id (segmentation color) image. |
-| [end](#end) | End the simulation. |
-| [communicate](#communicate) | Use this function to send low-level TDW API commands and receive low-level output data. |
-
-***
-
-## Frames
-
-Every action advances the simulation by 1 or more _simulation frames_. This occurs every time the `communicate()` function is called (which all actions call internally).
-
-Every simulation frame advances the simulation by contains `1 + n` _physics frames_. `n` is defined in the `skip_frames` parameter of the Magnebot constructor. This greatly increases the speed of the simulation.
-
-Unless otherwise stated, "frame" in the Magnebot API documentation always refers to a simulation frame rather than a physics frame.
-
-***
-
-## Parameter types
-
-The types `Dict`, `Union`, and `List` are in the [`typing` module](https://docs.python.org/3/library/typing.html).
-
-#### Dict[str, float]
-
-Parameters of type `Dict[str, float]` are Vector3 dictionaries formatted like this:
-
-```json
-{"x": -0.2, "y": 0.21, "z": 0.385}
-```
-
-`y` is the up direction.
-
-To convert from or to a numpy array:
-
-```python
-from tdw.tdw_utils import TDWUtils
-
-target = {"x": 1, "y": 0, "z": 0}
-target = TDWUtils.vector3_to_array(target)
-print(target) # [1 0 0]
-target = TDWUtils.array_to_vector3(target)
-print(target) # {'x': 1.0, 'y': 0.0, 'z': 0.0}
-```
-
-#### Union[Dict[str, float], int]]
-
-Parameters of type `Union[Dict[str, float], int]]` can be either a Vector3 or an integer (an object ID).
-
-#### Arm
-
-All parameters of type `Arm` require you to import the [Arm enum class](arm.md):
-
-```python
-from magnebot import Arm
-
-print(Arm.left)
-```
-
-***
-
-***
-
-## Class Variables
-
-| Variable | Type | Description |
-| --- | --- | --- |
-| `CAMERA_RPY_CONSTRAINTS` | List[float] | The camera roll, pitch, yaw constraints in degrees. |
+- The `MagnebotController` *is a [controller](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/controller.md)* and will send its own commands.
+- In the `MagnebotController`, the agent's action will begin and end automatically. In the above example, `c.move_by(2)` will continuously advance the simulation until the Magnebot has moved 2 meters or stopped unexpectedly (i.e. due to a collision).
+- The `MagnebotController`, [physics frames are skipped per output data frame](skip_frames.md); see `skip_frames` in the constructor.
+- Images are always returned at the end of every action. In the above example, [`c.magnebot.dynamic.images`](magnebot_dynamic.md) will be updated at the end of `c.move_by(2)`.
+- The `MagnebotController` includes two functions that can initialize a scene optimized for the Magnebot.
+- The `MagnebotController` adds an [`ObjectManager`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/add_ons/object_manager.md).
 
 ***
 
 ## Fields
 
-- `state` [Dynamic data for all of the most recent frame after doing an action.](scene_state.md) This includes image data, physics metadata, etc.       
+- `occupancy_map` A numpy array of an occupancy map. This is set after calling `self.init_floorplan_scene()`.
 
-```python
-from magnebot import Magnebot
-
-m = Magnebot()
-m.init_floorplan_scene(scene="2a", layout=1)
-
-# Print the initial position of the Magnebot.
-print(m.state.magnebot_transform.position)
-
-m.move_by(1)
-
-# Print the new position of the Magnebot.
-print(m.state.magnebot_transform.position)
-```
-
-- `auto_save_images` If True, automatically save images to `images_directory` at the end of every action.
-
-- `images_directory` The output directory for images if `auto_save_images == True`. This is a [`Path` object from `pathlib`](https://docs.python.org/3/library/pathlib.html).
-
-- `camera_rpy` The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees as a numpy array. This is handled outside of `self.state` because it isn't calculated using output data from the build. See: `Magnebot.CAMERA_RPY_CONSTRAINTS` and `self.rotate_camera()`
-
-- `colliding_objects` A list of objects that the Magnebot is currently colliding with.
-
-- `colliding_with_wall` If True, the Magnebot is currently colliding with a wall.
-
-- `objects_static` [Data for all objects in the scene that that doesn't change between frames, such as object IDs, mass, etc.](object_static.md) Key = the ID of the object..
-
-```python
-from magnebot import Magnebot
-
-m = Magnebot()
-m.init_floorplan_scene(scene="2a", layout=1)
-
-# Print each object ID and segmentation color.     
-for object_id in m.objects_static:
-    o = m.objects_static[object_id]
-    print(object_id, o.segmentation_color)
-```
-
-- `magnebot_static` [Data for the Magnebot that doesn't change between frames.](magnebot_static.md)
-
-```python
-from magnebot import Magnebot
-
-m = Magnebot()
-m.init_floorplan_scene(scene="2a", layout=1)
-print(m.magnebot_static.magnets)
-```
-
-- `occupancy_map` A numpy array of the occupancy map. This is None until you call `init_scene()`.
-
-Shape = `(1, width, length)` where `width` and `length` are the number of cells in the grid. Each grid cell has a radius of 0.245. To convert from occupancy map `(x, y)` coordinates to worldspace `(x, z)` coordinates, see: `get_occupancy_position()`.
-
+Shape = (1, width, length) where width and length are the number of cells in the grid. Each grid cell has a radius of 0.49. To convert from occupancy map (x, y) coordinates to worldspace (x, z) coordinates, see: `self.get_occupancy_position(i, j)`.
 Each element is an integer describing the occupancy at that position.
 
 | Value | Meaning |
 | --- | --- |
-| -1 | This position is outside of the scene. |
-| 0 | Unoccupied and navigable; the Magnebot can go here. |
-| 1 | This position is occupied by an object(s) or a wall. |
-| 2 | This position is free but not navigable (usually because there are objects in the way. |
+| -1 | The cell is out of bounds of the scene or not navigable. |
+| 0 | The cell is unoccupied; there is a floor at this position but there are no objects. |
+| 1 | The cell is occupied by at least one object or a wall. |
 
 ```python
-from magnebot import Magnebot
+from magnebot import MagnebotController
 
-m = Magnebot(launch_build=False)
-m.init_floorplan_scene(scene="1a", layout=0)
+c = MagnebotController()
+c.init_floorplan_scene(scene="1a", layout=0, room=0)
 x = 30
-y = 16
-print(m.occupancy_map[x][y]) # 0 (free and navigable position)
-print(m.get_occupancy_position(x, y)) # (1.1157886505126946, 2.2528389358520506)
+z = 16
+print(c.occupancy_map[x][z]) # 0 (free and navigable position)
+print(c.get_occupancy_position(x, z)) # (1.1157886505126946, 2.2528389358520506)
+c.end()
 ```
 
 Images of occupancy maps can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/occupancy_maps). The blue squares are free navigable positions. Images are named `[scene]_[layout].jpg` For example, the occupancy map image for scene "2a" layout 0 is: `2_0.jpg`.
@@ -203,28 +55,54 @@ The occupancy map is static, meaning that it won't update when objects are moved
 
 Note that it is possible for the Magnebot to go to positions that aren't "free". The Magnebot's base is a rectangle that is longer on the sides than the front and back. The occupancy grid cell size is defined by the longer axis, so it is possible for the Magnebot to move forward and squeeze into a smaller space. The Magnebot can also push, lift, or otherwise move objects out of its way.
 
+- `rng` A random number generator.
+
+- `magnebot` [The Magnebot agent.](magnebot.md). Call this to access static or dynamic data:
+
+```python
+from magnebot import MagnebotController
+
+m = MagnebotController()
+m.init_scene()
+print(m.magnebot.dynamic.transform.position)
+m.end()
+```
+
+- `objects` [An `ObjectManager`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/add_ons/object_manager.md) for tracking static and dynamic object data:
+
+```python
+from magnebot import MagnebotController
+
+m = MagnebotController()
+m.init_floorplan_scene(scene="1a", layout=0, room=0)
+for object_id in m.objects.objects_static:
+    name = m.objects.objects_static[object_id].name
+    segmentation_color = m.objects.objects_static[object_id].segmentation_color
+    print(object_id, name, segmentation_color)
+for object_id in m.objects.transforms:
+    position = m.objects.transforms[object_id].position
+    print(object_id, position)
+m.end()
+```
+
 ***
 
 ## Functions
 
 #### \_\_init\_\_
 
-**`Magnebot()`**
+**`MagnebotController()`**
 
-**`Magnebot(port=1071, launch_build=False, screen_width=256, screen_height=256, auto_save_images=False, images_directory="images", random_seed=None, debug=False, img_is_png=False, skip_frames=10, check_pypi_version=True)`**
+**`MagnebotController(port=1071, launch_build=True, screen_width=256, screen_height=256, random_seed=None, skip_frames=10, check_pypi_version=True)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| port |  int  | 1071 | The socket port. [Read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/getting_started.md#command-line-arguments) for more information. |
-| launch_build |  bool  | False | If True, the build will launch automatically on the default port (1071). If False, you will need to launch the build yourself (for example, from a Docker container). |
+| port |  int  | 1071 | The port number. |
+| launch_build |  bool  | True | If True, automatically launch the build. If one doesn't exist, download and extract the correct version. Set this to False to use your own build, or (if you are a backend developer) to use Unity Editor. |
 | screen_width |  int  | 256 | The width of the screen in pixels. |
 | screen_height |  int  | 256 | The height of the screen in pixels. |
-| auto_save_images |  bool  | False | If True, automatically save images to `images_directory` at the end of every action. |
-| images_directory |  str  | "images" | The output directory for images if `auto_save_images == True`. |
-| random_seed |  int  | None | The seed used for random numbers. If None, this is chosen randomly. In the Magnebot API this is used only when randomly selecting a start position for the Magnebot (see the `room` parameter of `init_scene()`). The same random seed is used in higher-level APIs such as the Transport Challenge. |
-| debug |  bool  | False | If True, enable debug mode. This controller will output messages to the console, including any warnings or errors sent by the build. It will also create 3D plots of arm articulation IK solutions. |
-| img_is_png |  bool  | False | If True, the `img` pass images will be .png files. If False,  the `img` pass images will be .jpg files, which are smaller; the build will run approximately 2% faster. |
-| skip_frames |  int  | 10 | The build will return output data this many physics frames per simulation frame (`communicate()` call). This will greatly speed up the simulation, but eventually there will be a noticeable loss in physics accuracy. If you want to render every frame, set this to 0. |
+| random_seed |  int  | None | The seed used for random numbers. If None, this is chosen randomly. In the Magnebot API this is used only when randomly selecting a start position for the Magnebot (see the `room` parameter of `init_floorplan_scene()`). The same random seed is used in higher-level APIs such as the Transport Challenge. |
+| skip_frames |  int  | 10 | The build will return output data this many physics frames per simulation frame (communicate() call). This will greatly speed up the simulation, but eventually there will be a noticeable loss in physics accuracy. If you want to render every frame, set this to 0. |
 | check_pypi_version |  bool  | True | If True, compare the locally installed version of TDW and Magnebot to the most recent versions on PyPi. |
 
 ***
@@ -240,15 +118,15 @@ These functions should be sent at the start of the simulation.
 Initialize the Magnebot in an empty test room.
 
 ```python
-from magnebot import Magnebot
+from magnebot import MagnebotController
 
-m = Magnebot()
+m = MagnebotController()
 m.init_scene()
 
 # Your code here.
-```
 
-_Returns:_  An `ActionStatus` (always `success`).
+m.end()
+```
 
 #### init_floorplan_scene
 
@@ -263,12 +141,14 @@ It might take a few minutes to initialize the scene. You can call `init_scene()`
 Set the `scene` and `layout` parameters in `init_scene()` to load an interior scene with furniture and props. Set the `room` to spawn the avatar in the center of a specific room.
 
 ```python
-from magnebot import Magnebot
+from magnebot import MagnebotController
 
-m = Magnebot()
+m = MagnebotController()
 m.init_floorplan_scene(scene="2b", layout=0, room=1)
 
 # Your code here.
+
+m.end()
 ```
 
 Valid scenes, layouts, and rooms:
@@ -284,10 +164,6 @@ Images of each scene+layout combination can be found [here](https://github.com/a
 
 Images of where each room in a scene is can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/rooms). Images are named `[scene].jpg` For example, the image for scene "2a" layout 0 is: `2.jpg`.
 
-Possible [return values](action_status.md):
-
-- `success`
-
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -301,126 +177,90 @@ _Returns:_  An `ActionStatus` (always success).
 
 ### Movement
 
-These functions move or turn the Magnebot. [Read this for more information about movement and collision detection.](../movement.md)
+These functions move or turn the Magnebot. [Read this for more information about movement and collision detection.](../manual/magnebot_controller/movement.md)
 
 #### turn_by
 
 **`self.turn_by(angle)`**
 
-**`self.turn_by(angle, aligned_at=1, stop_on_collision=True, target_position=None)`**
+**`self.turn_by(angle, aligned_at=1)`**
 
 Turn the Magnebot by an angle.
 
-When turning, the left wheels will turn one way and the right wheels in the opposite way, allowing the Magnebot to turn in place.
-
-Possible [return values](action_status.md):
-
-- `success`
-- `failed_to_turn`
-- `tipping`
-- `collision`
+While turning, the left wheels will turn one way and the right wheels in the opposite way, allowing the Magnebot to turn in place.
 
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | angle |  float |  | The target angle in degrees. Positive value = clockwise turn. |
 | aligned_at |  float  | 1 | If the difference between the current angle and the target angle is less than this value, then the action is successful. |
-| stop_on_collision |  Union[bool, CollisionDetection] | True | If True, if the Magnebot will stop when it detects certain collisions. If False, ignore collisions. This can also be a [`CollisionDetection`](collision_detection.md) object. [Read this](../movement.md) for more information. |
-| target_position |  Dict[str, float] | None | This parameter is used internally by the `turn_to()` action. Do not set this parameter to anything other than None (the default). |
 
-_Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
+_Returns:_  An `ActionStatus` indicating whether the Magnebot succeeded in turning and if not, why.
 
 #### turn_to
 
 **`self.turn_to(target)`**
 
-**`self.turn_to(target, aligned_at=1, stop_on_collision=True)`**
+**`self.turn_to(target, aligned_at=1)`**
 
 Turn the Magnebot to face a target object or position.
 
-When turning, the left wheels will turn one way and the right wheels in the opposite way, allowing the Magnebot to turn in place.
-
-Possible [return values](action_status.md):
-
-- `success`
-- `failed_to_turn`
-- `tipping`
-- `collision`
+While turning, the left wheels will turn one way and the right wheels in the opposite way, allowing the Magnebot to turn in place.
 
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| target |  Union[int, Dict[str, float] |  | Either the ID of an object or a Vector3 position. |
-| aligned_at |  float  | 1 | If the different between the current angle and the target angle is less than this value, then the action is successful. |
-| stop_on_collision |  Union[bool, CollisionDetection] | True | If True, if the Magnebot will stop when it detects certain collisions. If False, ignore collisions. This can also be a [`CollisionDetection`](collision_detection.md) object. [Read this](../movement.md) for more information. |
+| target |  Union[int, Dict[str, float] |  | The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array. |
+| aligned_at |  float  | 1 | If the difference between the current angle and the target angle is less than this value, then the action is successful. |
 
-_Returns:_  An `ActionStatus` indicating if the Magnebot turned by the angle and if not, why.
+_Returns:_  An `ActionStatus` indicating whether the Magnebot succeeded in turning and if not, why.
 
 #### move_by
 
 **`self.move_by(distance)`**
 
-**`self.move_by(distance, arrived_at=0.1, stop_on_collision=True)`**
+**`self.move_by(distance, arrived_at=0.1)`**
 
 Move the Magnebot forward or backward by a given distance.
-
-Possible [return values](action_status.md):
-
-- `success`
-- `failed_to_move`
-- `collision`
-- `tipping`
 
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | distance |  float |  | The target distance. If less than zero, the Magnebot will move backwards. |
 | arrived_at |  float  | 0.1 | If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
-| stop_on_collision |  Union[bool, CollisionDetection] | True | If True, if the Magnebot will stop when it detects certain collisions. If False, ignore collisions. This can also be a [`CollisionDetection`](collision_detection.md) object. [Read this](../movement.md) for more information. |
 
-_Returns:_  An `ActionStatus` indicating if the Magnebot moved by `distance` and if not, why.
+_Returns:_  An `ActionStatus` indicating whether the Magnebot succeeded in moving and if not, why.
 
 #### move_to
 
 **`self.move_to(target)`**
 
-**`self.move_to(target, arrived_at=0.1, aligned_at=1, stop_on_collision=True)`**
+**`self.move_to(target, arrived_at=0.1, aligned_at=1, arrived_offset=0)`**
 
-Move the Magnebot to a target object or position.
-
-This is a wrapper function for `turn_to()` followed by `move_by()`.
-
-Possible [return values](action_status.md):
-
-- `success`
-- `failed_to_move`
-- `collision`
-- `failed_to_turn`
-- `tipping`
+Move to a target object or position. This combines turn_to() followed by move_by().
 
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| target |  Union[int, Dict[str, float] |  | Either the ID of an object or a Vector3 position. |
-| arrived_at |  float  | 0.1 | While moving, if at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
-| aligned_at |  float  | 1 | While turning, if the different between the current angle and the target angle is less than this value, then the action is successful. |
-| stop_on_collision |  Union[bool, CollisionDetection] | True | If True, if the Magnebot will stop when it detects certain collisions. If False, ignore collisions. This can also be a [`CollisionDetection`](collision_detection.md) object. [Read this](../movement.md) for more information. |
+| target |  Union[int, Dict[str, float] |  | The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array. |
+| arrived_at |  float  | 0.1 | If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
+| aligned_at |  float  | 1 | If the difference between the current angle and the target angle is less than this value, then the action is successful. |
+| arrived_offset |  float  | 0 | Offset the arrival position by this value. This can be useful if the Magnebot needs to move to an object but shouldn't try to move to the object's centroid. This is distinct from `arrived_at` because it won't affect the Magnebot's braking solution. |
 
-_Returns:_  An `ActionStatus` indicating if the Magnebot moved to the target and if not, why.
+_Returns:_  An `ActionStatus` indicating whether the Magnebot succeeded in moving and if not, why.
 
 #### reset_position
 
 **`self.reset_position()`**
 
-Reset the Magnebot so that it isn't tipping over. Set the Magnebot's position from `(x, y, z)` to `(x, 0, z)`, set its rotation to the default rotation (see `tdw.tdw_utils.QuaternionUtils.IDENTITY`), and drop all held objects. The action ends when all previously-held objects stop moving.
+Reset the Magnebot so that it isn't tipping over.
+This will rotate the Magnebot to the default rotation (so that it isn't tipped over) and move the Magnebot to the nearest empty space on the floor.
+It will also drop any held objects.
 
-This will be interpreted by the physics engine as a _very_ sudden and fast movement. This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
+This will be interpreted by the physics engine as a _very_ sudden and fast movement.
+This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
 
-Possible [return values](action_status.md):
-
-- `success`
-
-_Returns:_  An `ActionStatus` (always success).
+_Returns:_  An `ActionStatus` indicating whether the Magnebot reset its position and if not, why.
 
 ***
 
@@ -430,106 +270,82 @@ These functions move and bend the joints of the Magnebots's arms.
 
 During an arm articulation action, the Magnebot is always "immovable", meaning that its wheels are locked and it isn't possible for its root object to move or rotate.
 
-For more information regarding how arm articulation works, [read this](../arm_articulation.md).
+For more information regarding how arm articulation works, [read this](../manual/magnebot_controller/arm_articulation.md).
 
 #### reach_for
 
 **`self.reach_for(target, arm)`**
 
-**`self.reach_for(target, arm, absolute=True, arrived_at=0.125, target_orientation=TargetOrientation.auto, orientation_mode=OrientationMode.auto)`**
+**`self.reach_for(target, arm, absolute=True, arrived_at=0.125, orientation_mode=OrientationMode.auto, target_orientation=TargetOrientation.auto)`**
 
-Reach for a target position.
-
-The action ends when the arm stops moving. The arm might stop moving if it succeeded at finishing the motion, in which case the action is successful. Or, the arms might stop moving because the motion is impossible, there's an obstacle in the way, if the arm is holding something heavy, and so on.
-
-Possible [return values](action_status.md):
-
-- `success`
-- `cannot_reach`
-- `failed_to_reach`
+Reach for a target position. The action ends when the magnet is at or near the target position, or if it fails to reach the target.
+The Magnebot may try to reach for the target multiple times, trying different IK orientations each time, or no times, if it knows the action will fail.
 
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| target |  Dict[str, float] |  | The target position for the magnet at the arm to reach. |
-| arm |  Arm |  | The arm that will reach for the target. |
+| target |  Union[Dict[str, float] |  | The target position. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array. |
+| arm |  Arm |  | [The arm that will reach for the target.](arm.md) |
 | absolute |  bool  | True | If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot. |
 | arrived_at |  float  | 0.125 | If the magnet is this distance or less from `target`, then the action is successful. |
-| target_orientation |  TargetOrientation  | TargetOrientation.auto | [The target orientation of the IK solution.](../arm_articulation.md) |
-| orientation_mode |  OrientationMode  | OrientationMode.auto | [The orientation mode of the IK solution.](../arm_articulation.md) |
+| orientation_mode |  OrientationMode  | OrientationMode.auto | [The orientation mode.](ik/orientation_mode.md) |
+| target_orientation |  TargetOrientation  | TargetOrientation.auto | [The target orientation.](ik/target_orientation.md) |
 
-_Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` is at the `target` and if not, why.
+_Returns:_  An `ActionStatus` indicating whether the Magnebot's magnet reached the target position and if not, why.
 
 #### grasp
 
 **`self.grasp(target, arm)`**
 
-**`self.grasp(target, arm, target_orientation=TargetOrientation.auto, orientation_mode=OrientationMode.auto)`**
+**`self.grasp(target, arm, orientation_mode=OrientationMode.auto, target_orientation=TargetOrientation.auto)`**
 
-Try to grasp the target object with the arm. The Magnebot will reach for the nearest position on the object.
-
-If the magnet grasps the object, the arm will stop moving and the action is successful.
-
-Possible [return values](action_status.md):
-
-- `success`
-- `cannot_reach`
-- `failed_to_grasp`
+Try to grasp a target object.
+The action ends when either the Magnebot grasps the object, can't grasp it, or fails arm articulation.
 
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | target |  int |  | The ID of the target object. |
-| arm |  Arm |  | The arm of the magnet that will try to grasp the object. |
-| target_orientation |  TargetOrientation  | TargetOrientation.auto | [The target orientation of the IK solution.](../arm_articulation.md) |
-| orientation_mode |  OrientationMode  | OrientationMode.auto | [The orientation mode of the IK solution.](../arm_articulation.md) |
+| arm |  Arm |  | [The arm that will reach for and grasp the target.](arm.md) |
+| orientation_mode |  OrientationMode  | OrientationMode.auto | [The orientation mode.](ik/orientation_mode.md) |
+| target_orientation |  TargetOrientation  | TargetOrientation.auto | [The target orientation.](ik/target_orientation.md) |
 
-_Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` is holding the `target` and if not, why.
+_Returns:_  An `ActionStatus` indicating whether the Magnebot succeeded in grasping the object and if not, why.
 
 #### drop
 
 **`self.drop(target, arm)`**
 
-**`self.drop(target, arm, wait_for_objects=True)`**
+**`self.drop(target, arm, wait_for_object=True)`**
 
 Drop an object held by a magnet.
-
-See [`SceneState.held`](scene_state.md) for a dictionary of held objects.
-
-Possible [return values](action_status.md):
-
-- `success`
-- `not_holding`
 
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | target |  int |  | The ID of the object currently held by the magnet. |
-| arm |  Arm |  | The arm of the magnet holding the object. |
-| wait_for_objects |  bool  | True | If True, the action will continue until the objects have finished falling. If False, the action advances the simulation by exactly 1 frame. |
+| arm |  Arm |  | [The arm of the magnet holding the object.](arm.md) |
+| wait_for_object |  bool  | True | If True, the action will continue until the object has finished falling. If False, the action advances the simulation by exactly 1 frame. |
 
-_Returns:_  An `ActionStatus` indicating if the magnet at the end of the `arm` dropped the `target`.
+_Returns:_  An `ActionStatus` indicating whether the Magnebot succeeded in dropping the object and if not, why.
 
 #### reset_arm
 
 **`self.reset_arm(arm)`**
 
-**`self.reset_arm(arm, reset_torso=True)`**
+Reset the Magnebot so that it isn't tipping over.
+This will rotate the Magnebot to the default rotation (so that it isn't tipped over) and move the Magnebot to the nearest empty space on the floor.
+It will also drop any held objects.
 
-Reset an arm to its neutral position.
-
-Possible [return values](action_status.md):
-
-- `success`
-- `failed_to_bend`
+This will be interpreted by the physics engine as a _very_ sudden and fast movement.
+This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
 
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| arm |  Arm |  | The arm that will be reset. |
-| reset_torso |  bool  | True | If True, rotate and slide the torso to its neutral rotation and height. |
+| arm |  Arm |  | [The arm to reset.](arm.md) |
 
-_Returns:_  An `ActionStatus` indicating if the arm reset and if not, why.
+_Returns:_  An `ActionStatus` indicating whether the Magnebot reset its arm and if not, why.
 
 ***
 
@@ -545,30 +361,13 @@ These commands rotate the Magnebot's camera or add additional camera to the scen
 
 Rotate the Magnebot's camera by the (roll, pitch, yaw) axes.
 
-Each axis of rotation is constrained (see `Magnebot.CAMERA_RPY_CONSTRAINTS`).
+Each axis of rotation is constrained by the following limits:
 
 | Axis | Minimum | Maximum |
 | --- | --- | --- |
 | roll | -55 | 55 |
 | pitch | -70 | 70 |
 | yaw | -85 | 85 |
-
-See `self.camera_rpy` for the current (roll, pitch, yaw) angles of the camera.
-
-```python
-from magnebot import Magnebot
-
-m = Magnebot()
-m.init_floorplan_scene(scene="2a", layout=1)
-status = m.rotate_camera(roll=-10, pitch=-90, yaw=45)
-print(status) # ActionStatus.clamped_camera_rotation
-print(m.camera_rpy) # [-10 -70 45]
-```
-
-Possible [return values](action_status.md):
-
-- `success`
-- `clamped_camera_rotation`
 
 
 | Parameter | Type | Default | Description |
@@ -577,7 +376,7 @@ Possible [return values](action_status.md):
 | pitch |  float  | 0 | The pitch angle in degrees. |
 | yaw |  float  | 0 | The yaw angle in degrees. |
 
-_Returns:_  An `ActionStatus` indicating if the camera rotated fully or if the rotation was clamped..
+_Returns:_  An `ActionStatus` indicating whether the Magnebot rotated its camera freely or if the rotation was clamped at a limit.
 
 #### reset_camera
 
@@ -585,54 +384,27 @@ _Returns:_  An `ActionStatus` indicating if the camera rotated fully or if the r
 
 Reset the rotation of the Magnebot's camera to its default angles.
 
-```python
-from magnebot import Magnebot
-
-m = Magnebot()
-m.init_floorplan_scene(scene="2a", layout=1)
-m.rotate_camera(roll=-10, pitch=-90, yaw=45)
-m.reset_camera()
-print(m.camera_rpy) # [0 0 0]
-```
-
-Possible [return values](action_status.md):
-
-- `success`
-
-_Returns:_  An `ActionStatus` (always `success`).
-
-#### add_camera
-
-**`self.add_camera(position)`**
-
-**`self.add_camera(position, roll=0, pitch=0, yaw=0, look_at=True, follow=False, camera_id="c")`**
-
-Add a third person camera (i.e. a camera not attached to the any object) to the scene. This camera will render concurrently with the camera attached to the Magnebot and will output images at the end of every action (see [`SceneState.third_person_images`](scene_state.md)).
-
-This should only be sent per `init_scene()` call. When `init_scene()` is called to reset the simulation, you'll need to send `add_camera()` again too.
-
-Possible [return values](action_status.md):
-
-- `success`
-
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| position |  Dict[str, float] |  | The initial position of the camera. If `follow == True`, this is relative to the Magnebot. If `follow == False`, this is in absolute worldspace coordinates. |
-| roll |  float  | 0 | The initial roll of the camera in degrees. |
-| pitch |  float  | 0 | The initial pitch of the camera in degrees. |
-| yaw |  float  | 0 | The initial yaw of the camera in degrees. |
-| look_at |  bool  | True | If True, on every frame, the camera will rotate to look at the Magnebot. |
-| follow |  bool  | False | If True, on every frame, the camera will follow the Magnebot, maintaining a constant relative position and rotation. |
-| camera_id |  str  | "c" | The ID of this camera. |
-
-_Returns:_  An `ActionStatus` (always `success`).
+_Returns:_  An `ActionStatus` (always success).
 
 ***
 
 ### Misc.
 
 These are utility functions that won't advance the simulation by any frames.
+
+#### get_visible_objects
+
+**`self.get_visible_objects()`**
+
+Get all objects visible to the Magnebot.
+
+_Returns:_  A list of IDs of visible objects.
+
+#### end
+
+**`self.end()`**
+
+End the simulation. Terminate the build process.
 
 #### get_occupancy_position
 
@@ -642,17 +414,6 @@ Converts the position `(i, j)` in the occupancy map to `(x, z)` worldspace coord
 
 This only works if you've loaded an occupancy map via `self.init_floorplan_scene()`.
 
-```python
-from magnebot import Magnebot
-
-m = Magnebot(launch_build=False)
-m.init_floorplan_scene(scene="1a", layout=0)
-x = 30
-y = 16
-print(m.occupancy_map[x][y]) # 0 (free and navigable position)
-print(m.get_occupancy_position(x, y)) # (1.1157886505126946, 2.2528389358520506)
-```
-
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -660,20 +421,6 @@ print(m.get_occupancy_position(x, y)) # (1.1157886505126946, 2.2528389358520506)
 | j |  int |  | The j coordinate in the occupancy map. |
 
 _Returns:_  Tuple: (x coordinate; z coordinate) of the corresponding worldspace position.
-
-#### get_visible_objects
-
-**`self.get_visible_objects()`**
-
-Get all objects visible to the Magnebot in `self.state` using the id (segmentation color) image.
-
-_Returns:_  A list of IDs of visible objects.
-
-#### end
-
-**`self.end()`**
-
-End the simulation. Terminate the build process.
 
 ***
 
@@ -685,16 +432,216 @@ These are low-level functions that you are unlikely to ever need to use.
 
 **`self.communicate(commands)`**
 
-Use this function to send low-level TDW API commands and receive low-level output data. See: [`Controller.communicate()`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/controller.md)
-
-You shouldn't ever need to use this function, but you might see it in some of the example controllers because they might require a custom scene setup.
+Send commands and receive output data in response.
 
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| commands |  Union[dict, List[dict] |  | Commands to send to the build. See: [Command API](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md). |
+| commands |  Union[dict, List[dict] |  | A list of JSON commands. |
 
-_Returns:_  The response from the build as a list of byte arrays. See: [Output Data](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/output_data.md).
+_Returns:_  The output data from the build.
 
-***
+#### get_add_object
+
+**`Controller.get_add_object(model_name, object_id)`**
+
+**`Controller.get_add_object(model_name, position=None, rotation=None, library="", object_id)`**
+
+_This is a static function._
+
+Returns a valid add_object command.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| model_name |  str |  | The name of the model. |
+| position |  Dict[str, float] | None | The position of the model. If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
+| rotation |  Dict[str, float] | None | The starting rotation of the model, in Euler angles. If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
+| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `ModelLibrarian.get_library_filenames()` and `ModelLibrarian.get_default_library()`. |
+| object_id |  int |  | The ID of the new object. |
+
+_Returns:_  An add_object command that the controller can then send.
+
+#### get_add_physics_object
+
+**`Controller.get_add_physics_object(model_name, object_id)`**
+
+**`Controller.get_add_physics_object(model_name, position=None, rotation=None, library="", object_id, scale_factor=None, kinematic=False, gravity=True, default_physics_values=True, mass=1, dynamic_friction=0.3, static_friction=0.3, bounciness=0.7)`**
+
+_This is a static function._
+
+Add an object to the scene with physics values (mass, friction coefficients, etc.).
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| model_name |  str |  | The name of the model. |
+| position |  Dict[str, float] | None | The position of the model. If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
+| rotation |  Dict[str, float] | None | The starting rotation of the model, in Euler angles. If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
+| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `ModelLibrarian.get_library_filenames()` and `ModelLibrarian.get_default_library()`. |
+| object_id |  int |  | The ID of the new object. |
+| scale_factor |  Dict[str, float] | None | The [scale factor](../api/command_api.md#
+
+#### get_add_material
+
+**`Controller.get_add_material(material_name)`**
+
+**`Controller.get_add_material(material_name, library="")`**
+
+_This is a static function._
+
+Returns a valid add_material command.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| material_name |  str |  | The name of the material. |
+| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `MaterialLibrarian.get_library_filenames()` and `MaterialLibrarian.get_default_library()`. |
+
+_Returns:_  An add_material command that the controller can then send.
+
+#### get_add_scene
+
+**`Controller.get_add_scene(scene_name)`**
+
+**`Controller.get_add_scene(scene_name, library="")`**
+
+_This is a static function._
+
+Returns a valid add_scene command.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| scene_name |  str |  | The name of the scene. |
+| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `SceneLibrarian.get_library_filenames()` and `SceneLibrarian.get_default_library()`. |
+
+_Returns:_  An add_scene command that the controller can then send.
+
+#### get_add_hdri_skybox
+
+**`Controller.get_add_hdri_skybox(skybox_name)`**
+
+**`Controller.get_add_hdri_skybox(skybox_name, library="")`**
+
+_This is a static function._
+
+Returns a valid add_hdri_skybox command.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| skybox_name |  str |  | The name of the skybox. |
+| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `HDRISkyboxLibrarian.get_library_filenames()` and `HDRISkyboxLibrarian.get_default_library()`. |
+
+_Returns:_  An add_hdri_skybox command that the controller can then send.
+
+#### get_add_humanoid
+
+**`Controller.get_add_humanoid(humanoid_name, object_id)`**
+
+**`Controller.get_add_humanoid(humanoid_name, position=None, rotation=None, library="", object_id)`**
+
+_This is a static function._
+
+Returns a valid add_humanoid command.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| humanoid_name |  str |  | The name of the humanoid. |
+| position |  Dict[str, float] | None | The position of the humanoid. |
+| rotation |  Dict[str, float] | None | The starting rotation of the humanoid, in Euler angles. |
+| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `HumanoidLibrarian.get_library_filenames()` and `HumanoidLibrarian.get_default_library()`. |
+| object_id |  int |  | The ID of the new object. |
+
+_Returns:_  An add_humanoid command that the controller can then send.
+
+#### get_add_humanoid_animation
+
+**`Controller.get_add_humanoid_animation(humanoid_animation_name)`**
+
+**`Controller.get_add_humanoid_animation(humanoid_animation_name, library="")`**
+
+_This is a static function._
+
+Returns a valid add_humanoid_animation command and the record (which you will need to play an animation).
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| humanoid_animation_name |  str |  | The name of the animation. |
+| library |  | "" | The path to the records file. If left empty, the default library will be selected. See `HumanoidAnimationLibrarian.get_library_filenames()` and `HumanoidAnimationLibrarian.get_default_library()`. |
+
+_Returns:_  An add_humanoid_animation command that the controller can then send.
+
+#### get_add_robot
+
+**`Controller.get_add_robot(name, robot_id)`**
+
+**`Controller.get_add_robot(name, robot_id, position=None, rotation=None, library="")`**
+
+_This is a static function._
+
+Returns a valid add_robot command.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| name |  str |  | The name of the robot. |
+| robot_id |  int |  | A unique ID for the robot. |
+| position |  Dict[str, float] | None | The initial position of the robot. If None, the position will be (0, 0, 0). |
+| rotation |  Dict[str, float] | None | The initial rotation of the robot in Euler angles. |
+| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `RobotLibrarian.get_library_filenames()` and `RobotLibrarian.get_default_library()`. |
+
+_Returns:_  An `add_robot` command that the controller can then send.
+
+#### get_version
+
+**`self.get_version()`**
+
+Send a send_version command to the build.
+
+_Returns:_  The TDW version and the Unity Engine version.
+
+#### get_unique_id
+
+**`Controller.get_unique_id()`**
+
+_This is a static function._
+
+Generate a unique integer. Useful when creating objects.
+
+_Returns:_  The new unique ID.
+
+#### get_frame
+
+**`Controller.get_frame(frame)`**
+
+_This is a static function._
+
+Converts the frame byte array to an integer.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| frame |  bytes |  | The frame as bytes. |
+
+_Returns:_  The frame as an integer.
+
+#### launch_build
+
+**`Controller.launch_build()`**
+
+**`Controller.launch_build(port=1071)`**
+
+_This is a static function._
+
+Launch the build. If a build doesn't exist at the expected location, download one to that location.
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| port |  int  | 1071 | The socket port. |
+
+
 

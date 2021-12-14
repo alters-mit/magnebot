@@ -1,4 +1,4 @@
-from magnebot import Magnebot, Arm, ActionStatus
+from magnebot import MagnebotController, Arm, ActionStatus
 
 """
 Test arm movement symmetry.
@@ -6,7 +6,7 @@ Test arm movement symmetry.
 
 
 if __name__ == "__main__":
-    m = Magnebot()
+    m = MagnebotController()
     m.init_scene()
     # Bend both arms to mirrored targets.
     for direction, arm in zip([1, -1], [Arm.left, Arm.right]):

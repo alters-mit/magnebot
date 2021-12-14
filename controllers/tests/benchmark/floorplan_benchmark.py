@@ -1,9 +1,9 @@
 from time import time
 from typing import List
-from magnebot import Magnebot
+from magnebot import MagnebotController
 
 
-class FloorplanBenchmark(Magnebot):
+class FloorplanBenchmark(MagnebotController):
     """
     Benchmark how global values affect speed.
     """
@@ -22,7 +22,6 @@ class FloorplanBenchmark(Magnebot):
                            "enable": reflection_probe},
                           {"$type": "set_post_process",
                            "value": post_process}])
-        self._end_action()
 
         times: List[float] = list()
         direction = 1

@@ -1,14 +1,12 @@
-from time import time
 import numpy as np
 from tqdm import tqdm
 from tdw.tdw_utils import TDWUtils
-from tdw.object_init_data import AudioInitData
-from magnebot import Magnebot, ActionStatus, Arm
+from magnebot import MagnebotController, ActionStatus, Arm
 from magnebot.ik.target_orientation import TargetOrientation
 from magnebot.ik.orientation_mode import OrientationMode
 
 
-class IK(Magnebot):
+class IK(MagnebotController):
     """
     Reach for random targets using the automated IK orientation system.
     If the action succeeds OR if the action fails but we expected it to fail, record the trial as a "correct guess".
@@ -76,95 +74,6 @@ class IK(Magnebot):
         pbar.close()
         return successes / (len(self.positions) * 2)
 
-    def get_orientation_speed(self) -> float:
-        """
-        :return: The average speed of `_get_ik_orientation()`.
-        """
-
-        orientation_times = list()
-        for arm in [Arm.left, Arm.right]:
-            for i in range(len(self.positions)):
-                # Get the orientation.
-                t0 = time()
-                self._get_ik_orientations(arm=arm, target=self.positions[i])
-                orientation_times.append(time() - t0)
-        return sum(orientation_times) / len(orientation_times)
-
-    def no_orientation(self) -> float:
-        """
-        Per arm, reach for targets and record whether the IK system correctly guessed the outcome.
-
-        :return: The percentage of times where we guessed the action would fail and it did.
-        """
-
-        pbar = tqdm(total=len(self.positions) * 2)
-        correct_no_orientation: int = 0
-        total_no_orientation: int = 0
-        for arm in [Arm.left, Arm.right]:
-            for i in range(len(self.positions)):
-                # Reload the scene.
-                self.init_scene()
-                orientations = self._get_ik_orientations(arm=arm, target=self.positions[i])
-                if len(orientations) == 0:
-                    target_orientation = TargetOrientation.none
-                    orientation_mode = OrientationMode.none
-                else:
-                    target_orientation = orientations[0].target_orientation
-                    orientation_mode = orientations[0].orientation_mode
-
-                # Reach for the target.
-                status = self.reach_for(target=TDWUtils.array_to_vector3(self.positions[i]),
-                                        arm=arm,
-                                        arrived_at=self.arrived_at,
-                                        target_orientation=target_orientation,
-                                        orientation_mode=orientation_mode)
-                # Record how often we correctly guess that there's no solution (the action should fail).
-                if len(orientations) == 0:
-                    total_no_orientation += 1
-                    if status != ActionStatus.success:
-                        correct_no_orientation += 1
-                pbar.update(1)
-        pbar.close()
-        if total_no_orientation > 0:
-            return correct_no_orientation / total_no_orientation
-        else:
-            return -1
-
-    def grasp_ik(self) -> float:
-        """
-        Test how often we correctly guess that a `grasp()` action will succeed.
-
-        :return: The percentage of times where we guessed correctly.
-        """
-
-        pbar = tqdm(total=len(self.positions) * 2)
-        successes: int = 0
-        for arm in [Arm.left, Arm.right]:
-            for i in range(len(self.positions)):
-                a = AudioInitData(name="jug05",
-                                  position=TDWUtils.array_to_vector3(self.positions[i]),
-                                  kinematic=True,
-                                  gravity=False)
-                self.init_scene(a=a)
-                # Reach for the target.
-                status = self.grasp(target=list(self.objects_static.keys())[0], arm=arm)
-                # Record a successful action or an action that was unsuccessful that we guessed would be.
-                if status == ActionStatus.success or status == ActionStatus.cannot_reach:
-                    successes += 1
-                pbar.update(1)
-        pbar.close()
-        return successes / (len(self.positions) * 2)
-
-    def init_scene(self, a: AudioInitData = None) -> ActionStatus:
-        """
-        Added optional parameter `a` to add an object to the scene.
-        """
-
-        if a is not None:
-            o_id, o_commands = a.get_commands()
-            self._object_init_commands[o_id] = o_commands
-        return super().init_scene()
-
 
 if __name__ == "__main__":
     m = IK()
@@ -174,14 +83,5 @@ if __name__ == "__main__":
 
     none = m.run(target_orientation=TargetOrientation.none, orientation_mode=OrientationMode.none)
     print("Success if orientation is (none, none):", none)
-
-    orientation_speed = m.get_orientation_speed()
-    print("Average time elapsed per _get_ik_orientation() call:", orientation_speed)
-
-    no_orientation = m.no_orientation()
-    print("Accuracy of no solution prediction:", no_orientation)
-
-    grasp = m.grasp_ik()
-    print("Accuracy of grasp():", grasp)
 
     m.end()

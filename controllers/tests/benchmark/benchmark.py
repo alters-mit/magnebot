@@ -1,9 +1,9 @@
 from typing import List
 from time import time
-from magnebot import Magnebot
+from magnebot import MagnebotController
 
 
-class Benchmark(Magnebot):
+class Benchmark(MagnebotController):
     """
     Run simple benchmarks for the average speed of an action.
 
@@ -43,7 +43,7 @@ class Benchmark(Magnebot):
         print("| Skipped frames | Time elapsed |\n| --- | --- |")
         for frames in [0, 5, 10, 15, 20]:
             self.init_scene()
-            self._skip_frames = frames
+            self._step_physics.num_frames = frames
             t = self._get_move_fps()
             print(f"| {frames} | {t} |")
 

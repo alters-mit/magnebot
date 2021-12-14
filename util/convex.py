@@ -58,7 +58,6 @@ class Convex(Controller):
         Write all convex sides per object to disk.
         """
 
-        self.start()
         self.communicate({"$type": "create_empty_environment"})
 
         for record in self.model_librarian.records:
