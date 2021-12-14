@@ -8,7 +8,7 @@
   - `pip3 install tdw -U`
   - Download [the latest release of the TDW build](https://github.com/threedworld-mit/tdw/releases/latest/) and unzip the file. 
 - Read the rest of this guide.
-- [Read the TDW troubleshooting guide](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/troubleshooting/overview.md).
+- [Read the TDW troubleshooting guide](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/troubleshooting/issues.md).
 - If you're still getting errors or buggy behavior, create a GitHub Issue on this repo. Describe the problem and include steps to reproduce the bug. If possible, please also include [the player log](https://docs.unity3d.com/Manual/LogFiles.html).
 
 ## Common questions

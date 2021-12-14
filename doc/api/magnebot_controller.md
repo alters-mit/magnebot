@@ -443,9 +443,9 @@ _Returns:_  The output data from the build.
 
 #### get_add_object
 
-**`Controller(object).get_add_object(model_name, object_id)`**
+**`Controller.get_add_object(model_name, object_id)`**
 
-**`Controller(object).get_add_object(model_name, position=None, rotation=None, library="", object_id)`**
+**`Controller.get_add_object(model_name, position=None, rotation=None, library="", object_id)`**
 
 _This is a static function._
 
@@ -464,9 +464,9 @@ _Returns:_  An add_object command that the controller can then send.
 
 #### get_add_physics_object
 
-**`Controller(object).get_add_physics_object(model_name, object_id)`**
+**`Controller.get_add_physics_object(model_name, object_id)`**
 
-**`Controller(object).get_add_physics_object(model_name, position=None, rotation=None, library="", object_id, scale_factor=None, kinematic=False, gravity=True, default_physics_values=True, mass=1, dynamic_friction=0.3, static_friction=0.3, bounciness=0.7)`**
+**`Controller.get_add_physics_object(model_name, position=None, rotation=None, library="", object_id, scale_factor=None, kinematic=False, gravity=True, default_physics_values=True, mass=1, dynamic_friction=0.3, static_friction=0.3, bounciness=0.7)`**
 
 _This is a static function._
 
@@ -484,9 +484,9 @@ Add an object to the scene with physics values (mass, friction coefficients, etc
 
 #### get_add_material
 
-**`Controller(object).get_add_material(material_name)`**
+**`Controller.get_add_material(material_name)`**
 
-**`Controller(object).get_add_material(material_name, library="")`**
+**`Controller.get_add_material(material_name, library="")`**
 
 _This is a static function._
 
@@ -502,9 +502,9 @@ _Returns:_  An add_material command that the controller can then send.
 
 #### get_add_scene
 
-**`Controller(object).get_add_scene(scene_name)`**
+**`Controller.get_add_scene(scene_name)`**
 
-**`Controller(object).get_add_scene(scene_name, library="")`**
+**`Controller.get_add_scene(scene_name, library="")`**
 
 _This is a static function._
 
@@ -520,9 +520,9 @@ _Returns:_  An add_scene command that the controller can then send.
 
 #### get_add_hdri_skybox
 
-**`Controller(object).get_add_hdri_skybox(skybox_name)`**
+**`Controller.get_add_hdri_skybox(skybox_name)`**
 
-**`Controller(object).get_add_hdri_skybox(skybox_name, library="")`**
+**`Controller.get_add_hdri_skybox(skybox_name, library="")`**
 
 _This is a static function._
 
@@ -538,9 +538,9 @@ _Returns:_  An add_hdri_skybox command that the controller can then send.
 
 #### get_add_humanoid
 
-**`Controller(object).get_add_humanoid(humanoid_name, object_id)`**
+**`Controller.get_add_humanoid(humanoid_name, object_id)`**
 
-**`Controller(object).get_add_humanoid(humanoid_name, position=None, rotation=None, library="", object_id)`**
+**`Controller.get_add_humanoid(humanoid_name, position=None, rotation=None, library="", object_id)`**
 
 _This is a static function._
 
@@ -559,9 +559,9 @@ _Returns:_  An add_humanoid command that the controller can then send.
 
 #### get_add_humanoid_animation
 
-**`Controller(object).get_add_humanoid_animation(humanoid_animation_name)`**
+**`Controller.get_add_humanoid_animation(humanoid_animation_name)`**
 
-**`Controller(object).get_add_humanoid_animation(humanoid_animation_name, library="")`**
+**`Controller.get_add_humanoid_animation(humanoid_animation_name, library="")`**
 
 _This is a static function._
 
@@ -577,9 +577,9 @@ _Returns:_  An add_humanoid_animation command that the controller can then send.
 
 #### get_add_robot
 
-**`Controller(object).get_add_robot(name, robot_id)`**
+**`Controller.get_add_robot(name, robot_id)`**
 
-**`Controller(object).get_add_robot(name, robot_id, position=None, rotation=None, library="")`**
+**`Controller.get_add_robot(name, robot_id, position=None, rotation=None, library="")`**
 
 _This is a static function._
 
@@ -606,7 +606,7 @@ _Returns:_  The TDW version and the Unity Engine version.
 
 #### get_unique_id
 
-**`Controller(object).get_unique_id()`**
+**`Controller.get_unique_id()`**
 
 _This is a static function._
 
@@ -616,7 +616,7 @@ _Returns:_  The new unique ID.
 
 #### get_frame
 
-**`Controller(object).get_frame(frame)`**
+**`Controller.get_frame(frame)`**
 
 _This is a static function._
 
@@ -631,9 +631,9 @@ _Returns:_  The frame as an integer.
 
 #### launch_build
 
-**`Controller(object).launch_build()`**
+**`Controller.launch_build()`**
 
-**`Controller(object).launch_build(port=1071)`**
+**`Controller.launch_build(port=1071)`**
 
 _This is a static function._
 
