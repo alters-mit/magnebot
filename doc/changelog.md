@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.1
+
+- Fixed: `'NoneType' object has no attribute 'transform'` in minimal `Magnebot` example because the add-on isn't appended to `c.add_ons`
+
 ## 2.0.0
 
 **This is a MAJOR update to the Magnebot API. Please read this changelog carefully.**
