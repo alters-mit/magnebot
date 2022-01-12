@@ -11,6 +11,7 @@ from magnebot import Magnebot, ActionStatus
 
 c = Controller()  # On a server, change this to Controller(launch_build=False)
 magnebot = Magnebot()
+c.add_ons.append(magnebot)
 c.communicate(TDWUtils.create_empty_room(12, 12))
 magnebot.move_by(2)
 while magnebot.action.status == ActionStatus.ongoing:
