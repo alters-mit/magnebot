@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.2
+
+- Required version of TDW is now >=1.9.9.2
+- Updated example controllers to set `scale_mass=False` (see changelog of TDW v1.9.9)
+
 ## 2.0.1
 
 - Fixed: `'NoneType' object has no attribute 'transform'` in minimal `Magnebot` example because the add-on isn't appended to `c.add_ons`

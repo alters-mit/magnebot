@@ -77,6 +77,7 @@ class ChaseBall(Controller):
                                                     position={"x": -0.871, "y": 0.1, "z": 3.189},
                                                     scale_factor={"x": 0.2, "y": 0.2, "z": 0.2},
                                                     default_physics_values=False,
+                                                    scale_mass=False,
                                                     dynamic_friction=0.1,
                                                     static_friction=0.1,
                                                     bounciness=0.7,

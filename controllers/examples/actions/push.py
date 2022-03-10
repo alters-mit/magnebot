@@ -146,6 +146,7 @@ class PushController(Controller):
                                                     rotation={"x": 0, "y": -29, "z": 0},
                                                     scale_factor={"x": 1, "y": 0.8, "z": 1},
                                                     default_physics_values=False,
+                                                    scale_mass=False,
                                                     kinematic=True,
                                                     object_id=trunck_id))
         commands.extend(self.get_add_physics_object(model_name="vase_02",
