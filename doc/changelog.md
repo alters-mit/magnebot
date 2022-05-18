@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.3
+
+- Removed `CompositeObjects` from output data types that can be used by `util.get_data(resp, d_type)` because `CompositeObjects` has been removed as of TDW v1.10.0; Magnebot is still compatible with TDW >=1.9.9.2 but as usual we recommend that users upgrade to the latest version of TDW whenever possible.
+
 ## 2.0.2
 
 - Required version of TDW is now >=1.9.9.2

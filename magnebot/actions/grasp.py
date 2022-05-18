@@ -105,13 +105,13 @@ class Grasp(IKMotion):
             bounds = get_data(resp=resp, d_type=Bounds)
             for i in range(bounds.get_num()):
                 if bounds.get_id(i) == self._target:
-                    self._target_bounds = {"left": np.array(bounds.get_left(i)),
-                                           "right": np.array(bounds.get_right(i)),
-                                           "front": np.array(bounds.get_front(i)),
-                                           "back": np.array(bounds.get_back(i)),
-                                           "top": np.array(bounds.get_top(i)),
-                                           "bottom": np.array(bounds.get_bottom(i)),
-                                           "center": np.array(bounds.get_center(i))}
+                    self._target_bounds = {"left": bounds.get_left(i),
+                                           "right": bounds.get_right(i),
+                                           "front": bounds.get_front(i),
+                                           "back": bounds.get_back(i),
+                                           "top": bounds.get_top(i),
+                                           "bottom": bounds.get_bottom(i),
+                                           "center": bounds.get_center(i)}
                     self._grasp_status = _GraspStatus.spherecasting
                     return [{"$type": "send_spherecast",
                              "radius": 0.2,
