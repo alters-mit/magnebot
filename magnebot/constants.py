@@ -24,4 +24,4 @@ WHEEL_CIRCUMFERENCE: float = 2 * np.pi * WHEEL_RADIUS
 # The wheel friction coefficient when braking during a move action.
 BRAKE_FRICTION: float = 0.95
 # The required TDW version.
-TDW_VERSION: str = "1.9.9"
+TDW_VERSION: str = "1.10.0"

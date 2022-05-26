@@ -66,7 +66,7 @@ class Push(IKMotion):
                     bounds = Bounds(resp[i])
                     for j in range(bounds.get_num()):
                         if bounds.get_id(j) == self.target:
-                            self.initial_object_centroid = np.array(bounds.get_center(j))
+                            self.initial_object_centroid = bounds.get_center(j)
                             break
             self.initial_object_position = self._get_object_position(resp=resp)
             # Slide the torso up and above the target object.
@@ -110,7 +110,7 @@ class Push(IKMotion):
                 transforms = Transforms(resp[i])
                 for j in range(transforms.get_num()):
                     if transforms.get_id(j) == self.target:
-                        return np.array(transforms.get_position(j))
+                        return transforms.get_position(j)
         raise Exception()
 
     def _get_ik_target_position(self) -> np.array:
