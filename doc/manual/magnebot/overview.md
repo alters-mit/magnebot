@@ -28,7 +28,7 @@ c.communicate({"$type": "terminate"})
 In order to use `Magnebot`, you need to understand more of TDW than if you use `MagenbotController`. [TDW is extensively documented.](https://github.com/threedworld-mit/tdw) We recommend reading these sections in particular:
 
 - [Core concepts](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/core_concepts/controller.md) explains the fundamentals of TDW.
-- [Objects and scenes](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/objects_and_scenes/overview.md) explains how to populate a scene with objects.
+- [Scene Setup](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/scene_setup/overview.md) explains how to populate a scene with objects.
 - [Visual perception](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/visual_perception/overview.md) explains how to access data image passes such as the depth map.
 - [Physics (PhysX)](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/physx/physx.md) explains how the physics engine works in TDW.
 - [Robots](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/robots/overview.md) explains TDW robotics simulation. The `Magnebot` agent uses TDW robotics commands and is itself a subclass of [`Robot`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/add_ons/robot.md).

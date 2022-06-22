@@ -1,29 +1,44 @@
 from pathlib import Path
-from os import chdir
+from os import chdir, remove
+from shutil import copy
 from pkg_resources import resource_filename
-from py_md_doc import PyMdDoc
+from py_md_doc import PyMdDoc, ClassInheritance
 from md_link_tester import MdLinkTester
+from tdw_dev.config import Config
 
 
 if __name__ == "__main__":
     chdir("..")
     metadata_file = "doc_metadata.json"
+    md = PyMdDoc(input_directory="magnebot", files=["magnebot.py",
+                                                    "magnebot_controller.py"], metadata_path=metadata_file)
+    md.get_docs(output_directory="doc/api")
+    tdw_path = Config().tdw_path.joinpath("Python/tdw")
     # Add documentation for classes that inherit from tdw classes.
-    for magnebot_class, tdw_class in zip(["magnebot",
-                                          "magnebot_controller",
+    for magnebot_class, tdw_class in zip(["magnebot_controller",
                                           "magnebot_dynamic",
                                           "magnebot_static"],
-                                         ["add_ons/robot_base.py",
-                                          "controller.py",
-                                          "robot_data/robot_dynamic.py",
+                                         ["robot_data/robot_dynamic.py",
                                           "robot_data/robot_static.py",
                                           "add_ons/add_on.py"]):
+        # Copy the TDW file.
+        tdw_src = tdw_path.joinpath(tdw_class)
+        tdw_class_split = tdw_class.split('/')
+        if len(tdw_class_split) == 1:
+            tdw_file = tdw_class_split[0]
+        else:
+            tdw_file = tdw_class_split[1]
+        tdw_dst = f"magnebot/{tdw_file}"
+        copy(src=tdw_src, dst=tdw_dst)
         # Generate the document.
-        md = PyMdDoc(input_directory="magnebot", files=[f"{magnebot_class}.py"], metadata_path=metadata_file)
-        docs = md.get_docs_with_inheritance(abstract_class_path=resource_filename("tdw", tdw_class),
-                                            child_class_paths=[f"magnebot/{magnebot_class}.py"])
-        Path(f"doc/api/{magnebot_class}.md").write_text(docs[magnebot_class])
-
+        ClassInheritance.get_from_directory(input_directory="magnebot",
+                                            output_directory="doc/api",
+                                            import_path="magnebot",
+                                            includes=[f"{magnebot_class}.py", tdw_file])
+        # Remove the TDW file.
+        remove(tdw_dst)
+        # Remove the TDW document.
+        remove(f"doc/api/{tdw_file[:-3]}.md")
     md = PyMdDoc(input_directory="magnebot", files=["action_status.py",
                                                     "arm.py",
                                                     "arm_joint.py",
@@ -37,16 +52,12 @@ if __name__ == "__main__":
                                                     "ik/orientation_mode.py",
                                                     "ik/target_orientation.py"])
     md.get_docs(output_directory="doc/api/ik")
-    child_class_paths = ["arm_motion.py", "camera_action.py", "drop.py", "grasp.py", "ik_motion.py", "move_by.py",
-                         "move_to.py", "reach_for.py", "reset_arm.py", "reset_position.py", "rotate_camera.py",
-                         "stop.py", "turn.py", "turn_to.py", "wait.py", "wheel_motion.py"]
-    docs = md.get_docs_with_inheritance(abstract_class_path="magnebot/actions/action.py",
-                                        child_class_paths=[f"magnebot/actions/{c}" for c in child_class_paths])
-    paths = child_class_paths[:]
-    paths.append("action.py")
-    for class_name, child_class_path in zip(docs.keys(), paths):
-        Path(f"doc/api/actions/{child_class_path[:-3]}.md").write_text(docs[class_name])
-
+    ClassInheritance.get_from_directory(input_directory="magnebot/actions",
+                                        output_directory="doc/api/actions",
+                                        import_path="magnebot.actions",
+                                        import_prefix="from magnebot.actions",
+                                        overrides={"IkMotion": "IKMotion",
+                                                   "i_k_motion": "ik_motion"})
     # Fix inherited links.
     for magnebot_class in ["magnebot_dynamic", "magnebot_static"]:
         doc_path = Path(f"doc/api/{magnebot_class}.md")
@@ -54,6 +65,9 @@ if __name__ == "__main__":
         for tdw_class in ["joint_dynamic", "joint_static", "robot_static", "non_moving"]:
             doc = doc.replace(f"{tdw_class}.md",
                               f"https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/{tdw_class}.md")
+        for tdw_class in ["transform"]:
+            doc = doc.replace(f"../object_data/{tdw_class}.md",
+                              f"https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/object_data/{tdw_class}.md")
         doc_path.write_text(doc)
 
     # Test links.

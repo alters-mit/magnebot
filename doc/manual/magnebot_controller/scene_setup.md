@@ -47,7 +47,7 @@ Most scene setup logic is handled in the backend function `self._init_scene()` (
 
 *For more information regarding TDW scenes in general, [read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/core_concepts/scenes.md).*
 
-*For more information regarding TDW scene setup concepts, [read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/objects_and_scenes/overview.md).*
+*For more information regarding TDW scene setup concepts, [read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/scene_setup/overview.md).*
 
 If you're loading a streamed scene, this can be a list that just contains `self.get_add_scene()`, a function that is deliberately not listed in the Magnebot API but is  part of the base class Controller API:
 

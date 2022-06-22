@@ -105,12 +105,6 @@ m.end()
 | skip_frames |  int  | 10 | The build will return output data this many physics frames per simulation frame (communicate() call). This will greatly speed up the simulation, but eventually there will be a noticeable loss in physics accuracy. If you want to render every frame, set this to 0. |
 | check_pypi_version |  bool  | True | If True, compare the locally installed version of TDW and Magnebot to the most recent versions on PyPi. |
 
-***
-
-### Scene Setup
-
-These functions should be sent at the start of the simulation.
-
 #### init_scene
 
 **`self.init_scene()`**
@@ -122,11 +116,6 @@ from magnebot import MagnebotController
 
 m = MagnebotController()
 m.init_scene()
-
-# Your code here.
-
-m.end()
-```
 
 #### init_floorplan_scene
 
@@ -145,39 +134,6 @@ from magnebot import MagnebotController
 
 m = MagnebotController()
 m.init_floorplan_scene(scene="2b", layout=0, room=1)
-
-# Your code here.
-
-m.end()
-```
-
-Valid scenes, layouts, and rooms:
-
-| `scene` | `layout` | `room` |
-| --- | --- | --- |
-| 1a, 1b, 1c | 0, 1, 2 | 0, 1, 2, 3, 4, 5, 6 |
-| 2a, 2b, 2c | 0, 1, 2 | 0, 1, 2, 3, 4, 5, 6, 7, 8 |
-| 4a, 4b, 4c | 0, 1, 2 | 0, 1, 2, 3, 4, 5, 6, 7 |
-| 5a, 5b, 5c | 0, 1, 2 | 0, 1, 2, 3 |
-
-Images of each scene+layout combination can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/floorplans). Images are named `[scene]_[layout].jpg` For example, the image for scene "2a" layout 0 is: `2a_0.jpg`.
-
-Images of where each room in a scene is can be found [here](https://github.com/alters-mit/magnebot/tree/master/doc/images/rooms). Images are named `[scene].jpg` For example, the image for scene "2a" layout 0 is: `2.jpg`.
-
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| scene |  str |  | The name of an interior floorplan scene. Each number (1, 2, etc.) has a different shape, different rooms, etc. Each letter (a, b, c) is a cosmetically distinct variant with the same floorplan. |
-| layout |  int |  | The furniture layout of the floorplan. Each number (0, 1, 2) will populate the floorplan with different furniture in different positions. |
-| room |  int  | None | The index of the room that the Magnebot will spawn in the center of. If None, the room will be chosen randomly. |
-
-_Returns:_  An `ActionStatus` (always success).
-
-***
-
-### Movement
-
-These functions move or turn the Magnebot. [Read this for more information about movement and collision detection.](../manual/magnebot_controller/movement.md)
 
 #### turn_by
 
@@ -248,29 +204,6 @@ Move to a target object or position. This combines turn_to() followed by move_by
 | arrived_offset |  float  | 0 | Offset the arrival position by this value. This can be useful if the Magnebot needs to move to an object but shouldn't try to move to the object's centroid. This is distinct from `arrived_at` because it won't affect the Magnebot's braking solution. |
 
 _Returns:_  An `ActionStatus` indicating whether the Magnebot succeeded in moving and if not, why.
-
-#### reset_position
-
-**`self.reset_position()`**
-
-Reset the Magnebot so that it isn't tipping over.
-This will rotate the Magnebot to the default rotation (so that it isn't tipped over) and move the Magnebot to the nearest empty space on the floor.
-It will also drop any held objects.
-
-This will be interpreted by the physics engine as a _very_ sudden and fast movement.
-This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
-
-_Returns:_  An `ActionStatus` indicating whether the Magnebot reset its position and if not, why.
-
-***
-
-### Arm Articulation
-
-These functions move and bend the joints of the Magnebots's arms.
-
-During an arm articulation action, the Magnebot is always "immovable", meaning that its wheels are locked and it isn't possible for its root object to move or rotate.
-
-For more information regarding how arm articulation works, [read this](../manual/magnebot_controller/arm_articulation.md).
 
 #### reach_for
 
@@ -347,11 +280,18 @@ This action should only be called if the Magnebot is a position that will preven
 
 _Returns:_  An `ActionStatus` indicating whether the Magnebot reset its arm and if not, why.
 
-***
+#### reset_position
 
-### Camera
+**`self.reset_position()`**
 
-These commands rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by exactly 1 frame.
+Reset the Magnebot so that it isn't tipping over.
+This will rotate the Magnebot to the default rotation (so that it isn't tipped over) and move the Magnebot to the nearest empty space on the floor.
+It will also drop any held objects.
+
+This will be interpreted by the physics engine as a _very_ sudden and fast movement.
+This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
+
+_Returns:_  An `ActionStatus` indicating whether the Magnebot reset its position and if not, why.
 
 #### rotate_camera
 
@@ -386,12 +326,6 @@ Reset the rotation of the Magnebot's camera to its default angles.
 
 _Returns:_  An `ActionStatus` (always success).
 
-***
-
-### Misc.
-
-These are utility functions that won't advance the simulation by any frames.
-
 #### get_visible_objects
 
 **`self.get_visible_objects()`**
@@ -421,227 +355,3 @@ This only works if you've loaded an occupancy map via `self.init_floorplan_scene
 | j |  int |  | The j coordinate in the occupancy map. |
 
 _Returns:_  Tuple: (x coordinate; z coordinate) of the corresponding worldspace position.
-
-***
-
-### Low-level
-
-These are low-level functions that you are unlikely to ever need to use.
-
-#### communicate
-
-**`self.communicate(commands)`**
-
-Send commands and receive output data in response.
-
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| commands |  Union[dict, List[dict] |  | A list of JSON commands. |
-
-_Returns:_  The output data from the build.
-
-#### get_add_object
-
-**`Controller.get_add_object(model_name, object_id)`**
-
-**`Controller.get_add_object(model_name, position=None, rotation=None, library="", object_id)`**
-
-_This is a static function._
-
-Returns a valid add_object command.
-
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| model_name |  str |  | The name of the model. |
-| position |  Dict[str, float] | None | The position of the model. If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
-| rotation |  Dict[str, float] | None | The starting rotation of the model, in Euler angles. If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
-| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `ModelLibrarian.get_library_filenames()` and `ModelLibrarian.get_default_library()`. |
-| object_id |  int |  | The ID of the new object. |
-
-_Returns:_  An add_object command that the controller can then send.
-
-#### get_add_physics_object
-
-**`Controller.get_add_physics_object(model_name, object_id)`**
-
-**`Controller.get_add_physics_object(model_name, position=None, rotation=None, library="", object_id, scale_factor=None, kinematic=False, gravity=True, default_physics_values=True, mass=1, dynamic_friction=0.3, static_friction=0.3, bounciness=0.7)`**
-
-_This is a static function._
-
-Add an object to the scene with physics values (mass, friction coefficients, etc.).
-
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| model_name |  str |  | The name of the model. |
-| position |  Dict[str, float] | None | The position of the model. If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
-| rotation |  Dict[str, float] | None | The starting rotation of the model, in Euler angles. If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
-| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `ModelLibrarian.get_library_filenames()` and `ModelLibrarian.get_default_library()`. |
-| object_id |  int |  | The ID of the new object. |
-| scale_factor |  Dict[str, float] | None | The [scale factor](../api/command_api.md#
-
-#### get_add_material
-
-**`Controller.get_add_material(material_name)`**
-
-**`Controller.get_add_material(material_name, library="")`**
-
-_This is a static function._
-
-Returns a valid add_material command.
-
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| material_name |  str |  | The name of the material. |
-| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `MaterialLibrarian.get_library_filenames()` and `MaterialLibrarian.get_default_library()`. |
-
-_Returns:_  An add_material command that the controller can then send.
-
-#### get_add_scene
-
-**`Controller.get_add_scene(scene_name)`**
-
-**`Controller.get_add_scene(scene_name, library="")`**
-
-_This is a static function._
-
-Returns a valid add_scene command.
-
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| scene_name |  str |  | The name of the scene. |
-| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `SceneLibrarian.get_library_filenames()` and `SceneLibrarian.get_default_library()`. |
-
-_Returns:_  An add_scene command that the controller can then send.
-
-#### get_add_hdri_skybox
-
-**`Controller.get_add_hdri_skybox(skybox_name)`**
-
-**`Controller.get_add_hdri_skybox(skybox_name, library="")`**
-
-_This is a static function._
-
-Returns a valid add_hdri_skybox command.
-
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| skybox_name |  str |  | The name of the skybox. |
-| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `HDRISkyboxLibrarian.get_library_filenames()` and `HDRISkyboxLibrarian.get_default_library()`. |
-
-_Returns:_  An add_hdri_skybox command that the controller can then send.
-
-#### get_add_humanoid
-
-**`Controller.get_add_humanoid(humanoid_name, object_id)`**
-
-**`Controller.get_add_humanoid(humanoid_name, position=None, rotation=None, library="", object_id)`**
-
-_This is a static function._
-
-Returns a valid add_humanoid command.
-
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| humanoid_name |  str |  | The name of the humanoid. |
-| position |  Dict[str, float] | None | The position of the humanoid. |
-| rotation |  Dict[str, float] | None | The starting rotation of the humanoid, in Euler angles. |
-| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `HumanoidLibrarian.get_library_filenames()` and `HumanoidLibrarian.get_default_library()`. |
-| object_id |  int |  | The ID of the new object. |
-
-_Returns:_  An add_humanoid command that the controller can then send.
-
-#### get_add_humanoid_animation
-
-**`Controller.get_add_humanoid_animation(humanoid_animation_name)`**
-
-**`Controller.get_add_humanoid_animation(humanoid_animation_name, library="")`**
-
-_This is a static function._
-
-Returns a valid add_humanoid_animation command and the record (which you will need to play an animation).
-
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| humanoid_animation_name |  str |  | The name of the animation. |
-| library |  | "" | The path to the records file. If left empty, the default library will be selected. See `HumanoidAnimationLibrarian.get_library_filenames()` and `HumanoidAnimationLibrarian.get_default_library()`. |
-
-_Returns:_  An add_humanoid_animation command that the controller can then send.
-
-#### get_add_robot
-
-**`Controller.get_add_robot(name, robot_id)`**
-
-**`Controller.get_add_robot(name, robot_id, position=None, rotation=None, library="")`**
-
-_This is a static function._
-
-Returns a valid add_robot command.
-
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| name |  str |  | The name of the robot. |
-| robot_id |  int |  | A unique ID for the robot. |
-| position |  Dict[str, float] | None | The initial position of the robot. If None, the position will be (0, 0, 0). |
-| rotation |  Dict[str, float] | None | The initial rotation of the robot in Euler angles. |
-| library |  str  | "" | The path to the records file. If left empty, the default library will be selected. See `RobotLibrarian.get_library_filenames()` and `RobotLibrarian.get_default_library()`. |
-
-_Returns:_  An `add_robot` command that the controller can then send.
-
-#### get_version
-
-**`self.get_version()`**
-
-Send a send_version command to the build.
-
-_Returns:_  The TDW version and the Unity Engine version.
-
-#### get_unique_id
-
-**`Controller.get_unique_id()`**
-
-_This is a static function._
-
-Generate a unique integer. Useful when creating objects.
-
-_Returns:_  The new unique ID.
-
-#### get_frame
-
-**`Controller.get_frame(frame)`**
-
-_This is a static function._
-
-Converts the frame byte array to an integer.
-
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| frame |  bytes |  | The frame as bytes. |
-
-_Returns:_  The frame as an integer.
-
-#### launch_build
-
-**`Controller.launch_build()`**
-
-**`Controller.launch_build(port=1071)`**
-
-_This is a static function._
-
-Launch the build. If a build doesn't exist at the expected location, download one to that location.
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| port |  int  | 1071 | The socket port. |
-
-
-

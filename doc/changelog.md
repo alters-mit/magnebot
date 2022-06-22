@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.0.4
+
+- Required version of TDW is now >=1.10.1.0
+- Fixed import statements and other errors for `Action` API documents
+- Added inherited fields to `MagnebotDynamic` API document
+- Fixed broken links in various documents due to the TDW v1.10 release
+- (Backend) Added field `robot_index` to `MagnebotStatic` (inherited from `RobotStatic`)
+- (Backend) Removed constructor parameters from `MagnebotDynamic`: `robot_id`, `body_parts`, `previous`
+- (Backend) Added constructor parameters to `MagnebotDynamic`: `static` (`MagnebotStatic` object)
+- (Backend) Updated doc_gen.py for the latest version of PyMDDoc
+
 ## 2.0.3
 
 - Required version of TDW is now >=1.10.0.0
