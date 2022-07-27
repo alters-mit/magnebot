@@ -30,21 +30,31 @@ print(m.magnebot.dynamic.transform.position)
 m.end()
 ```
 
-***
-
 ## Class Variables
 
-| Variable | Type | Description |
-| --- | --- | --- |
-| `NON_MOVING` | float | If the joint moved by less than this angle or distance since the previous frame, it's considered to be non-moving. |
+| Variable | Type | Description | Value |
+| --- | --- | --- | --- |
+| `NON_MOVING` | float | If the joint moved by less than this angle or distance since the previous frame, it's considered to be non-moving. | `0.001` |
 
 ***
 
 ## Fields
 
-- `transform` The Transform data for this robot.
+- `held` A dictionary of object IDs currently held by the Magnebot. Key = The arm. Value = a numpy array of object IDs.
 
-- `joints` A dictionary of [dynamic joint data](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/joint_dynamic.md). Key = The ID of the joint.
+- `top` The position of the point at the top of the Magnebot's column.
+
+- `images` The images rendered by the robot as dictionary. Key = the name of the pass. Value = the pass as a numpy array.
+
+- `projection_matrix` The [camera projection matrix](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/output_data.md#cameramatrices) of the Magnebot's camera as a numpy array.
+
+- `camera_matrix` The [camera matrix](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/output_data.md#cameramatrices) of the Magnebot's camera as a numpy array.
+
+- `frame_count` The current frame count. This is used for image filenames.
+
+- `transform` The [`Transform`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/object_data/transform.md) data for this robot.
+
+- `joints` A dictionary of [`JointDynamic`](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/joint_dynamic.md). Key = The ID of the joint.
 
 - `immovable` If True, this robot is immovable.
 
@@ -54,33 +64,18 @@ m.end()
 
 - `collisions_with_environment` A dictionary of collisions between one of this robot's [body parts](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/robot_static.md) and the environment (floors, walls, etc.).
 
-- `held` A dictionary of object IDs currently held by the Magnebot. Key = The arm. Value = a numpy array of object IDs.
-
-- `top` The position of the point at the top of the Magnebot's column.
-
-- `images` The images rendered by the robot as dictionary. Key = the name of the pass. Value = the pass as a numpy array.
-
-| Pass | Image | Description |
-| --- | --- | --- |
-| `"img"` | ![](images/pass_masks/img_0.jpg) | The rendered image. |
-| `"id"` | ![](images/pass_masks/id_0.png) | The object color segmentation pass. See `Magnebot.segmentation_color_to_id` and `Magnebot.objects_static` to map segmentation colors to object IDs. |
-| `"depth"` | ![](images/pass_masks/depth_0.png) | The depth values per pixel as a numpy array. Depth values are encoded into the RGB image; see `SceneState.get_depth_values()`. Use the camera matrices to interpret this data. |
-
-- `projection_matrix` The [camera projection matrix](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/output_data.md#cameramatrices) of the Magnebot's camera as a numpy array.
-
-- `camera_matrix` The [camera matrix](https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/output_data.md#cameramatrices) of the Magnebot's camera as a numpy array.
-
-- `frame_count` The current frame count. This is used for image filenames.
-
 ***
 
 ## Functions
 
 #### \_\_init\_\_
 
-**`MagnebotDynamic()`**
+**`MagnebotDynamic(static, resp)`**
 
-A dictionary of object IDs currently held by the Magnebot. Key = The arm. Value = a numpy array of object IDs.
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| static |  MagnebotStatic |  | [`MagnebotStatic`](magnebot_static.md) data for this robot. |
+| resp |  List[bytes] |  | The response from the build. |
 
 #### save_images
 
@@ -119,4 +114,3 @@ _Returns:_  A decoded depth pass as a numpy array of floats.
 Returns a point cloud from the depth pass. Can be None if there is no depth image data.
 
 _Returns:_  A decoded depth pass as a numpy array of floats.
-

@@ -524,8 +524,7 @@ class Magnebot(RobotBase):
         else:
             self.dynamic: MagnebotDynamic
             frame_count = self.dynamic.frame_count
-        dynamic = MagnebotDynamic(resp=resp, robot_id=self.robot_id, body_parts=self.static.body_parts,
-                                  previous=self.dynamic, frame_count=frame_count)
+        dynamic = MagnebotDynamic(static=self.static, resp=resp, frame_count=frame_count)
         wheels_moving: Dict[Wheel, bool] = dict()
         if self.dynamic is not None:
             # Set whether the wheels are moving.

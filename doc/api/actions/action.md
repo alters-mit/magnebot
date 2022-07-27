@@ -1,6 +1,6 @@
 # Action
 
-`from magnebot.action import Action`
+`from magnebot.actions.action import Action`
 
 An action that the Magnebot can do. An action is initialized, has an ongoing state, and an end state.
 An action also has a status indicating whether it's ongoing, succeeded, or failed; and if it failed, why.
@@ -9,9 +9,9 @@ An action also has a status indicating whether it's ongoing, succeeded, or faile
 
 ## Class Variables
 
-| Variable | Type | Description |
-| --- | --- | --- |
-| `JOINT_ORDER` | Dict[Arm, List[ArmJoint]] | The order in which joint angles will be set. |
+| Variable | Type | Description | Value |
+| --- | --- | --- | --- |
+| `JOINT_ORDER` | Dict[Arm, List[ArmJoint]] | The order in which joint angles will be set. | `{Arm.left: [ArmJoint.column,` |
 
 ***
 
@@ -56,8 +56,6 @@ To do so, override this method.
 
 #### get_ongoing_commands
 
-_(Abstract)_
-
 **`self.get_ongoing_commands(resp, static, dynamic)`**
 
 Evaluate an action per-frame to determine whether it's done.
@@ -84,4 +82,3 @@ _Returns:_  A list of commands to send to the build to continue the action.
 | image_frequency |  ImageFrequency |  | [How image data will be captured during the image.](../image_frequency.md) |
 
 _Returns:_  A list of commands that must be sent to end any action.
-

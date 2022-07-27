@@ -7,6 +7,7 @@ from tdw.tdw_utils import TDWUtils
 from tdw.output_data import OutputData, Magnebot, Images, CameraMatrices
 from tdw.robot_data.robot_dynamic import RobotDynamic
 from magnebot.arm import Arm
+from magnebot.magnebot_static import MagnebotStatic
 
 
 class MagnebotDynamic(RobotDynamic):
@@ -40,8 +41,13 @@ class MagnebotDynamic(RobotDynamic):
     ```
     """
 
-    def __init__(self, robot_id: int, resp: List[bytes], body_parts: List[int], frame_count: int, previous=None):
-        super().__init__(robot_id=robot_id, resp=resp, body_parts=body_parts, previous=previous)
+    def __init__(self, static: MagnebotStatic, resp: List[bytes], frame_count: int):
+        """
+        :param static: [`MagnebotStatic`](magnebot_static.md) data for this robot.
+        :param resp: The response from the build.
+        """
+
+        super().__init__(static=static, resp=resp)
 
         """:field
         A dictionary of object IDs currently held by the Magnebot. Key = The arm. Value = a numpy array of object IDs.
@@ -80,14 +86,13 @@ class MagnebotDynamic(RobotDynamic):
         self.__image_extensions: Dict[str, str] = dict()
 
         got_magnebot_images = False
-        avatar_id = str(robot_id)
         for i in range(0, len(resp) - 1):
             r_id = OutputData.get_data_type_id(resp[i])
             # Get the images captured by the avatar's camera.
             if r_id == "imag":
                 images = Images(resp[i])
                 # Get this robot's avatar and save the images.
-                if images.get_avatar_id() == avatar_id:
+                if images.get_avatar_id() == static.avatar_id:
                     got_magnebot_images = True
                     for j in range(images.get_num_passes()):
                         image_data = images.get_image(j)
@@ -103,13 +108,13 @@ class MagnebotDynamic(RobotDynamic):
             # Get the camera matrices for the avatar's camera.
             elif r_id == "cama":
                 camera_matrices = CameraMatrices(resp[i])
-                if camera_matrices.get_avatar_id() == avatar_id:
+                if camera_matrices.get_avatar_id() == static.avatar_id:
                     self.projection_matrix = camera_matrices.get_projection_matrix()
                     self.camera_matrix = camera_matrices.get_camera_matrix()
             # Get data for this Magnebot.
             elif r_id == "magn":
                 magnebot = Magnebot(resp[i])
-                if magnebot.get_id() == robot_id:
+                if magnebot.get_id() == static.robot_id:
                     self.held[Arm.left] = magnebot.get_held_left()
                     self.held[Arm.right] = magnebot.get_held_right()
                     self.top = np.array(magnebot.get_top())

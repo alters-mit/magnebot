@@ -2,7 +2,7 @@
 
 # Scene Setup
 
-*For more information regarding TDW scene setup strategies, [read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/objects_and_scenes/overview.md).*
+*For more information regarding TDW scene setup strategies, [read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/scene_setup/overview.md).*
 
 By design, scene setup for a [`Magnebot`](../../api/magnebot.md) can be much more complicated than scene setup for a [`MagnebotController`](../../api/magnebot_controller.md). This is intentional; the `Magnebot` agent is meant to be usable in *any* TDW controller.
 
@@ -118,7 +118,7 @@ c.communicate({"$type": "terminate"})
 
 ## Reset a scene
 
-*For more information regarding how to reset a scene, [read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/objects_and_scenes/reset_scene.md).*
+*For more information regarding how to reset a scene, [read this](https://github.com/threedworld-mit/tdw/blob/master/Documentation/lessons/scene_setup_high_level/reset_scene.md).*
 
 When resetting a scene, be sure to call `magnebot.reset(position, rotation)`. If you're using an object manager, set `object_manager.initialized = False`.
 

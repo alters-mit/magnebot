@@ -38,6 +38,14 @@ m.end()
 
 ## Fields
 
+- `arm_joints` The name and ID of each arm joint. Key = The [`ArmJoint` enum value](arm_joint.md). Value = The object ID.
+
+- `wheels` The object IDs of each wheel. Key = The [`Wheel` enum value](wheel.md).
+
+- `magnets` The object IDs of each magnet. Key = The [enum value of the `Arm`](arm.md) attached to the magnet.
+
+- `avatar_id` The ID of the Magnebot's avatar (camera). This is used internally for API calls.
+
 - `robot_id` The ID of the robot.
 
 - `joints` A dictionary of [Static robot joint data](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/joint_static.md) for each joint. Key = The ID of the joint.
@@ -50,13 +58,7 @@ m.end()
 
 - `immovable` If True, the robot is immovable.
 
-- `arm_joints` The name and ID of each arm joint. Key = The [`ArmJoint` enum value](arm_joint.md). Value = The object ID.
-
-- `wheels` The object IDs of each wheel. Key = The [`Wheel` enum value](wheel.md).
-
-- `magnets` The object IDs of each magnet. Key = The [enum value of the `Arm`](arm.md) attached to the magnet.
-
-- `avatar_id` The ID of the Magnebot's avatar (camera). This is used internally for API calls.
+- `robot_index` The index of the robot in `DynamicRobots` output data. This is used internally; you almost always want to refer to `self.robot_id` instead.
 
 ***
 
@@ -67,4 +69,3 @@ m.end()
 **`MagnebotStatic()`**
 
 The name and ID of each arm joint. Key = The [`ArmJoint` enum value](arm_joint.md). Value = The object ID.
-
