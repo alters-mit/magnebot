@@ -1,14 +1,16 @@
 # ArmMotion
 
-`from magnebot.actions.arm_motion import ArmMotion`
+`from magnebot.arm_motion import ArmMotion`
 
 Abstract base class for arm motions.
 
+***
+
 ## Class Variables
 
-| Variable | Type | Description | Value |
-| --- | --- | --- | --- |
-| `JOINT_ORDER` | Dict[Arm, List[ArmJoint]] | The order in which joint angles will be set. | `{Arm.left: [ArmJoint.column,` |
+| Variable | Type | Description |
+| --- | --- | --- |
+| `JOINT_ORDER` | Dict[Arm, List[ArmJoint]] | The order in which joint angles will be set. |
 
 ***
 
@@ -46,6 +48,18 @@ Abstract base class for arm motions.
 
 _Returns:_  A list of commands to initialize this action.
 
+#### get_end_commands
+
+**`self.get_end_commands(static, dynamic)`**
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| static |  MagnebotStatic |  | [The static Magnebot data.](../magnebot_static.md) |
+| dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |
+
+_Returns:_  True if these joints are still moving.
+
 #### set_status_after_initialization
 
 **`self.set_status_after_initialization()`**
@@ -81,3 +95,6 @@ _Returns:_  A list of commands to send to the build to continue the action.
 | image_frequency |  ImageFrequency |  | [How image data will be captured during the image.](../image_frequency.md) |
 
 _Returns:_  A list of commands that must be sent to end any action.
+
+
+

@@ -38,6 +38,18 @@ m.end()
 
 ## Fields
 
+- `robot_id` The ID of the robot.
+
+- `joints` A dictionary of [Static robot joint data](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/joint_static.md) for each joint. Key = The ID of the joint.
+
+- `joint_ids_by_name` A dictionary of joint names. Key = The name of the joint. Value = The joint ID.
+
+- `non_moving` A dictionary of [Static data for non-moving parts](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/non_moving.md) for each non-moving part. Key = The ID of the part.
+
+- `body_parts` A list of joint IDs and non-moving body part IDs.
+
+- `immovable` If True, the robot is immovable.
+
 - `arm_joints` The name and ID of each arm joint. Key = The [`ArmJoint` enum value](arm_joint.md). Value = The object ID.
 
 - `wheels` The object IDs of each wheel. Key = The [`Wheel` enum value](wheel.md).
@@ -55,3 +67,4 @@ m.end()
 **`MagnebotStatic()`**
 
 The name and ID of each arm joint. Key = The [`ArmJoint` enum value](arm_joint.md). Value = The object ID.
+

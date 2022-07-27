@@ -1,6 +1,6 @@
 # ResetPosition
 
-`from magnebot.actions.reset_position import ResetPosition`
+`from magnebot.reset_position import ResetPosition`
 
 Reset the Magnebot so that it isn't tipping over.
 This will rotate the Magnebot to the default rotation (so that it isn't tipped over) and move the Magnebot to the nearest empty space on the floor.
@@ -9,11 +9,13 @@ It will also drop any held objects.
 This will be interpreted by the physics engine as a _very_ sudden and fast movement.
 This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
 
+***
+
 ## Class Variables
 
-| Variable | Type | Description | Value |
-| --- | --- | --- | --- |
-| `JOINT_ORDER` | Dict[Arm, List[ArmJoint]] | The order in which joint angles will be set. | `{Arm.left: [ArmJoint.column,` |
+| Variable | Type | Description |
+| --- | --- | --- |
+| `JOINT_ORDER` | Dict[Arm, List[ArmJoint]] | The order in which joint angles will be set. |
 
 ***
 
@@ -48,6 +50,10 @@ This action should only be called if the Magnebot is a position that will preven
 | image_frequency |  ImageFrequency |  | [How image data will be captured during the image.](../image_frequency.md) |
 
 _Returns:_  A list of commands to initialize this action.
+
+#### get_ongoing_commands
+
+**`self.get_ongoing_commands()`**
 
 #### set_status_after_initialization
 
@@ -84,3 +90,6 @@ _Returns:_  A list of commands to send to the build to continue the action.
 | image_frequency |  ImageFrequency |  | [How image data will be captured during the image.](../image_frequency.md) |
 
 _Returns:_  A list of commands that must be sent to end any action.
+
+
+

@@ -1,24 +1,20 @@
 # Drop
 
-`from magnebot.actions.drop import Drop`
+`from magnebot.drop import Drop`
 
 Drop an object held by a magnet.
 
+***
+
 ## Class Variables
 
-| Variable | Type | Description | Value |
-| --- | --- | --- | --- |
-| `JOINT_ORDER` | Dict[Arm, List[ArmJoint]] | The order in which joint angles will be set. | `{Arm.left: [ArmJoint.column,` |
+| Variable | Type | Description |
+| --- | --- | --- |
+| `JOINT_ORDER` | Dict[Arm, List[ArmJoint]] | The order in which joint angles will be set. |
 
 ***
 
 ## Fields
-
-- `status` [The current status of the action.](../action_status.md) By default, this is `ongoing` (the action isn't done).
-
-- `initialized` If True, the action has initialized. If False, the action will try to send `get_initialization_commands(resp)` on this frame.
-
-- `done` If True, this action is done and won't send any more commands.
 
 - `status` [The current status of the action.](../action_status.md) By default, this is `ongoing` (the action isn't done).
 
@@ -57,10 +53,16 @@ _Returns:_  A list of commands to initialize this action.
 
 #### set_status_after_initialization
 
-**`self.set_status_after_initialization()`**
+**`self.set_status_after_initialization(resp)`**
 
-In some cases (such as camera actions) that finish on one frame, we want to set the status after sending initialization commands.
-To do so, override this method.
+Update the object's position and check if it's still moving.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| resp |  |  | The response from the build. |
+
+_Returns:_  True if the object is moving.
 
 #### get_ongoing_commands
 
@@ -77,6 +79,13 @@ Evaluate an action per-frame to determine whether it's done.
 
 _Returns:_  A list of commands to send to the build to continue the action.
 
+#### set_status_after_initialization
+
+**`self.set_status_after_initialization()`**
+
+In some cases (such as camera actions) that finish on one frame, we want to set the status after sending initialization commands.
+To do so, override this method.
+
 #### get_end_commands
 
 **`self.get_end_commands(resp, static, dynamic, image_frequency)`**
@@ -90,3 +99,6 @@ _Returns:_  A list of commands to send to the build to continue the action.
 | image_frequency |  ImageFrequency |  | [How image data will be captured during the image.](../image_frequency.md) |
 
 _Returns:_  A list of commands that must be sent to end any action.
+
+
+

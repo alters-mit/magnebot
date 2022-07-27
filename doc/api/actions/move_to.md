@@ -1,16 +1,18 @@
 # MoveTo
 
-`from magnebot.actions.move_to import MoveTo`
+`from magnebot.move_to import MoveTo`
 
 Turn the Magnebot to a target position or object and then move to it.
 
 This action has two "sub-actions": A [`TurnBy`](turn_by.md) and a [`MoveBy`](move_by.md).
 
+***
+
 ## Class Variables
 
-| Variable | Type | Description | Value |
-| --- | --- | --- | --- |
-| `JOINT_ORDER` | Dict[Arm, List[ArmJoint]] | The order in which joint angles will be set. | `{Arm.left: [ArmJoint.column,` |
+| Variable | Type | Description |
+| --- | --- | --- |
+| `JOINT_ORDER` | Dict[Arm, List[ArmJoint]] | The order in which joint angles will be set. |
 
 ***
 
@@ -57,6 +59,10 @@ This action has two "sub-actions": A [`TurnBy`](turn_by.md) and a [`MoveBy`](mov
 
 _Returns:_  A list of commands to initialize this action.
 
+#### get_ongoing_commands
+
+**`self.get_ongoing_commands()`**
+
 #### set_status_after_initialization
 
 **`self.set_status_after_initialization()`**
@@ -92,3 +98,6 @@ _Returns:_  A list of commands to send to the build to continue the action.
 | image_frequency |  ImageFrequency |  | [How image data will be captured during the image.](../image_frequency.md) |
 
 _Returns:_  A list of commands that must be sent to end any action.
+
+
+

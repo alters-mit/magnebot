@@ -32,7 +32,27 @@ m.end()
 
 ***
 
+## Class Variables
+
+| Variable | Type | Description |
+| --- | --- | --- |
+| `NON_MOVING` | float | If the joint moved by less than this angle or distance since the previous frame, it's considered to be non-moving. |
+
+***
+
 ## Fields
+
+- `transform` The Transform data for this robot.
+
+- `joints` A dictionary of [dynamic joint data](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/joint_dynamic.md). Key = The ID of the joint.
+
+- `immovable` If True, this robot is immovable.
+
+- `collisions_with_objects` A dictionary of collisions between one of this robot's [body parts (joints or non-moving)](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/robot_static.md) and another object.
+
+- `collisions_with_self` A dictionary of collisions between two of this robot's [body parts](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/robot_static.md).
+
+- `collisions_with_environment` A dictionary of collisions between one of this robot's [body parts](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/robot_data/robot_static.md) and the environment (floors, walls, etc.).
 
 - `held` A dictionary of object IDs currently held by the Magnebot. Key = The arm. Value = a numpy array of object IDs.
 
@@ -58,12 +78,9 @@ m.end()
 
 #### \_\_init\_\_
 
-**`MagnebotDynamic(static, resp)`**
+**`MagnebotDynamic()`**
 
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| static |  MagnebotStatic |  | [`MagnebotStatic`](magnebot_static.md) data for this robot. |
-| resp |  List[bytes] |  | The response from the build. |
+A dictionary of object IDs currently held by the Magnebot. Key = The arm. Value = a numpy array of object IDs.
 
 #### save_images
 
@@ -102,3 +119,4 @@ _Returns:_  A decoded depth pass as a numpy array of floats.
 Returns a point cloud from the depth pass. Can be None if there is no depth image data.
 
 _Returns:_  A decoded depth pass as a numpy array of floats.
+
