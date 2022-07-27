@@ -1,16 +1,14 @@
 # Wait
 
-`from magnebot.wait import Wait`
+`from magnebot.actions.wait import Wait`
 
 Make the Magnebot's base immovable and wait for its arms to stop moving. The Magnebot has this action when it is first initialized.
 
-***
-
 ## Class Variables
 
-| Variable | Type | Description |
-| --- | --- | --- |
-| `JOINT_ORDER` | Dict[Arm, List[ArmJoint]] | The order in which joint angles will be set. |
+| Variable | Type | Description | Value |
+| --- | --- | --- | --- |
+| `JOINT_ORDER` | Dict[Arm, List[ArmJoint]] | The order in which joint angles will be set. | `{Arm.left: [ArmJoint.column,` |
 
 ***
 
@@ -23,6 +21,16 @@ Make the Magnebot's base immovable and wait for its arms to stop moving. The Mag
 - `done` If True, this action is done and won't send any more commands.
 
 ***
+
+## Functions
+
+#### \_\_init\_\_
+
+\_\_init\_\_
+
+**`Wait()`**
+
+(no parameters)
 
 #### get_initialization_commands
 
@@ -37,12 +45,6 @@ Make the Magnebot's base immovable and wait for its arms to stop moving. The Mag
 | image_frequency |  ImageFrequency |  | [How image data will be captured during the image.](../image_frequency.md) |
 
 _Returns:_  A list of commands to initialize this action.
-
-#### get_ongoing_commands
-
-**`self.get_ongoing_commands()`**
-
-## Functions
 
 #### set_status_after_initialization
 
@@ -79,6 +81,3 @@ _Returns:_  A list of commands to send to the build to continue the action.
 | image_frequency |  ImageFrequency |  | [How image data will be captured during the image.](../image_frequency.md) |
 
 _Returns:_  A list of commands that must be sent to end any action.
-
-
-

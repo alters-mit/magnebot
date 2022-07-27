@@ -16,14 +16,6 @@ The Magnebot has various [actions](actions/action.md). Each action has a start a
 
 ***
 
-## Class Variables
-
-| Variable | Type | Description |
-| --- | --- | --- |
-| `NON_MOVING` | float | If a joint has moved less than this many degrees (revolute or spherical) or meters (prismatic) since the previous frame, it is considered to be not moving for the purposes of determining which joints are moving. |
-
-***
-
 ## Basic usage
 
 You can add a Magnebot to a regular TDW controller:
@@ -145,16 +137,6 @@ print(Arm.left)
 ***
 
 ## Fields
-
-- `initial_position` The initial position of the robot.
-
-- `initial_rotation` The initial rotation of the robot.
-
-- `robot_id` The ID of this robot.
-
-- `static` Static robot data.
-
-- `dynamic` Dynamic robot data.
 
 - `static` [Cached static data for the Magnebot](magnebot_static.md) such as the IDs and segmentation colors of each joint:
 
@@ -285,20 +267,20 @@ Move to a target object or position. This combines turn_to() followed by move_by
 
 Stop the Magnebot's wheels at their current positions.
 
-#### reset
+#### reset_position
 
-**`self.reset()`**
+**`self.reset_position()`**
 
-**`self.reset(position=None, rotation=None)`**
+Reset the Magnebot so that it isn't tipping over.
+This will rotate the Magnebot to the default rotation (so that it isn't tipped over) and move the Magnebot to the nearest empty space on the floor.
+It will also drop any held objects.
 
-Reset the robot.
+This will be interpreted by the physics engine as a _very_ sudden and fast movement.
+This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
 
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| position |  Dict[str, float] | None | The position of the robot. |
-| rotation |  Dict[str, float] | None | The rotation of the robot. |
+***
 
-## Arm Articulation
+### Arm Articulation
 
 These functions move and bend the joints of the Magnebots's arms.
 
@@ -354,20 +336,19 @@ Drop an object held by a magnet.
 | arm |  Arm |  | [The arm of the magnet holding the object.](arm.md) |
 | wait_for_object |  bool  | True | If True, the action will continue until the object has finished falling. If False, the action advances the simulation by exactly 1 frame. |
 
-#### reset
+#### reset_arm
 
-**`self.reset()`**
+**`self.reset_arm(arm)`**
 
-**`self.reset(position=None, rotation=None)`**
-
-Reset the robot.
+Reset an arm to its neutral position.
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| position |  Dict[str, float] | None | The position of the robot. |
-| rotation |  Dict[str, float] | None | The rotation of the robot. |
+| arm |  Arm |  | [The arm to reset.](arm.md) |
 
-## Camera
+***
+
+### Camera
 
 These commands rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by exactly 1 frame.
 
@@ -393,20 +374,15 @@ Each axis of rotation is constrained by the following limits:
 | pitch |  float  | 0 | The pitch angle in degrees. |
 | yaw |  float  | 0 | The yaw angle in degrees. |
 
-#### reset
+#### reset_camera
 
-**`self.reset()`**
+**`self.reset_camera()`**
 
-**`self.reset(position=None, rotation=None)`**
+Reset the rotation of the Magnebot's camera to its default angles.
 
-Reset the robot.
+***
 
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| position |  Dict[str, float] | None | The position of the robot. |
-| rotation |  Dict[str, float] | None | The rotation of the robot. |
-
-## RobotBase
+### RobotBase
 
 These functions are inherited from the `RobotBase` parent class.
 
@@ -414,7 +390,7 @@ These functions are inherited from the `RobotBase` parent class.
 
 **`self.get_initialization_commands()`**
 
-This function gets called exactly once per add-on. To re-initialize, set `self.initialized = False`.
+This function gets called exactly once per add-on by the controller; don't call this function yourself!
 
 _Returns:_  A list of commands that will initialize this add-on.
 
@@ -434,50 +410,5 @@ This function is called automatically by the controller; you don't need to call 
 
 **`self.reset()`**
 
-**`self.reset(position=None, rotation=None)`**
-
-Reset the robot.
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| position |  Dict[str, float] | None | The position of the robot. |
-| rotation |  Dict[str, float] | None | The rotation of the robot. |
-
-### joints_are_moving
-
-**`self.joints_are_moving()`**
-
-**`self.joints_are_moving(joint_ids=None)`**
-
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| joint_ids |  List[int] | None | A list of joint IDs to check for movement. If `None`, check all joints for movement. |
-
-_Returns:_  True if the joints are moving.
-
-#### on_send
-
-**`self.on_send(resp)`**
-
-This is called after commands are sent to the build and a response is received.
-
-Use this function to send commands to the build on the next frame, given the `resp` response.
-Any commands in the `self.commands` list will be sent on the next frame.
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| resp |  List[bytes] |  | The response from the build. |
-
-#### before_send
-
-**`self.before_send(commands)`**
-
-This is called before sending commands to the build. By default, this function doesn't do anything.
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| commands |  List[dict] |  | The commands that are about to be sent to the build. |
-
-
+***
 

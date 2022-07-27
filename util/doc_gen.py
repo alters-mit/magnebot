@@ -15,12 +15,10 @@ if __name__ == "__main__":
     md.get_docs(output_directory="doc/api")
     tdw_path = Config().tdw_path.joinpath("Python/tdw")
     # Add documentation for classes that inherit from tdw classes.
-    for magnebot_class, tdw_class in zip(["magnebot_controller",
-                                          "magnebot_dynamic",
+    for magnebot_class, tdw_class in zip(["magnebot_dynamic",
                                           "magnebot_static"],
                                          ["robot_data/robot_dynamic.py",
-                                          "robot_data/robot_static.py",
-                                          "add_ons/add_on.py"]):
+                                          "robot_data/robot_static.py"]):
         # Copy the TDW file.
         tdw_src = tdw_path.joinpath(tdw_class)
         tdw_class_split = tdw_class.split('/')

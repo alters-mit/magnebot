@@ -435,6 +435,14 @@ class MagnebotController(Controller):
         return x, z
 
     def communicate(self, commands: Union[dict, List[dict]]) -> list:
+        """
+        Send commands and receive output data in response.
+
+        :param commands: A list of JSON commands.
+
+        :return The output data from the build.
+        """
+
         return super().communicate(commands=commands)
 
     @final
