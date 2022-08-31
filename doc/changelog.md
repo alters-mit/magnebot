@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.5
+
+- Required version of TDW is now >=1.10.5.0
+- Added some code to ensure that robot joint IDs are explicitly set so that log files work correctly.
+
 ## 2.0.4
 
 - Required version of TDW is now >=1.10.2.0
