@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.6
+
+- Required version of TDW is now >=1.10.6.0
+
 ## 2.0.5
 
 - Required version of TDW is now >=1.10.5.0
