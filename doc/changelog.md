@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.7
+
+- Fixed required version of TDW in setup.py (>=1.10.6.0)
+
 ## 2.0.6
 
 - Required version of TDW is now >=1.10.6.0

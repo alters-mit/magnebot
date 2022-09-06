@@ -10,7 +10,7 @@ readme = re.sub(r'\[(.*?)\]\(doc/(.*?)\)', r'[\1][https://github.com/alters-mit/
 
 setup(
     name='magnebot',
-    version="2.0.6",
+    version="2.0.7",
     description='High-level API for the Magnebot in TDW.',
     long_description=readme,
     long_description_content_type='text/markdown',
@@ -30,6 +30,6 @@ setup(
     keywords='unity simulation tdw robotics',
     packages=find_packages(),
     include_package_data=True,
-    install_requires=['tdw>=1.10.0.0', 'numpy', 'requests', 'matplotlib', 'pillow', "py_md_doc", "tqdm", "scipy", "ikpy==3.1",
+    install_requires=['tdw>=1.10.6.0', 'numpy', 'requests', 'matplotlib', 'pillow', "py_md_doc", "tqdm", "scipy", "ikpy==3.1",
                       "overrides"],
 )

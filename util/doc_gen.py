@@ -1,7 +1,6 @@
 from pathlib import Path
 from os import chdir, remove
 from shutil import copy
-from pkg_resources import resource_filename
 from py_md_doc import PyMdDoc, ClassInheritance
 from md_link_tester import MdLinkTester
 from tdw_dev.config import Config
