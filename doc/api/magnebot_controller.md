@@ -347,6 +347,19 @@ This action should only be called if the Magnebot is a position that will preven
 
 _Returns:_  An `ActionStatus` indicating whether the Magnebot reset its arm and if not, why.
 
+#### slide_torso
+
+**`self.slide_torso(height)`**
+
+Slide the Magnebot's torso up or down.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| height |  float |  | A value between 0 and 1, where 0 is the lowest height of the torso and 1 is the highest. |
+
+_Returns:_  An `ActionStatus` (always success).
+
 ***
 
 ### Camera

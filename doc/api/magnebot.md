@@ -346,6 +346,16 @@ Reset an arm to its neutral position.
 | --- | --- | --- | --- |
 | arm |  Arm |  | [The arm to reset.](arm.md) |
 
+#### slide_torso
+
+**`self.slide_torso(height)`**
+
+Slide the Magnebot's torso up or down.
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| height |  float |  | A value between 0 and 1, where 0 is the lowest height of the torso and 1 is the highest. |
+
 ***
 
 ### Camera
