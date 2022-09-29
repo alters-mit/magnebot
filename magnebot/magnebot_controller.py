@@ -398,7 +398,7 @@ class MagnebotController(Controller):
         """
         Slide the Magnebot's torso up or down.
 
-        :param height: A value between 0 and 1, where 0 is the lowest height of the torso and 1 is the highest.
+        :param height: A value between 0 and 1, where 0 is the lowest height of the torso and 1 is the highest. For the actual y values, see `magnebot.constants.TORSO_MIN_Y` and `magnebot.constants.TORSO_MAX_Y`.
 
         :return: An `ActionStatus` (always success).
         """

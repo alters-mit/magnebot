@@ -346,6 +346,14 @@ Reset an arm to its neutral position.
 | --- | --- | --- | --- |
 | arm |  Arm |  | [The arm to reset.](arm.md) |
 
+***
+
+### Torso
+
+These functions adjust the Magnebot's torso..
+
+During a torso action, the Magnebot is always "immovable", meaning that its wheels are locked and it isn't possible for its root object to move or rotate.
+
 #### slide_torso
 
 **`self.slide_torso(height)`**
@@ -354,13 +362,13 @@ Slide the Magnebot's torso up or down.
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| height |  float |  | A value between 0 and 1, where 0 is the lowest height of the torso and 1 is the highest. |
+| height |  float |  | A value between 0 and 1, where 0 is the lowest height of the torso and 1 is the highest. For the actual y values, see `magnebot.constants.TORSO_MIN_Y` and `magnebot.constants.TORSO_MAX_Y`. |
 
 ***
 
 ### Camera
 
-These commands rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by exactly 1 frame.
+These functions rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by exactly 1 frame.
 
 #### rotate_camera
 
