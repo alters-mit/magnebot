@@ -2,7 +2,6 @@ from typing import List
 import numpy as np
 from magnebot.actions.action import Action
 from magnebot.arm_joint import ArmJoint
-from magnebot.constants import TORSO_MIN_Y, TORSO_MAX_Y, COLUMN_Y
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.image_frequency import ImageFrequency
@@ -16,12 +15,12 @@ class SlideTorso(Action):
 
     def __init__(self, height: float):
         """
-        :param height: A value between 0 and 1, where 0 is the lowest height of the torso and 1 is the highest. For the actual y values, see `magnebot.constants.TORSO_MIN_Y` and `magnebot.constants.TORSO_MAX_Y`.
+        :param height: The height of the torso. Must be between `magnebot.constants.TORSO_MIN_Y` and `magnebot.constants.TORSO_MAX_Y`.
         """
 
         super().__init__()
-        # Clamp the `height` to be within the torso position limits and then convert it to a torso value.
-        self._position: float = self._y_position_to_torso_position((COLUMN_Y + (TORSO_MAX_Y - TORSO_MIN_Y)) * height)
+        # Convert the height to a torso value.
+        self._position: float = self._y_position_to_torso_position(height)
 
     def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
                                     image_frequency: ImageFrequency) -> List[dict]:

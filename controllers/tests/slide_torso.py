@@ -15,14 +15,14 @@ c.add_ons.append(m)
 c.communicate(TDWUtils.create_empty_room(12, 12))
 torso_id = m.static.arm_joints[ArmJoint.torso]
 # Slide all the way down.
-m.slide_torso(height=0)
+m.slide_torso(height=TORSO_MIN_Y)
 while m.action.status == ActionStatus.ongoing:
     c.communicate([])
 y = np.radians(m.dynamic.joints[torso_id].angles)[0]
 d = np.linalg.norm(y - TORSO_MIN_Y)
 assert d < 0.02, (y, d)
 # Slide all the way up.
-m.slide_torso(height=1)
+m.slide_torso(height=TORSO_MAX_Y)
 while m.action.status == ActionStatus.ongoing:
     c.communicate([])
 y = np.radians(m.dynamic.joints[torso_id].angles)[0]

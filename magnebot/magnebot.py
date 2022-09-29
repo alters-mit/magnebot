@@ -482,7 +482,7 @@ class Magnebot(RobotBase):
         """
         Slide the Magnebot's torso up or down.
 
-        :param height: A value between 0 and 1, where 0 is the lowest height of the torso and 1 is the highest. For the actual y values, see `magnebot.constants.TORSO_MIN_Y` and `magnebot.constants.TORSO_MAX_Y`.
+        :param height: The height of the torso. Must be between `magnebot.constants.TORSO_MIN_Y` and `magnebot.constants.TORSO_MAX_Y`.
         """
 
         self.action = SlideTorso(height=height)
