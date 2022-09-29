@@ -6,6 +6,7 @@ from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.image_frequency import ImageFrequency
 from magnebot.action_status import ActionStatus
+from magnebot.constants import TORSO_MIN_Y, TORSO_MAX_Y
 
 
 class SlideTorso(Action):
@@ -20,7 +21,7 @@ class SlideTorso(Action):
 
         super().__init__()
         # Convert the height to a torso value.
-        self._position: float = self._y_position_to_torso_position(height)
+        self._position: float = self._y_position_to_torso_position(max(min(height, TORSO_MAX_Y), TORSO_MIN_Y))
 
     def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
                                     image_frequency: ImageFrequency) -> List[dict]:
