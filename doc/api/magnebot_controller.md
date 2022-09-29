@@ -349,9 +349,30 @@ _Returns:_  An `ActionStatus` indicating whether the Magnebot reset its arm and 
 
 ***
 
+### Torso
+
+These functions adjust the Magnebot's torso..
+
+During a torso action, the Magnebot is always "immovable", meaning that its wheels are locked and it isn't possible for its root object to move or rotate.
+
+#### slide_torso
+
+**`self.slide_torso(height)`**
+
+Slide the Magnebot's torso up or down.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| height |  float |  | The height of the torso. Must be between `magnebot.constants.TORSO_MIN_Y` and `magnebot.constants.TORSO_MAX_Y`. |
+
+_Returns:_  An `ActionStatus` (always success).
+
+***
+
 ### Camera
 
-These commands rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by exactly 1 frame.
+These functions rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by exactly 1 frame.
 
 #### rotate_camera
 

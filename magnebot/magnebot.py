@@ -27,6 +27,7 @@ from magnebot.actions.reset_arm import ResetArm
 from magnebot.actions.reset_position import ResetPosition
 from magnebot.actions.rotate_camera import RotateCamera
 from magnebot.actions.reset_camera import ResetCamera
+from magnebot.actions.slide_torso import SlideTorso
 from magnebot.actions.stop import Stop
 from magnebot.actions.wait import Wait
 from magnebot.constants import TDW_VERSION
@@ -476,6 +477,15 @@ class Magnebot(RobotBase):
         self.camera_rpy: np.array = np.array([0, 0, 0])
         self.collision_detection = CollisionDetection()
         self._previous_resp.clear()
+
+    def slide_torso(self, height: float) -> None:
+        """
+        Slide the Magnebot's torso up or down.
+
+        :param height: The height of the torso. Must be between `magnebot.constants.TORSO_MIN_Y` and `magnebot.constants.TORSO_MAX_Y`.
+        """
+
+        self.action = SlideTorso(height=height)
 
     def _cache_static_data(self, resp: List[bytes]) -> None:
         """

@@ -162,6 +162,8 @@ c.end()
 
 Raw image data is stored in `self.magnebot.dynamic.images`, a dictionary where key = pass mask (`_img`, `_id`, or `_depth`) and value = raw numpy image array.
 
+Call these functions after a `c.communicate(commands)` call.
+
 - To save the images to disk, call `c.magnebot.dynamic.save_images(path)`.
 - To get PIL images, call `c.magnebot.dynamic.get_pil_images()`
 - To get depth values, call `c.magnebot.dynamic.get_depth_values()`

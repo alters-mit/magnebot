@@ -394,6 +394,18 @@ class MagnebotController(Controller):
         self.magnebot.reset_camera()
         return self._do_action()
 
+    def slide_torso(self, height: float) -> ActionStatus:
+        """
+        Slide the Magnebot's torso up or down.
+
+        :param height: The height of the torso. Must be between `magnebot.constants.TORSO_MIN_Y` and `magnebot.constants.TORSO_MAX_Y`.
+
+        :return: An `ActionStatus` (always success).
+        """
+
+        self.magnebot.slide_torso(height=height)
+        return self._do_action()
+
     def get_visible_objects(self) -> List[int]:
         """
         Get all objects visible to the Magnebot.
