@@ -385,7 +385,7 @@ class MagnebotController(Controller):
         self.magnebot.rotate_camera(roll=roll, pitch=pitch, yaw=yaw)
         return self._do_action()
 
-    def reset_camera(self) -> ActionStatus:
+    def reset_camera_rotation(self) -> ActionStatus:
         """
         Reset the rotation of the Magnebot's camera to its default angles.
 
