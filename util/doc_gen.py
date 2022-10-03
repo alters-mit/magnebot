@@ -42,6 +42,7 @@ if __name__ == "__main__":
                                                     "collision_detection.py",
                                                     "image_frequency.py",
                                                     "wheel.py",
+                                                    "camera_coordinate_space.py",
                                                     "turn_constants.py"], metadata_path="doc_metadata.json")
     md.get_docs(output_directory="doc/api")
     # Add IK documents.

@@ -372,7 +372,7 @@ _Returns:_  An `ActionStatus` (always success).
 
 ### Camera
 
-These functions rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by exactly 1 frame.
+These functions rotate or move the Magnebot's camera. They advance the simulation by exactly 1 frame.
 
 #### rotate_camera
 
@@ -399,11 +399,33 @@ Each axis of rotation is constrained by the following limits:
 
 _Returns:_  An `ActionStatus` indicating whether the Magnebot rotated its camera freely or if the rotation was clamped at a limit.
 
-#### reset_camera
+#### move_camera
 
-**`self.reset_camera()`**
+**`self.move_camera(position, coordinate_space)`**
+
+Move the Magenbot's camera.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| position |  Union[Dict[str, float] |  | The position of the camera. |
+| coordinate_space |  CameraCoordinateSpace |  | The [`CameraCoordinateSpace`](camera_coordinate_space.md), which is used to define what `position` means. |
+
+_Returns:_  An `ActionStatus` (always success).
+
+#### reset_camera_rotation
+
+**`self.reset_camera_rotation()`**
 
 Reset the rotation of the Magnebot's camera to its default angles.
+
+_Returns:_  An `ActionStatus` (always success).
+
+#### reset_camera_position
+
+**`self.reset_camera_position()`**
+
+Reset the Magnebot's camera to its initial position.
 
 _Returns:_  An `ActionStatus` (always success).
 

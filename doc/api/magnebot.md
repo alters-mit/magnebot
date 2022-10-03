@@ -187,7 +187,7 @@ c.communicate({"$type": "terminate"})
 
 **`Magnebot()`**
 
-**`Magnebot(robot_id=0, position=None, rotation=None, image_frequency=ImageFrequency.once, check_version=True)`**
+**`Magnebot(robot_id=0, position=None, rotation=None, image_frequency=ImageFrequency.once, parent_camera_to_torso=True, check_version=True)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -195,6 +195,7 @@ c.communicate({"$type": "terminate"})
 | position |  Dict[str, float] | None | The position of the robot. If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
 | rotation |  Dict[str, float] | None | The rotation of the robot in Euler angles (degrees). If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
 | image_frequency |  ImageFrequency  | ImageFrequency.once | [The frequency of image capture.](image_frequency.md) |
+| parent_camera_to_torso |  bool  | True | If True, the camera will be parented to the Magnebot's torso. If False, the camera will be parented to the Magenbot's column. |
 | check_version |  bool  | True | If True, check whether an update to the Magnebot API or TDW API is available. |
 
 ***
@@ -368,7 +369,7 @@ Slide the Magnebot's torso up or down.
 
 ### Camera
 
-These functions rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by exactly 1 frame.
+These functions rotate the Magnebot's camera. They advance the simulation by exactly 1 frame.
 
 #### rotate_camera
 
@@ -392,11 +393,28 @@ Each axis of rotation is constrained by the following limits:
 | pitch |  float  | 0 | The pitch angle in degrees. |
 | yaw |  float  | 0 | The yaw angle in degrees. |
 
-#### reset_camera
+#### move_camera
 
-**`self.reset_camera()`**
+**`self.move_camera(position, coordinate_space)`**
+
+Move the Magnebot's camera.
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| position |  Union[Dict[str, float] |  | The position of the camera. |
+| coordinate_space |  CameraCoordinateSpace |  | The [`CameraCoordinateSpace`](camera_coordinate_space.md), which is used to define what `position` means. |
+
+#### reset_camera_rotation
+
+**`self.reset_camera_rotation()`**
 
 Reset the rotation of the Magnebot's camera to its default angles.
+
+#### reset_camera_position
+
+**`self.reset_camera_position()`**
+
+Reset the Magnebot's camera to its initial position.
 
 ***
 
