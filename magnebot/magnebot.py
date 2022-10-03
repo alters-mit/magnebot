@@ -34,7 +34,6 @@ from magnebot.actions.stop import Stop
 from magnebot.actions.wait import Wait
 from magnebot.constants import TDW_VERSION, DEFAULT_CAMERA_POSITION_TORSO, DEFAULT_CAMERA_POSITION_COLUMN
 from magnebot.wheel import Wheel
-from magnebot.camera_coordinate_space import CameraCoordinateSpace
 
 
 class Magnebot(RobotBase):
@@ -469,16 +468,16 @@ class Magnebot(RobotBase):
         # Update the camera RPY angles.
         self.camera_rpy = np.array(self.action.camera_rpy[:])
 
-    def move_camera(self, position: Union[Dict[str, float], np.ndarray],
-                    coordinate_space: CameraCoordinateSpace = CameraCoordinateSpace.relative_to_camera) -> None:
+    def move_camera(self, position: Union[Dict[str, float], np.ndarray]) -> None:
         """
-        Move the Magnebot's camera.
+        Move the Magnebot's camera by an offset position.
 
-        :param position: The position of the camera.
-        :param coordinate_space: The [`CameraCoordinateSpace`](camera_coordinate_space.md), which is used to define what `position` means.
+        By default, the camera is parented to the torso and will continue to move when the torso moves. You can prevent this by setting `parent_camera_to_torso=False` in the Magnebot constructor.
+
+        :param position: The positional offset that the camera will move by.
         """
 
-        self.action = MoveCamera(position=position, coordinate_space=coordinate_space)
+        self.action = MoveCamera(position=position)
 
     def reset_camera_rotation(self) -> None:
         """

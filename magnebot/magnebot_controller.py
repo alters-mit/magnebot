@@ -14,7 +14,6 @@ from magnebot.arm import Arm
 from magnebot.ik.orientation_mode import OrientationMode
 from magnebot.ik.target_orientation import TargetOrientation
 from magnebot.image_frequency import ImageFrequency
-from magnebot.camera_coordinate_space import CameraCoordinateSpace
 from magnebot.magnebot import Magnebot
 from magnebot.paths import SPAWN_POSITIONS_PATH, OCCUPANCY_MAPS_DIRECTORY
 from magnebot.constants import OCCUPANCY_CELL_SIZE
@@ -385,18 +384,18 @@ class MagnebotController(Controller):
         self.magnebot.rotate_camera(roll=roll, pitch=pitch, yaw=yaw)
         return self._do_action()
 
-    def move_camera(self, position: Union[Dict[str, float], np.ndarray],
-                    coordinate_space: CameraCoordinateSpace = CameraCoordinateSpace.relative_to_camera) -> ActionStatus:
+    def move_camera(self, position: Union[Dict[str, float], np.ndarray]) -> ActionStatus:
         """
-        Move the Magenbot's camera.
+        Move the Magnebot's camera by an offset position.
 
-        :param position: The position of the camera.
-        :param coordinate_space: The [`CameraCoordinateSpace`](camera_coordinate_space.md), which is used to define what `position` means.
+        By default, the camera is parented to the torso and will continue to move when the torso moves. You can prevent this by setting `parent_camera_to_torso=False` in the Magnebot constructor.
+
+        :param position: The positional offset that the camera will move by.
 
         :return: An `ActionStatus` (always success).
         """
 
-        self.magnebot.move_camera(position=position, coordinate_space=coordinate_space)
+        self.magnebot.move_camera(position=position)
         return self._do_action()
 
     def reset_camera_rotation(self) -> ActionStatus:

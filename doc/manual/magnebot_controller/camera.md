@@ -41,18 +41,6 @@ c.move_camera({"x": 0, "y": 0.6, "z": 0})
 c.communicate({"$type": "terminate"})
 ```
 
-You can move set the coordinate space of camera movement by setting the `coordinate_space` parameter, which accepts a [`CameraCoordinateSpace` enum value](../../api/camera_coordinate_space.md):
-
-```python
-from magnebot import MagnebotController
-from magnebot.camera_coordinate_space import CameraCoordinateSpace
-
-c = MagnebotController()
-c.init_scene()
-c.move_camera({"x": 0, "y": 0.6, "z": 0}, coordinate_space=CameraCoordinateSpace.absolute)
-c.communicate({"$type": "terminate"})
-```
-
 You can reset the camera to its default position with by calling `reset_camera_position()`:
 
 ```python
