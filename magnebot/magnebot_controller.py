@@ -385,6 +385,20 @@ class MagnebotController(Controller):
         self.magnebot.rotate_camera(roll=roll, pitch=pitch, yaw=yaw)
         return self._do_action()
 
+    def move_camera(self, position: Union[Dict[str, float], np.ndarray],
+                    coordinate_space: CameraCoordinateSpace) -> ActionStatus:
+        """
+        Move the Magenbot's camera.
+
+        :param position: The position of the camera.
+        :param coordinate_space: The [`CameraCoordinateSpace`](camera_coordinate_space.md), which is used to define what `position` means.
+
+        :return: An `ActionStatus` (always success).
+        """
+
+        self.magnebot.move_camera(position=position, coordinate_space=coordinate_space)
+        return self._do_action()
+
     def reset_camera_rotation(self) -> ActionStatus:
         """
         Reset the rotation of the Magnebot's camera to its default angles.
@@ -395,15 +409,14 @@ class MagnebotController(Controller):
         self.magnebot.reset_camera_rotation()
         return self._do_action()
 
-    def move_camera(self, position: Union[Dict[str, float], np.ndarray], coordinate_space: CameraCoordinateSpace) -> ActionStatus:
+    def reset_camera_position(self) -> ActionStatus:
         """
-        Move the Magenbot's camera.
+        Reset the Magnebot's camera to its initial position.
 
-        :param position: The position of the camera.
-        :param coordinate_space: The [`CameraCoordinateSpace`](camera_coordinate_space.md), which is used to define what `position` means.
+        :return: An `ActionStatus` (always success).
         """
 
-        self.magnebot.move_camera(position=position, coordinate_space=coordinate_space)
+        self.magnebot.reset_camera_position()
         return self._do_action()
 
     def slide_torso(self, height: float) -> ActionStatus:

@@ -22,8 +22,8 @@
       "functions": ["slide_torso"]
     },
     "Camera": {
-      "description": "These functions rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by exactly 1 frame.",
-      "functions": ["rotate_camera", "reset_camera", "add_camera"]
+      "description": "These functions rotate or move the Magnebot's camera. They advance the simulation by exactly 1 frame.",
+      "functions": ["rotate_camera", "move_camera", "reset_camera_rotation", "reset_camera_position"]
     },
     "Misc.": {
       "description": "These are utility functions that won't advance the simulation by any frames.",
@@ -53,8 +53,8 @@
       "functions": ["slide_torso"]
     },
     "Camera": {
-      "description": "These functions rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by exactly 1 frame.",
-      "functions": ["rotate_camera", "reset_camera", "add_camera"]
+      "description": "These functions rotate the Magnebot's camera. They advance the simulation by exactly 1 frame.",
+      "functions": ["rotate_camera", "move_camera", "reset_camera_rotation", "reset_camera_position"]
     },
     "RobotBase": {
       "description": "These functions are inherited from the `RobotBase` parent class.",

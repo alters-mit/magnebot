@@ -26,12 +26,13 @@ from magnebot.actions.drop import Drop
 from magnebot.actions.reset_arm import ResetArm
 from magnebot.actions.reset_position import ResetPosition
 from magnebot.actions.rotate_camera import RotateCamera
-from magnebot.actions.reset_camera_rotation import ResetCameraRotation
 from magnebot.actions.move_camera import MoveCamera
+from magnebot.actions.reset_camera_rotation import ResetCameraRotation
+from magnebot.actions.reset_camera_position import ResetCameraPosition
 from magnebot.actions.slide_torso import SlideTorso
 from magnebot.actions.stop import Stop
 from magnebot.actions.wait import Wait
-from magnebot.constants import TDW_VERSION
+from magnebot.constants import TDW_VERSION, DEFAULT_CAMERA_POSITION_TORSO, DEFAULT_CAMERA_POSITION_COLUMN
 from magnebot.wheel import Wheel
 from magnebot.camera_coordinate_space import CameraCoordinateSpace
 
@@ -175,14 +176,14 @@ class Magnebot(RobotBase):
     _CHECKED_VERSION: bool = False
 
     def __init__(self, robot_id: int = 0, position: Dict[str, float] = None, rotation: Dict[str, float] = None,
-                 image_frequency: ImageFrequency = ImageFrequency.once, camera_parent: ArmJoint = ArmJoint.torso,
+                 image_frequency: ImageFrequency = ImageFrequency.once, parent_camera_to_torso: bool = True,
                  check_version: bool = True):
         """
         :param robot_id: The ID of the robot.
         :param position: The position of the robot. If None, defaults to `{"x": 0, "y": 0, "z": 0}`.
         :param rotation: The rotation of the robot in Euler angles (degrees). If None, defaults to `{"x": 0, "y": 0, "z": 0}`.
         :param image_frequency: [The frequency of image capture.](image_frequency.md)
-        :param camera_parent: The [`ArmJoint`](arm_joint.md) that the camera will be parented to.
+        :param parent_camera_to_torso: If True, the camera will be parented to the Magnebot's torso. If False, the camera will be parented to the Magenbot's column.
         :param check_version: If True, check whether an update to the Magnebot API or TDW API is available.
         """
 
@@ -243,7 +244,7 @@ class Magnebot(RobotBase):
         self._previous_resp: List[bytes] = list()
         self._previous_action: Optional[Action] = None
         self._check_version: bool = check_version
-        self._camera_parent: ArmJoint = camera_parent
+        self._parent_camera_to_torso: bool = parent_camera_to_torso
 
     def get_initialization_commands(self) -> List[dict]:
         """
@@ -466,15 +467,6 @@ class Magnebot(RobotBase):
         # Update the camera RPY angles.
         self.camera_rpy = np.array(self.action.camera_rpy[:])
 
-    def reset_camera_rotation(self) -> None:
-        """
-        Reset the rotation of the Magnebot's camera to its default angles.
-        """
-
-        self.action = ResetCameraRotation()
-        # Reset the camera RPY angles.
-        self.camera_rpy = np.array([0, 0, 0])
-
     def move_camera(self, position: Union[Dict[str, float], np.ndarray],
                     coordinate_space: CameraCoordinateSpace) -> None:
         """
@@ -486,6 +478,22 @@ class Magnebot(RobotBase):
 
         self.action = MoveCamera(position=position, coordinate_space=coordinate_space)
 
+    def reset_camera_rotation(self) -> None:
+        """
+        Reset the rotation of the Magnebot's camera to its default angles.
+        """
+
+        self.action = ResetCameraRotation()
+        # Reset the camera RPY angles.
+        self.camera_rpy = np.array([0, 0, 0])
+
+    def reset_camera_position(self) -> None:
+        """
+        Reset the Magnebot's camera to its initial position.
+        """
+
+        self.action = ResetCameraPosition(parented_to_torso=self._parent_camera_to_torso)
+
     def reset(self, position: Dict[str, float] = None, rotation: Dict[str, float] = None) -> None:
         super().reset(position=position, rotation=rotation)
         self.action = None
@@ -493,6 +501,7 @@ class Magnebot(RobotBase):
         self.camera_rpy: np.array = np.array([0, 0, 0])
         self.collision_detection = CollisionDetection()
         self._previous_resp.clear()
+        self.commands.append(self._get_parent_avatar_command())
 
     def slide_torso(self, height: float) -> None:
         """
@@ -528,11 +537,7 @@ class Magnebot(RobotBase):
                               {"$type": "set_pass_masks",
                                "pass_masks": ["_img", "_id", "_depth"],
                                "avatar_id": self.static.avatar_id},
-                              {"$type": "parent_avatar_to_robot",
-                               "position": {"x": 0, "y": 0.053, "z": 0.1838},
-                               "body_part_id": self.static.arm_joints[self._camera_parent],
-                               "avatar_id": self.static.avatar_id,
-                               "id": self.static.robot_id},
+                              self._get_parent_avatar_command(),
                               {"$type": "enable_image_sensor",
                                "enable": False,
                                "avatar_id": self.static.avatar_id},
@@ -573,3 +578,14 @@ class Magnebot(RobotBase):
                 "position": self.initial_position,
                 "rotation": self.initial_rotation,
                 "id": self.robot_id}
+
+    def _get_parent_avatar_command(self) -> dict:
+        """
+        :return: A command to parent the avatar to the Magenbot. The parent body part is determined by `self._parent_camera_to_torso` and the `parent_camera_to_torso` constructor parameter.
+        """
+
+        return {"$type": "parent_avatar_to_robot",
+                "position": DEFAULT_CAMERA_POSITION_TORSO if self._parent_camera_to_torso else DEFAULT_CAMERA_POSITION_COLUMN,
+                "body_part_id": self.static.arm_joints[ArmJoint.torso if self._parent_camera_to_torso else ArmJoint.column],
+                "avatar_id": self.static.avatar_id,
+                "id": self.static.robot_id}

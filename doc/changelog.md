@@ -3,6 +3,7 @@
 ## 2.2.0
 
 - Added a new action: `MoveCamera(position, coordinate_space)`, which can be called via `magnebot.move_camera(position, coordinate_space)` or `magnebot_controller.move_camera(position, coordinate_space)`.
+- Added a new action: `ResetCameraPosition(parented_to_torso)`, which can be called via `magnebot.reset_camera_position()` or `magnebot_controller.reset_camera_position()`.
 - Added new parameter `camera_parent` to the `Magnebot` constructor. Defines which body part the camera is parented to.
 - Renamed `ResetCamera` to `ResetCameraRotation`. Renamed `magnebot.reset_camera()` to `magnebot.reset_camera_rotation()`. Renamed `magnebot_controller.reset_camera()` to `magnebot_controller.reset_camera_rotation()`.
 - Required version of TDW is now >=1.10.8.0
