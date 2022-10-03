@@ -28,7 +28,7 @@ if __name__ == "__main__":
     assert status == ActionStatus.clamped_camera_rotation, status
     assert m.magnebot.camera_rpy[0] == 0 and m.magnebot.camera_rpy[1] == 70 and m.magnebot.camera_rpy[2] == -85, m.magnebot.camera_rpy
     # Reset.
-    status = m.reset_camera_rotation()
+    status = m.reset_camera()
     assert status == ActionStatus.success, status
     assert np.linalg.norm(m.magnebot.camera_rpy) == 0
     # Multiaxis.

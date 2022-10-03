@@ -39,7 +39,7 @@ c.end()
 
 ## Reset the camera
 
-You can reset the camera to its default position with by calling `reset_camera_position()`:
+You can reset the camera to its default position with by calling `reset_camera()`:
 
 ```python
 from magnebot import MagnebotController

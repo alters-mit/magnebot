@@ -5,14 +5,13 @@ from tdw.add_ons.image_capture import ImageCapture
 from tdw.backend.paths import EXAMPLE_CONTROLLER_OUTPUT_PATH
 from magnebot import Magnebot, ActionStatus
 from magnebot.constants import TORSO_MIN_Y
-from magnebot.camera_coordinate_space import CameraCoordinateSpace
 
 c = Controller()
 m = Magnebot(visual_camera_mesh=True, parent_camera_to_torso=False)
 c.add_ons.append(m)
 c.communicate(TDWUtils.create_empty_room(12, 12))
 c.communicate([])
-m.move_camera({"x": 0, "y": 0.6, "z": 0}, coordinate_space=CameraCoordinateSpace.relative_to_camera)
+m.move_camera({"x": 0, "y": 0.6, "z": 0})
 c.communicate([])
 m.rotate_camera(pitch=30)
 while m.action.status == ActionStatus.ongoing:
