@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.0
+
+- Required version of TDW is now >=1.10.8.0
+
 ## 2.1.0
 
 - Added a new action: `SlideTorso(height)`, which can be called via `magnebot.slide_torso(height)` or `magnebot_controller.slide_torso(height)`.
