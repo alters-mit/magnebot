@@ -2,6 +2,7 @@
 
 ## 2.2.0
 
+- Added a new action: `MoveCamera(position, coordinate_space)`, which can be called via `magnebot.move_camera(position, coordinate_space)` or `magnebot_controller.move_camera(position, coordinate_space)`.
 - Required version of TDW is now >=1.10.8.0
 
 ## 2.1.0
