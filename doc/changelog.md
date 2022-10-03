@@ -8,6 +8,7 @@
 - Added new parameter `visual_camera_mesh` to the `Magnebot` constructor. If True, the camera will receive a visual mesh. The mesh won't have colliders and won't respond to physics. If False, the camera won't have a visual mesh. Default = False.
 - Renamed `ResetCamera` to `ResetCameraRotation`. Renamed `magnebot.reset_camera()` to `magnebot.reset_camera_rotation()`. Renamed `magnebot_controller.reset_camera()` to `magnebot_controller.reset_camera_rotation()`.
 - Added test controller: `visual_camera.py`
+- Renamed `manual/magnebot/rotate_camera.md` to `manul/magnebot/camera.md` and added documentation for camera movement and visualization.
 - Required version of TDW is now >=1.10.8.0
 
 ## 2.1.0

@@ -88,7 +88,7 @@ The [`MagnebotController`](doc/api/magnebot_controller.md) offers a simplified A
 - [Moving, turning, and collision detection](doc/manual/magnebot/movement.md)
 - [Arm articulation](doc/manual/magnebot/arm_articulation.md)
 - [Grasp action](doc/manual/magnebot/grasp.md)
-- [Camera rotation](doc/manual/magnebot/camera_rotation.md)
+- [Camera](doc/manual/magnebot/camera.md)
 - [Third-person cameras](doc/manual/magnebot/third_person_camera.md)
 - [Occupancy maps](doc/manual/magnebot/occupancy_map.md)
 - [Multi-agent simulations](doc/manual/magnebot/multi_agent.md)

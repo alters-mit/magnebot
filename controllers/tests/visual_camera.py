@@ -4,10 +4,11 @@ from tdw.add_ons.third_person_camera import ThirdPersonCamera
 from tdw.add_ons.image_capture import ImageCapture
 from tdw.backend.paths import EXAMPLE_CONTROLLER_OUTPUT_PATH
 from magnebot import Magnebot, ActionStatus
+from magnebot.constants import TORSO_MIN_Y
 from magnebot.camera_coordinate_space import CameraCoordinateSpace
 
 c = Controller()
-m = Magnebot(visual_camera=True)
+m = Magnebot(visual_camera_mesh=True, parent_camera_to_torso=False)
 c.add_ons.append(m)
 c.communicate(TDWUtils.create_empty_room(12, 12))
 c.communicate([])
@@ -24,4 +25,8 @@ print(f"Images will be saved to: {path}")
 capture = ImageCapture(avatar_ids=["a", m.static.avatar_id], path=path)
 c.add_ons.extend([camera, capture])
 c.communicate([])
+# Slide the torso away from the camera.
+m.slide_torso(height=TORSO_MIN_Y)
+while m.action.status == ActionStatus.ongoing:
+    c.communicate([])
 c.communicate({"$type": "terminate"})
