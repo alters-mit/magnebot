@@ -392,7 +392,7 @@ class MagnebotController(Controller):
         :return: An `ActionStatus` (always success).
         """
 
-        self.magnebot.reset_camera()
+        self.magnebot.reset_camera_rotation()
         return self._do_action()
 
     def move_camera(self, position: Union[Dict[str, float], np.ndarray], coordinate_space: CameraCoordinateSpace) -> ActionStatus:

@@ -26,7 +26,7 @@ from magnebot.actions.drop import Drop
 from magnebot.actions.reset_arm import ResetArm
 from magnebot.actions.reset_position import ResetPosition
 from magnebot.actions.rotate_camera import RotateCamera
-from magnebot.actions.reset_camera import ResetCamera
+from magnebot.actions.reset_camera_rotation import ResetCameraRotation
 from magnebot.actions.move_camera import MoveCamera
 from magnebot.actions.slide_torso import SlideTorso
 from magnebot.actions.stop import Stop
@@ -466,12 +466,12 @@ class Magnebot(RobotBase):
         # Update the camera RPY angles.
         self.camera_rpy = np.array(self.action.camera_rpy[:])
 
-    def reset_camera(self) -> None:
+    def reset_camera_rotation(self) -> None:
         """
         Reset the rotation of the Magnebot's camera to its default angles.
         """
 
-        self.action = ResetCamera()
+        self.action = ResetCameraRotation()
         # Reset the camera RPY angles.
         self.camera_rpy = np.array([0, 0, 0])
 

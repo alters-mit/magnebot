@@ -1,5 +1,4 @@
 from typing import List
-import numpy as np
 from magnebot.action_status import ActionStatus
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.magnebot_static import MagnebotStatic
@@ -7,7 +6,7 @@ from magnebot.actions.camera_action import CameraAction
 from magnebot.image_frequency import ImageFrequency
 
 
-class ResetCamera(CameraAction):
+class ResetCameraRotation(CameraAction):
     """
     Reset the Magnebot's camera to its initial rotation.
     """
