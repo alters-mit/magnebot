@@ -8,8 +8,6 @@ Camera actions require only one `communicate()` call to complete.
 
 `rotate_camera(roll, pitch, yaw)` will rotate the camera by (roll, pitch, yaw) in degrees. The Magnebot's camera rotation is clamped to a certain range.
 
-To reset the camera's rotation, call `reset_camera_rotation()`.
-
 ```python
 from magnebot import MagnebotController, ActionStatus
 from magnebot.actions.rotate_camera import RotateCamera
@@ -23,8 +21,6 @@ assert status == ActionStatus.success, status
 # Clamped pitch.
 status = c.rotate_camera(pitch=90)
 assert status == ActionStatus.clamped_camera_rotation, status
-# Reset the camera.
-c.reset_camera_rotation()
 c.end()
 ```
 
@@ -38,8 +34,10 @@ from magnebot import MagnebotController
 c = MagnebotController()
 c.init_scene()
 c.move_camera({"x": 0, "y": 0.6, "z": 0})
-c.communicate({"$type": "terminate"})
+c.end()
 ```
+
+## Reset the camera
 
 You can reset the camera to its default position with by calling `reset_camera_position()`:
 
@@ -49,8 +47,20 @@ from magnebot import MagnebotController
 c = MagnebotController()
 c.init_scene()
 c.move_camera({"x": 0, "y": 0.6, "z": 0})
-c.reset_camera_position()
-c.communicate({"$type": "terminate"})
+c.reset_camera()
+c.end()
+```
+
+Set the optional `position` and `rotation` parameters to reset only the position or rotation:
+
+```python
+from magnebot import MagnebotController
+
+c = MagnebotController()
+c.init_scene()
+c.move_camera({"x": 0, "y": 0.6, "z": 0})
+c.reset_camera(position=True, rotation=False)
+c.end()
 ```
 
 ***

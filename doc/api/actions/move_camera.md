@@ -2,7 +2,7 @@
 
 `from magnebot.actions.move_camera import MoveCamera`
 
-Move the Magnebot's camera.
+Move the Magnebot's camera by an offset position.
 
 ## Class Variables
 
@@ -32,12 +32,11 @@ Move the Magnebot's camera.
 
 #### \_\_init\_\_
 
-**`MoveCamera(position, coordinate_space)`**
+**`MoveCamera(position)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| position |  Union[Dict[str, float] |  | The position of the camera. |
-| coordinate_space |  CameraCoordinateSpace |  | The [`CameraCoordinateSpace`](../camera_coordinate_space.md), which is used to define what `position` means. |
+| position |  Union[Dict[str, float] |  | The positional offset that the camera will move by. |
 
 #### get_initialization_commands
 

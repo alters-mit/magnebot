@@ -16,9 +16,8 @@ By default, the `Magnebot` action space is:
 - `reset_arm(arm)`
 - `reset_position()`
 - `rotate_camera(roll, pitch, yaw)`
-- `reset_camera_rotation()`
 - `move_camera(position)`
-- `reset_camera_position()`
+- `reset_camera()`
 - `slide_torso(height)`
 - `stop()`
 

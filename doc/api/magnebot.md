@@ -398,26 +398,26 @@ Each axis of rotation is constrained by the following limits:
 
 **`self.move_camera(position)`**
 
-**`self.move_camera(position, coordinate_space=CameraCoordinateSpace.relative_to_camera)`**
+Move the Magnebot's camera by an offset position.
 
-Move the Magnebot's camera.
+By default, the camera is parented to the torso and will continue to move when the torso moves. You can prevent this by setting `parent_camera_to_torso=False` in the Magnebot constructor.
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| position |  Union[Dict[str, float] |  | The position of the camera. |
-| coordinate_space |  CameraCoordinateSpace  | CameraCoordinateSpace.relative_to_camera | The [`CameraCoordinateSpace`](camera_coordinate_space.md), which is used to define what `position` means. |
+| position |  Union[Dict[str, float] |  | The positional offset that the camera will move by. |
 
-#### reset_camera_rotation
+#### reset_camera
 
-**`self.reset_camera_rotation()`**
+**`self.reset_camera()`**
 
-Reset the rotation of the Magnebot's camera to its default angles.
+**`self.reset_camera(position=True, rotation=True)`**
 
-#### reset_camera_position
+Reset the rotation of the Magnebot's camera to its default angles and/or its default position relative to its parent (by default, its parent is the torso).
 
-**`self.reset_camera_position()`**
-
-Reset the Magnebot's camera to its initial position.
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| position |  bool  | True | If True, reset the camera's position. |
+| rotation |  bool  | True | If True, reset the camera' rotation. |
 
 ***
 

@@ -398,24 +398,17 @@ class MagnebotController(Controller):
         self.magnebot.move_camera(position=position)
         return self._do_action()
 
-    def reset_camera_rotation(self) -> ActionStatus:
+    def reset_camera(self, position: bool = True, rotation: bool = True) -> ActionStatus:
         """
-        Reset the rotation of the Magnebot's camera to its default angles.
+        Reset the rotation of the Magnebot's camera to its default angles and/or its default position relative to its parent (by default, its parent is the torso).
+
+        :param position: If True, reset the camera's position.
+        :param rotation: If True, reset the camera' rotation.
 
         :return: An `ActionStatus` (always success).
         """
 
-        self.magnebot.reset_camera_rotation()
-        return self._do_action()
-
-    def reset_camera_position(self) -> ActionStatus:
-        """
-        Reset the Magnebot's camera to its initial position.
-
-        :return: An `ActionStatus` (always success).
-        """
-
-        self.magnebot.reset_camera_position()
+        self.magnebot.reset_camera(position=position, rotation=rotation)
         return self._do_action()
 
     def slide_torso(self, height: float) -> ActionStatus:

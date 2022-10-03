@@ -27,8 +27,7 @@ from magnebot.actions.reset_arm import ResetArm
 from magnebot.actions.reset_position import ResetPosition
 from magnebot.actions.rotate_camera import RotateCamera
 from magnebot.actions.move_camera import MoveCamera
-from magnebot.actions.reset_camera_rotation import ResetCameraRotation
-from magnebot.actions.reset_camera_position import ResetCameraPosition
+from magnebot.actions.reset_camera import ResetCamera
 from magnebot.actions.slide_torso import SlideTorso
 from magnebot.actions.stop import Stop
 from magnebot.actions.wait import Wait
@@ -479,21 +478,18 @@ class Magnebot(RobotBase):
 
         self.action = MoveCamera(position=position)
 
-    def reset_camera_rotation(self) -> None:
+    def reset_camera(self, position: bool = True, rotation: bool = True) -> None:
         """
-        Reset the rotation of the Magnebot's camera to its default angles.
+        Reset the rotation of the Magnebot's camera to its default angles and/or its default position relative to its parent (by default, its parent is the torso).
+
+        :param position: If True, reset the camera's position.
+        :param rotation: If True, reset the camera' rotation.
         """
 
-        self.action = ResetCameraRotation()
+        self.action = ResetCamera(position=position, rotation=rotation, parented_to_torso=self._parent_camera_to_torso)
         # Reset the camera RPY angles.
-        self.camera_rpy = np.array([0, 0, 0])
-
-    def reset_camera_position(self) -> None:
-        """
-        Reset the Magnebot's camera to its initial position.
-        """
-
-        self.action = ResetCameraPosition(parented_to_torso=self._parent_camera_to_torso)
+        if rotation:
+            self.camera_rpy = np.array([0, 0, 0])
 
     def reset(self, position: Dict[str, float] = None, rotation: Dict[str, float] = None) -> None:
         super().reset(position=position, rotation=rotation)

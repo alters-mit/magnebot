@@ -8,8 +8,6 @@ Camera actions require only one `communicate()` call to complete.
 
 `rotate_camera(roll, pitch, yaw)` will rotate the camera by (roll, pitch, yaw) in degrees. The Magnebot's camera rotation is clamped to a certain range.
 
-To reset the camera's rotation, call `reset_camera_rotation()`.
-
 ```python
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
@@ -29,9 +27,6 @@ assert magnebot.action.status == ActionStatus.success, magnebot.action.status
 magnebot.rotate_camera(pitch=90)
 c.communicate([])
 assert magnebot.action.status == ActionStatus.clamped_camera_rotation, magnebot.action.status
-# Reset the camera.
-magnebot.reset_camera_rotation()
-c.communicate([])
 c.communicate({"$type": "terminate"})
 ```
 
@@ -54,7 +49,9 @@ c.communicate([])
 c.communicate({"$type": "terminate"})
 ```
 
-You can reset the camera to its default position with by calling `reset_camera_position()`:
+## Reset the camera
+
+You can reset the camera to its default position with by calling `reset_camera()`:
 
 ```python
 from tdw.controller import Controller
@@ -68,7 +65,26 @@ c.communicate(TDWUtils.create_empty_room(12, 12))
 c.communicate([])
 m.move_camera({"x": 0, "y": 0.6, "z": 0})
 c.communicate([])
-m.reset_camera_position()
+m.reset_camera()
+c.communicate([])
+c.communicate({"$type": "terminate"})
+```
+
+Set the optional `position` and `rotation` parameters to reset only the position or rotation:
+
+```python
+from tdw.controller import Controller
+from tdw.tdw_utils import TDWUtils
+from magnebot import Magnebot
+
+c = Controller()
+m = Magnebot()
+c.add_ons.append(m)
+c.communicate(TDWUtils.create_empty_room(12, 12))
+c.communicate([])
+m.move_camera({"x": 0, "y": 0.6, "z": 0})
+c.communicate([])
+m.reset_camera(position=True, rotation=False)
 c.communicate([])
 c.communicate({"$type": "terminate"})
 ```

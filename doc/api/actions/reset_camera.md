@@ -1,8 +1,8 @@
-# ResetCameraPosition
+# ResetCamera
 
-`from magnebot.actions.reset_camera_position import ResetCameraPosition`
+`from magnebot.actions.reset_camera import ResetCamera`
 
-Reset the Magnebot's camera to its initial position.
+Reset the rotation of the Magnebot's camera to its default angles and/or its default position relative to its parent (by default, its parent is the torso).
 
 ## Class Variables
 
@@ -32,10 +32,12 @@ Reset the Magnebot's camera to its initial position.
 
 #### \_\_init\_\_
 
-**`ResetCameraPosition(parented_to_torso)`**
+**`ResetCamera(position, rotation, parented_to_torso)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
+| position |  bool |  | If True, reset the camera's position. |
+| rotation |  bool |  | If True, reset the camera' rotation. |
 | parented_to_torso |  bool |  | If True, the camera is parented to the torso. |
 
 #### get_initialization_commands

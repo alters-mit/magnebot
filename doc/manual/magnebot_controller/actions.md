@@ -16,9 +16,8 @@ The `MagnebotController` action space is:
 - `reset_arm(arm)`
 - `reset_position()`
 - `rotate_camera(roll, pitch, yaw)`
-- `reset_camera_rotation()`
 - `move_camera(position)`
-- `reset_camera_position()`
+- `reset_camera()`
 - `slide_torso(height)`
 
 *Note:  Most of these actions have additional optional parameters. Read the API document for more information.*
