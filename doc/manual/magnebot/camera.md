@@ -151,7 +151,7 @@ c.communicate({"$type": "terminate"})
 
 Result:
 
-![](../images/visual_camera.jpg)
+![](../images/visual_camera.gif)
 
 ***
 

@@ -9,6 +9,7 @@
 - Renamed `ResetCamera` to `ResetCameraRotation`. Renamed `magnebot.reset_camera()` to `magnebot.reset_camera_rotation()`. Renamed `magnebot_controller.reset_camera()` to `magnebot_controller.reset_camera_rotation()`.
 - Added test controller: `visual_camera.py`
 - Renamed `manual/magnebot/rotate_camera.md` to `manul/magnebot/camera.md` and added documentation for camera movement and visualization.
+- Renamed `manual/magnebot_controller/rotate_camera.md` to `manul/magnebot_controller/camera.md` and added documentation for camera movement.
 - Required version of TDW is now >=1.10.8.0
 
 ## 2.1.0
