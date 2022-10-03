@@ -177,13 +177,14 @@ class Magnebot(RobotBase):
 
     def __init__(self, robot_id: int = 0, position: Dict[str, float] = None, rotation: Dict[str, float] = None,
                  image_frequency: ImageFrequency = ImageFrequency.once, parent_camera_to_torso: bool = True,
-                 check_version: bool = True):
+                 visual_camera_mesh: bool = False, check_version: bool = True):
         """
         :param robot_id: The ID of the robot.
         :param position: The position of the robot. If None, defaults to `{"x": 0, "y": 0, "z": 0}`.
         :param rotation: The rotation of the robot in Euler angles (degrees). If None, defaults to `{"x": 0, "y": 0, "z": 0}`.
         :param image_frequency: [The frequency of image capture.](image_frequency.md)
-        :param parent_camera_to_torso: If True, the camera will be parented to the Magnebot's torso. If False, the camera will be parented to the Magenbot's column.
+        :param parent_camera_to_torso: If True, the camera will be parented to the Magnebot's torso. If False, the camera will be parented to the Magnebot's column.
+        :param visual_camera_mesh: If True, the camera will receive a visual mesh. The mesh won't have colliders and won't respond to physics. If False, the camera won't have a visual mesh.
         :param check_version: If True, check whether an update to the Magnebot API or TDW API is available.
         """
 
@@ -245,6 +246,7 @@ class Magnebot(RobotBase):
         self._previous_action: Optional[Action] = None
         self._check_version: bool = check_version
         self._parent_camera_to_torso: bool = parent_camera_to_torso
+        self._visual_camera_mesh: bool = visual_camera_mesh
 
     def get_initialization_commands(self) -> List[dict]:
         """
@@ -468,7 +470,7 @@ class Magnebot(RobotBase):
         self.camera_rpy = np.array(self.action.camera_rpy[:])
 
     def move_camera(self, position: Union[Dict[str, float], np.ndarray],
-                    coordinate_space: CameraCoordinateSpace) -> None:
+                    coordinate_space: CameraCoordinateSpace = CameraCoordinateSpace.relative_to_camera) -> None:
         """
         Move the Magnebot's camera.
 
@@ -543,6 +545,10 @@ class Magnebot(RobotBase):
                                "avatar_id": self.static.avatar_id},
                               {"$type": "set_img_pass_encoding",
                                "value": False}])
+        # Visualize the camera.
+        if self._visual_camera_mesh:
+            self.commands.append({"$type": "add_visual_camera_mesh",
+                                  "avatar_id": self.static.avatar_id})
 
     def _set_dynamic_data(self, resp: List[bytes]) -> None:
         """

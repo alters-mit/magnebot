@@ -4,8 +4,10 @@
 
 - Added a new action: `MoveCamera(position, coordinate_space)`, which can be called via `magnebot.move_camera(position, coordinate_space)` or `magnebot_controller.move_camera(position, coordinate_space)`.
 - Added a new action: `ResetCameraPosition(parented_to_torso)`, which can be called via `magnebot.reset_camera_position()` or `magnebot_controller.reset_camera_position()`.
-- Added new parameter `camera_parent` to the `Magnebot` constructor. Defines which body part the camera is parented to.
+- Added new parameter `parent_camera_to_torso` to the `Magnebot` constructor. If True, the camera will be parented to the Magnebot's torso. If False, the camera will be parented to the Magnebot's column. Default = True.
+- Added new parameter `visual_camera_mesh` to the `Magnebot` constructor. If True, the camera will receive a visual mesh. The mesh won't have colliders and won't respond to physics. If False, the camera won't have a visual mesh. Default = False.
 - Renamed `ResetCamera` to `ResetCameraRotation`. Renamed `magnebot.reset_camera()` to `magnebot.reset_camera_rotation()`. Renamed `magnebot_controller.reset_camera()` to `magnebot_controller.reset_camera_rotation()`.
+- Added test controller: `visual_camera.py`
 - Required version of TDW is now >=1.10.8.0
 
 ## 2.1.0

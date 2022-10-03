@@ -386,7 +386,7 @@ class MagnebotController(Controller):
         return self._do_action()
 
     def move_camera(self, position: Union[Dict[str, float], np.ndarray],
-                    coordinate_space: CameraCoordinateSpace) -> ActionStatus:
+                    coordinate_space: CameraCoordinateSpace = CameraCoordinateSpace.relative_to_camera) -> ActionStatus:
         """
         Move the Magenbot's camera.
 

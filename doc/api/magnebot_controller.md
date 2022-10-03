@@ -401,7 +401,9 @@ _Returns:_  An `ActionStatus` indicating whether the Magnebot rotated its camera
 
 #### move_camera
 
-**`self.move_camera(position, coordinate_space)`**
+**`self.move_camera(position)`**
+
+**`self.move_camera(position, coordinate_space=CameraCoordinateSpace.relative_to_camera)`**
 
 Move the Magenbot's camera.
 
@@ -409,7 +411,7 @@ Move the Magenbot's camera.
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | position |  Union[Dict[str, float] |  | The position of the camera. |
-| coordinate_space |  CameraCoordinateSpace |  | The [`CameraCoordinateSpace`](camera_coordinate_space.md), which is used to define what `position` means. |
+| coordinate_space |  CameraCoordinateSpace  | CameraCoordinateSpace.relative_to_camera | The [`CameraCoordinateSpace`](camera_coordinate_space.md), which is used to define what `position` means. |
 
 _Returns:_  An `ActionStatus` (always success).
 

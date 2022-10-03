@@ -187,7 +187,7 @@ c.communicate({"$type": "terminate"})
 
 **`Magnebot()`**
 
-**`Magnebot(robot_id=0, position=None, rotation=None, image_frequency=ImageFrequency.once, parent_camera_to_torso=True, check_version=True)`**
+**`Magnebot(robot_id=0, position=None, rotation=None, image_frequency=ImageFrequency.once, parent_camera_to_torso=True, visual_camera_mesh=False, check_version=True)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -195,7 +195,8 @@ c.communicate({"$type": "terminate"})
 | position |  Dict[str, float] | None | The position of the robot. If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
 | rotation |  Dict[str, float] | None | The rotation of the robot in Euler angles (degrees). If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
 | image_frequency |  ImageFrequency  | ImageFrequency.once | [The frequency of image capture.](image_frequency.md) |
-| parent_camera_to_torso |  bool  | True | If True, the camera will be parented to the Magnebot's torso. If False, the camera will be parented to the Magenbot's column. |
+| parent_camera_to_torso |  bool  | True | If True, the camera will be parented to the Magnebot's torso. If False, the camera will be parented to the Magnebot's column. |
+| visual_camera_mesh |  bool  | False | If True, the camera will receive a visual mesh. The mesh won't have colliders and won't respond to physics. If False, the camera won't have a visual mesh. |
 | check_version |  bool  | True | If True, check whether an update to the Magnebot API or TDW API is available. |
 
 ***
@@ -395,14 +396,16 @@ Each axis of rotation is constrained by the following limits:
 
 #### move_camera
 
-**`self.move_camera(position, coordinate_space)`**
+**`self.move_camera(position)`**
+
+**`self.move_camera(position, coordinate_space=CameraCoordinateSpace.relative_to_camera)`**
 
 Move the Magnebot's camera.
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | position |  Union[Dict[str, float] |  | The position of the camera. |
-| coordinate_space |  CameraCoordinateSpace |  | The [`CameraCoordinateSpace`](camera_coordinate_space.md), which is used to define what `position` means. |
+| coordinate_space |  CameraCoordinateSpace  | CameraCoordinateSpace.relative_to_camera | The [`CameraCoordinateSpace`](camera_coordinate_space.md), which is used to define what `position` means. |
 
 #### reset_camera_rotation
 
