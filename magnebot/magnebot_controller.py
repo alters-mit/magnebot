@@ -14,6 +14,7 @@ from magnebot.arm import Arm
 from magnebot.ik.orientation_mode import OrientationMode
 from magnebot.ik.target_orientation import TargetOrientation
 from magnebot.image_frequency import ImageFrequency
+from magnebot.camera_coordinate_space import CameraCoordinateSpace
 from magnebot.magnebot import Magnebot
 from magnebot.paths import SPAWN_POSITIONS_PATH, OCCUPANCY_MAPS_DIRECTORY
 from magnebot.constants import OCCUPANCY_CELL_SIZE
@@ -392,6 +393,17 @@ class MagnebotController(Controller):
         """
 
         self.magnebot.reset_camera()
+        return self._do_action()
+
+    def move_camera(self, position: Union[Dict[str, float], np.ndarray], coordinate_space: CameraCoordinateSpace) -> ActionStatus:
+        """
+        Move the Magenbot's camera.
+
+        :param position: The position of the camera.
+        :param coordinate_space: The [`CameraCoordinateSpace`](camera_coordinate_space.md), which is used to define what `position` means.
+        """
+
+        self.magnebot.move_camera(position=position, coordinate_space=coordinate_space)
         return self._do_action()
 
     def slide_torso(self, height: float) -> ActionStatus:

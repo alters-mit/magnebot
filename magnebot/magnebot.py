@@ -27,11 +27,13 @@ from magnebot.actions.reset_arm import ResetArm
 from magnebot.actions.reset_position import ResetPosition
 from magnebot.actions.rotate_camera import RotateCamera
 from magnebot.actions.reset_camera import ResetCamera
+from magnebot.actions.move_camera import MoveCamera
 from magnebot.actions.slide_torso import SlideTorso
 from magnebot.actions.stop import Stop
 from magnebot.actions.wait import Wait
 from magnebot.constants import TDW_VERSION
 from magnebot.wheel import Wheel
+from magnebot.camera_coordinate_space import CameraCoordinateSpace
 
 
 class Magnebot(RobotBase):
@@ -469,6 +471,17 @@ class Magnebot(RobotBase):
         self.action = ResetCamera()
         # Reset the camera RPY angles.
         self.camera_rpy = np.array([0, 0, 0])
+
+    def move_camera(self, position: Union[Dict[str, float], np.ndarray],
+                    coordinate_space: CameraCoordinateSpace) -> None:
+        """
+        Move the Magnebot's camera.
+
+        :param position: The position of the camera.
+        :param coordinate_space: The [`CameraCoordinateSpace`](camera_coordinate_space.md), which is used to define what `position` means.
+        """
+
+        self.action = MoveCamera(position=position, coordinate_space=coordinate_space)
 
     def reset(self, position: Dict[str, float] = None, rotation: Dict[str, float] = None) -> None:
         super().reset(position=position, rotation=rotation)
