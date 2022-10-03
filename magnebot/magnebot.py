@@ -175,12 +175,14 @@ class Magnebot(RobotBase):
     _CHECKED_VERSION: bool = False
 
     def __init__(self, robot_id: int = 0, position: Dict[str, float] = None, rotation: Dict[str, float] = None,
-                 image_frequency: ImageFrequency = ImageFrequency.once, check_version: bool = True):
+                 image_frequency: ImageFrequency = ImageFrequency.once, camera_parent: ArmJoint = ArmJoint.torso,
+                 check_version: bool = True):
         """
         :param robot_id: The ID of the robot.
         :param position: The position of the robot. If None, defaults to `{"x": 0, "y": 0, "z": 0}`.
         :param rotation: The rotation of the robot in Euler angles (degrees). If None, defaults to `{"x": 0, "y": 0, "z": 0}`.
         :param image_frequency: [The frequency of image capture.](image_frequency.md)
+        :param camera_parent: The [`ArmJoint`](arm_joint.md) that the camera will be parented to.
         :param check_version: If True, check whether an update to the Magnebot API or TDW API is available.
         """
 
@@ -241,6 +243,7 @@ class Magnebot(RobotBase):
         self._previous_resp: List[bytes] = list()
         self._previous_action: Optional[Action] = None
         self._check_version: bool = check_version
+        self._camera_parent: ArmJoint = camera_parent
 
     def get_initialization_commands(self) -> List[dict]:
         """
@@ -527,7 +530,7 @@ class Magnebot(RobotBase):
                                "avatar_id": self.static.avatar_id},
                               {"$type": "parent_avatar_to_robot",
                                "position": {"x": 0, "y": 0.053, "z": 0.1838},
-                               "body_part_id": self.static.arm_joints[ArmJoint.torso],
+                               "body_part_id": self.static.arm_joints[self._camera_parent],
                                "avatar_id": self.static.avatar_id,
                                "id": self.static.robot_id},
                               {"$type": "enable_image_sensor",

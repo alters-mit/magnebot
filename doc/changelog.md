@@ -3,6 +3,7 @@
 ## 2.2.0
 
 - Added a new action: `MoveCamera(position, coordinate_space)`, which can be called via `magnebot.move_camera(position, coordinate_space)` or `magnebot_controller.move_camera(position, coordinate_space)`.
+- Added new parameter `camera_parent` to the `Magnebot` constructor. Defines which body part the camera is parented to.
 - Required version of TDW is now >=1.10.8.0
 
 ## 2.1.0
