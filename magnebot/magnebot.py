@@ -26,6 +26,7 @@ from magnebot.actions.drop import Drop
 from magnebot.actions.reset_arm import ResetArm
 from magnebot.actions.reset_position import ResetPosition
 from magnebot.actions.rotate_camera import RotateCamera
+from magnebot.actions.look_at import LookAt
 from magnebot.actions.move_camera import MoveCamera
 from magnebot.actions.reset_camera import ResetCamera
 from magnebot.actions.slide_torso import SlideTorso
@@ -237,7 +238,7 @@ class Magnebot(RobotBase):
         """
         self.collision_detection: CollisionDetection = CollisionDetection()
         """:field
-        The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees as a numpy array. This is handled outside of `self.state` because it isn't calculated using output data from the build. See: `Magnebot.CAMERA_RPY_CONSTRAINTS` and `self.rotate_camera()`
+        The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees as a numpy array. This is handled outside of `self.state` because it isn't calculated using output data from the build. See: `magnebot.actions.RotateCamera.CAMERA_RPY_CONSTRAINTS` and `self.rotate_camera()`
         """
         self.camera_rpy: np.array = np.array([0, 0, 0])
         self._previous_resp: List[bytes] = list()
@@ -466,6 +467,17 @@ class Magnebot(RobotBase):
         self.action = RotateCamera(roll=roll, pitch=pitch, yaw=yaw, camera_rpy=self.camera_rpy)
         # Update the camera RPY angles.
         self.camera_rpy = np.array(self.action.camera_rpy[:])
+
+    def look_at(self, target: Union[int, Dict[str, float], np.ndarray]) -> None:
+        """
+        Rotate the Magnebot's camera to look at a target object or position.
+
+        This action is not compatible with `rotate_camera()` because it will ignore (roll, pitch, yaw) constraints; if you use this action, `rotate_camera()` won't work as intended until you call `reset_camera()`.
+
+        :param target: The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array.
+        """
+
+        self.action = LookAt(target=target)
 
     def move_camera(self, position: Union[Dict[str, float], np.ndarray]) -> None:
         """

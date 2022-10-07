@@ -399,6 +399,21 @@ Each axis of rotation is constrained by the following limits:
 
 _Returns:_  An `ActionStatus` indicating whether the Magnebot rotated its camera freely or if the rotation was clamped at a limit.
 
+#### look_at
+
+**`self.look_at(target)`**
+
+Rotate the Magnebot's camera to look at a target object or position.
+
+This action is not compatible with `rotate_camera()` because it will ignore (roll, pitch, yaw) constraints; if you use this action, `rotate_camera()` won't work as intended until you call `reset_camera()`.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| target |  Union[int, Dict[str, float] |  | The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array. |
+
+_Returns:_  An `ActionStatus` (always success).
+
 #### move_camera
 
 **`self.move_camera(position)`**

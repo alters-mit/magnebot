@@ -11,7 +11,7 @@ class RotateCamera(CameraAction):
     """
     Rotate the Magnebot's camera by the (roll, pitch, yaw) axes.
 
-    Each axis of rotation is constrained (see `Magnebot.CAMERA_RPY_CONSTRAINTS`).
+    Each axis of rotation is constrained (see `RotateCamera.CAMERA_RPY_CONSTRAINTS`).
 
     | Axis | Minimum | Maximum |
     | --- | --- | --- |

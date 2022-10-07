@@ -1,8 +1,10 @@
-# MoveCamera
+# LookAt
 
-`from magnebot.actions.move_camera import MoveCamera`
+`from magnebot.actions.look_at import LookAt`
 
-Move the Magnebot's camera by an offset position.
+Rotate the Magnebot's camera to look at a target object or position.
+
+This action is not compatible with [`RotateCamera`](rotate_camera.md) because it will ignore (roll, pitch, yaw) constraints; if you use this action, `RotateCamera` won't work as intended until you use [`ResetCamera`](reset_camera.md).
 
 ## Class Variables
 
@@ -14,7 +16,7 @@ Move the Magnebot's camera by an offset position.
 
 ## Fields
 
-- `position` The positional offset that the camera will move by.
+- `target` The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array.
 
 - `status` [The current status of the action.](../action_status.md) By default, this is `ongoing` (the action isn't done).
 
@@ -34,11 +36,11 @@ Move the Magnebot's camera by an offset position.
 
 #### \_\_init\_\_
 
-**`MoveCamera(position)`**
+**`LookAt(target)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| position |  Union[Dict[str, float] |  | The positional offset that the camera will move by. |
+| target |  Union[int, Dict[str, float] |  | The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array. |
 
 #### get_initialization_commands
 

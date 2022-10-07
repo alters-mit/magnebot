@@ -4,7 +4,7 @@
 
 Camera actions are relatively easy to define because they only require one frame to complete.
 
-All camera actions should be subclasses of the abstract class [`CameraAction`](../../api/actions/camera_action.md). This class overrides `get_ongoing_commands` to return `[]` (because this function isn't used at all). In the default API, [`RotateCamera`](../../api/actions/rotate_camera.md), [`MoveCamera`](../../api/actions/move_camera.md), and [`ResetCamera`](../../api/actions/reset_camera.md) are subclasses of `CameraAction`.
+All camera actions should be subclasses of the abstract class [`CameraAction`](../../api/actions/camera_action.md). This class overrides `get_ongoing_commands` to return `[]` (because this function isn't used at all). In the default API, [`RotateCamera`](../../api/actions/rotate_camera.md), [`LookAt`](../../api/actions/look_at.md), [`MoveCamera`](../../api/actions/move_camera.md), and [`ResetCamera`](../../api/actions/reset_camera.md) are subclasses of `CameraAction`.
 
 Because camera actions require only one frame, you'll want to override `get_initialization_commands` to send the commands and `set_status_after_initialization` to immediately set [`self.status`](../../api/action_status.md) to something other than `ActionStatus.ongoing`, thereby ending the action.
 

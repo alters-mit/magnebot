@@ -20,8 +20,10 @@ class SlideTorso(Action):
         """
 
         super().__init__()
-        # Convert the height to a torso value.
-        self._position: float = self._y_position_to_torso_position(max(min(height, TORSO_MAX_Y), TORSO_MIN_Y))
+        """:field
+        The torso position value.
+        """
+        self.position: float = self._y_position_to_torso_position(max(min(height, TORSO_MAX_Y), TORSO_MIN_Y))
 
     def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
                                     image_frequency: ImageFrequency) -> List[dict]:
@@ -36,7 +38,7 @@ class SlideTorso(Action):
         commands.append({"$type": "set_prismatic_target",
                          "joint_id": static.arm_joints[ArmJoint.torso],
                          "id": static.robot_id,
-                         "target": self._position})
+                         "target": self.position})
         return commands
 
     def get_ongoing_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:

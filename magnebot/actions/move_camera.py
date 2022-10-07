@@ -20,9 +20,12 @@ class MoveCamera(CameraAction):
 
         super().__init__()
         if isinstance(position, dict):
-            self._position: Dict[str, float] = {k: v for k, v in position.items()}
+            """:field
+            The positional offset that the camera will move by. 
+            """
+            self.position: Dict[str, float] = {k: v for k, v in position.items()}
         elif isinstance(position, np.ndarray):
-            self._position = TDWUtils.array_to_vector3(position)
+            self.position = TDWUtils.array_to_vector3(position)
         else:
             raise Exception(f"Invalid position: {position}")
 
@@ -31,7 +34,7 @@ class MoveCamera(CameraAction):
         commands = super().get_initialization_commands(resp=resp, static=static, dynamic=dynamic,
                                                        image_frequency=image_frequency)
         commands.append({"$type": "teleport_avatar_by",
-                         "position": self._position,
+                         "position": self.position,
                          "avatar_id": static.avatar_id})
         return commands
 

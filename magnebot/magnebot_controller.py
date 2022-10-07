@@ -384,6 +384,20 @@ class MagnebotController(Controller):
         self.magnebot.rotate_camera(roll=roll, pitch=pitch, yaw=yaw)
         return self._do_action()
 
+    def look_at(self, target: Union[int, Dict[str, float], np.ndarray]) -> ActionStatus:
+        """
+        Rotate the Magnebot's camera to look at a target object or position.
+
+        This action is not compatible with `rotate_camera()` because it will ignore (roll, pitch, yaw) constraints; if you use this action, `rotate_camera()` won't work as intended until you call `reset_camera()`.
+
+        :param target: The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array.
+
+        :return: An `ActionStatus` (always success).
+        """
+
+        self.magnebot.look_at(target=target)
+        return self._do_action()
+
     def move_camera(self, position: Union[Dict[str, float], np.ndarray]) -> ActionStatus:
         """
         Move the Magnebot's camera by an offset position.
