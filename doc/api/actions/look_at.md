@@ -1,8 +1,10 @@
-# ResetCamera
+# LookAt
 
-`from magnebot.actions.reset_camera import ResetCamera`
+`from magnebot.actions.look_at import LookAt`
 
-Reset the rotation of the Magnebot's camera to its default angles and/or its default position relative to its parent (by default, its parent is the torso).
+Rotate the Magnebot's camera to look at a target object or position.
+
+This action is not compatible with [`RotateCamera`](rotate_camera.md) because it will ignore (roll, pitch, yaw) constraints; if you use this action, `RotateCamera` won't work as intended until you use [`ResetCamera`](reset_camera.md).
 
 ## Class Variables
 
@@ -13,6 +15,8 @@ Reset the rotation of the Magnebot's camera to its default angles and/or its def
 ***
 
 ## Fields
+
+- `target` The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array.
 
 - `status` [The current status of the action.](../action_status.md) By default, this is `ongoing` (the action isn't done).
 
@@ -32,13 +36,11 @@ Reset the rotation of the Magnebot's camera to its default angles and/or its def
 
 #### \_\_init\_\_
 
-**`ResetCamera(position, rotation, parented_to_torso)`**
+**`LookAt(target)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| position |  bool |  | If True, reset the camera's position. |
-| rotation |  bool |  | If True, reset the camera' rotation. |
-| parented_to_torso |  bool |  | If True, the camera is parented to the torso. |
+| target |  Union[int, Dict[str, float] |  | The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array. |
 
 #### get_initialization_commands
 

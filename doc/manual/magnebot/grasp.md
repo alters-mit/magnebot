@@ -57,6 +57,6 @@ Like `reach_for(target, arm)`, `grasp(target, arm)` has optional `target_orienta
 
 ***
 
-**Next: [Camera rotation](camera_rotation.md)**
+**Next: [Camera actions](camera.md)**
 
 [Return to the README](../../../README.md)

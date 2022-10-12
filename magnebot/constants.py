@@ -1,3 +1,4 @@
+from typing import Dict
 import numpy as np
 
 
@@ -23,5 +24,9 @@ WHEEL_RADIUS: float = 0.1
 WHEEL_CIRCUMFERENCE: float = 2 * np.pi * WHEEL_RADIUS
 # The wheel friction coefficient when braking during a move action.
 BRAKE_FRICTION: float = 0.95
+# The default camera position if the camera is parented to the torso.
+DEFAULT_CAMERA_POSITION_TORSO: Dict[str, float] = {"x": 0, "y": 0.053, "z": 0.1838}
+# The default camera position if the camera is parented to the column.
+DEFAULT_CAMERA_POSITION_COLUMN: Dict[str, float] = {"x": 0, "y": 0.6324, "z": 0.1838}
 # The required TDW version.
-TDW_VERSION: str = "1.10.6"
+TDW_VERSION: str = "1.10.8"

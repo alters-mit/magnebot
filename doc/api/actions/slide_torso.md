@@ -14,6 +14,8 @@ Slide the Magnebot's torso up or down.
 
 ## Fields
 
+- `position` The torso position value.
+
 - `status` [The current status of the action.](../action_status.md) By default, this is `ongoing` (the action isn't done).
 
 - `initialized` If True, the action has initialized. If False, the action will try to send `get_initialization_commands(resp)` on this frame.

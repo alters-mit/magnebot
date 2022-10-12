@@ -177,7 +177,7 @@ c.communicate({"$type": "terminate"})
 
 - `collision_detection` [The collision detection rules.](collision_detection.md) This determines whether the Magnebot will immediately stop moving or turning when it collides with something.
 
-- `camera_rpy` The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees as a numpy array. This is handled outside of `self.state` because it isn't calculated using output data from the build. See: `Magnebot.CAMERA_RPY_CONSTRAINTS` and `self.rotate_camera()`
+- `camera_rpy` The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees as a numpy array. This is handled outside of `self.state` because it isn't calculated using output data from the build. See: `magnebot.actions.RotateCamera.CAMERA_RPY_CONSTRAINTS` and `self.rotate_camera()`
 
 ***
 
@@ -187,7 +187,7 @@ c.communicate({"$type": "terminate"})
 
 **`Magnebot()`**
 
-**`Magnebot(robot_id=0, position=None, rotation=None, image_frequency=ImageFrequency.once, check_version=True)`**
+**`Magnebot(robot_id=0, position=None, rotation=None, image_frequency=ImageFrequency.once, parent_camera_to_torso=True, visual_camera_mesh=False, check_version=True)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -195,6 +195,8 @@ c.communicate({"$type": "terminate"})
 | position |  Dict[str, float] | None | The position of the robot. If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
 | rotation |  Dict[str, float] | None | The rotation of the robot in Euler angles (degrees). If None, defaults to `{"x": 0, "y": 0, "z": 0}`. |
 | image_frequency |  ImageFrequency  | ImageFrequency.once | [The frequency of image capture.](image_frequency.md) |
+| parent_camera_to_torso |  bool  | True | If True, the camera will be parented to the Magnebot's torso. If False, the camera will be parented to the Magnebot's column. |
+| visual_camera_mesh |  bool  | False | If True, the camera will receive a visual mesh. The mesh won't have colliders and won't respond to physics. If False, the camera won't have a visual mesh. |
 | check_version |  bool  | True | If True, check whether an update to the Magnebot API or TDW API is available. |
 
 ***
@@ -368,7 +370,7 @@ Slide the Magnebot's torso up or down.
 
 ### Camera
 
-These functions rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by exactly 1 frame.
+These functions rotate the Magnebot's camera. They advance the simulation by exactly 1 frame.
 
 #### rotate_camera
 
@@ -392,11 +394,42 @@ Each axis of rotation is constrained by the following limits:
 | pitch |  float  | 0 | The pitch angle in degrees. |
 | yaw |  float  | 0 | The yaw angle in degrees. |
 
+#### look_at
+
+**`self.look_at(target)`**
+
+Rotate the Magnebot's camera to look at a target object or position.
+
+This action is not compatible with `rotate_camera()` because it will ignore (roll, pitch, yaw) constraints; if you use this action, `rotate_camera()` won't work as intended until you call `reset_camera()`.
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| target |  Union[int, Dict[str, float] |  | The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array. |
+
+#### move_camera
+
+**`self.move_camera(position)`**
+
+Move the Magnebot's camera by an offset position.
+
+By default, the camera is parented to the torso and will continue to move when the torso moves. You can prevent this by setting `parent_camera_to_torso=False` in the Magnebot constructor.
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| position |  Union[Dict[str, float] |  | The positional offset that the camera will move by. |
+
 #### reset_camera
 
 **`self.reset_camera()`**
 
-Reset the rotation of the Magnebot's camera to its default angles.
+**`self.reset_camera(position=True, rotation=True)`**
+
+Reset the rotation of the Magnebot's camera to its default angles and/or its default position relative to its parent (by default, its parent is the torso).
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| position |  bool  | True | If True, reset the camera's position. |
+| rotation |  bool  | True | If True, reset the camera' rotation. |
 
 ***
 

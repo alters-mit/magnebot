@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.2.0
+
+- Added a new action: `MoveCamera(position, coordinate_space)`, which can be called via `magnebot.move_camera(position, coordinate_space)` or `magnebot_controller.move_camera(position, coordinate_space)`.
+- Added a new action: `LookAt(target)`, which can be called via `magnebot.look_at(target)` or `magnebot_controller.look_at(target)`.
+- The `reset_camera()` action now resets the camera's position.
+- Added optional parameters `position` and `rotation` to `reset_camera()` to handle situations where the user wants to reset on the position or rotation.
+- Added new parameter `parent_camera_to_torso` to the `Magnebot` constructor. If True, the camera will be parented to the Magnebot's torso. If False, the camera will be parented to the Magnebot's column. Default = True.
+- Added new parameter `visual_camera_mesh` to the `Magnebot` constructor. If True, the camera will receive a visual mesh. The mesh won't have colliders and won't respond to physics. If False, the camera won't have a visual mesh. Default = False.
+- Renamed parameter `_position` in `SlideTorso` to `position`.
+- Added test controller: `visual_camera.py`
+- Added example controllers: `magnebot/look_at.py` and `magnebot_controller/look_at.py`
+- Renamed `manual/magnebot/rotate_camera.md` to `manul/magnebot/camera.md` and added documentation for camera movement and visualization.
+- Renamed `manual/magnebot_controller/rotate_camera.md` to `manul/magnebot_controller/camera.md` and added documentation for camera movement.
+- Required version of TDW is now >=1.10.8.0
+
 ## 2.1.0
 
 - Added a new action: `SlideTorso(height)`, which can be called via `magnebot.slide_torso(height)` or `magnebot_controller.slide_torso(height)`.

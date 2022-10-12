@@ -384,14 +384,45 @@ class MagnebotController(Controller):
         self.magnebot.rotate_camera(roll=roll, pitch=pitch, yaw=yaw)
         return self._do_action()
 
-    def reset_camera(self) -> ActionStatus:
+    def look_at(self, target: Union[int, Dict[str, float], np.ndarray]) -> ActionStatus:
         """
-        Reset the rotation of the Magnebot's camera to its default angles.
+        Rotate the Magnebot's camera to look at a target object or position.
+
+        This action is not compatible with `rotate_camera()` because it will ignore (roll, pitch, yaw) constraints; if you use this action, `rotate_camera()` won't work as intended until you call `reset_camera()`.
+
+        :param target: The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array.
 
         :return: An `ActionStatus` (always success).
         """
 
-        self.magnebot.reset_camera()
+        self.magnebot.look_at(target=target)
+        return self._do_action()
+
+    def move_camera(self, position: Union[Dict[str, float], np.ndarray]) -> ActionStatus:
+        """
+        Move the Magnebot's camera by an offset position.
+
+        By default, the camera is parented to the torso and will continue to move when the torso moves. You can prevent this by setting `parent_camera_to_torso=False` in the Magnebot constructor.
+
+        :param position: The positional offset that the camera will move by.
+
+        :return: An `ActionStatus` (always success).
+        """
+
+        self.magnebot.move_camera(position=position)
+        return self._do_action()
+
+    def reset_camera(self, position: bool = True, rotation: bool = True) -> ActionStatus:
+        """
+        Reset the rotation of the Magnebot's camera to its default angles and/or its default position relative to its parent (by default, its parent is the torso).
+
+        :param position: If True, reset the camera's position.
+        :param rotation: If True, reset the camera' rotation.
+
+        :return: An `ActionStatus` (always success).
+        """
+
+        self.magnebot.reset_camera(position=position, rotation=rotation)
         return self._do_action()
 
     def slide_torso(self, height: float) -> ActionStatus:

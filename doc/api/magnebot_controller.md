@@ -372,7 +372,7 @@ _Returns:_  An `ActionStatus` (always success).
 
 ### Camera
 
-These functions rotate the Magnebot's camera or add additional camera to the scene. They advance the simulation by exactly 1 frame.
+These functions rotate or move the Magnebot's camera. They advance the simulation by exactly 1 frame.
 
 #### rotate_camera
 
@@ -399,11 +399,49 @@ Each axis of rotation is constrained by the following limits:
 
 _Returns:_  An `ActionStatus` indicating whether the Magnebot rotated its camera freely or if the rotation was clamped at a limit.
 
+#### look_at
+
+**`self.look_at(target)`**
+
+Rotate the Magnebot's camera to look at a target object or position.
+
+This action is not compatible with `rotate_camera()` because it will ignore (roll, pitch, yaw) constraints; if you use this action, `rotate_camera()` won't work as intended until you call `reset_camera()`.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| target |  Union[int, Dict[str, float] |  | The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array. |
+
+_Returns:_  An `ActionStatus` (always success).
+
+#### move_camera
+
+**`self.move_camera(position)`**
+
+Move the Magnebot's camera by an offset position.
+
+By default, the camera is parented to the torso and will continue to move when the torso moves. You can prevent this by setting `parent_camera_to_torso=False` in the Magnebot constructor.
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| position |  Union[Dict[str, float] |  | The positional offset that the camera will move by. |
+
+_Returns:_  An `ActionStatus` (always success).
+
 #### reset_camera
 
 **`self.reset_camera()`**
 
-Reset the rotation of the Magnebot's camera to its default angles.
+**`self.reset_camera(position=True, rotation=True)`**
+
+Reset the rotation of the Magnebot's camera to its default angles and/or its default position relative to its parent (by default, its parent is the torso).
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| position |  bool  | True | If True, reset the camera's position. |
+| rotation |  bool  | True | If True, reset the camera' rotation. |
 
 _Returns:_  An `ActionStatus` (always success).
 
