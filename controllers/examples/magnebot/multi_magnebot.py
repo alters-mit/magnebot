@@ -1,13 +1,14 @@
 from enum import Enum
-from typing import List, Dict
+from typing import List, Dict, Optional
 import numpy as np
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.object_manager import ObjectManager
 from tdw.add_ons.step_physics import StepPhysics
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
-from tdw.output_data import OutputData, Transforms, Robot
+from tdw.output_data import OutputData, Transforms
 from magnebot import Magnebot, Arm, ImageFrequency, ActionStatus
+from magnebot.magnebot_dynamic import MagnebotDynamic
 
 
 class MetaState(Enum):
@@ -81,13 +82,19 @@ class Navigator(Magnebot):
         self.navigation_state: NavigationState = NavigationState.moving_to_target
         self.avoidance_state: AvoidanceState = AvoidanceState.turning
         self.articulation_state: ArticulationState = ArticulationState.grasping
+        # The other Magnebot. We need this to get the other Magenbot's position.
+        self.other_magnebot: Optional[Magnebot] = None
 
     def on_send(self, resp: List[bytes]) -> None:
         super().on_send(resp=resp)
         if self.done:
             return
         # Get the position of the other Magnebot and the positions of the objects.
-        other_magnebot_position: np.array = np.array([0, 0, 0])
+        if self.other_magnebot is None:
+            other_magnebot_position = np.zeros(shape=3)
+        else:
+            other_magnebot_dynamic = MagnebotDynamic(static=self.other_magnebot.static, resp=resp, frame_count=0)
+            other_magnebot_position = other_magnebot_dynamic.transform.position
         object_positions: Dict[int, np.array] = dict()
         for i in range(len(resp) - 1):
             r_id = OutputData.get_data_type_id(resp[i])
@@ -95,10 +102,6 @@ class Navigator(Magnebot):
                 transforms = Transforms(resp[i])
                 for j in range(transforms.get_num()):
                     object_positions[transforms.get_id(j)] = np.array(transforms.get_position(j))
-            elif r_id == "robo":
-                robot = Robot(resp[i])
-                if robot.get_id() != self.robot_id:
-                    other_magnebot_position = np.array(robot.get_position())
         # Finish initializing the Magnebot.
         if self.meta_state == MetaState.initializing:
             # The Magnebot is done initializing. Go to the target object.
@@ -263,6 +266,9 @@ class MultiMagnebot(Controller):
                                                       look_at=self.m1.robot_id)
         self.add_ons.extend([self.object_manager, step_physics, self.m0, self.m1, camera])
         self.communicate(commands)
+        # Set the other Magnebot.
+        self.m0.other_magnebot = self.m1
+        self.m1.other_magnebot = self.m0
 
     def run(self) -> None:
         """

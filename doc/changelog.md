@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.1
+
+- Fixed: `controllers/examples/magnebot/multi_magnebot.py` doesn't work.
+
 ## 2.2.0
 
 - Added a new action: `MoveCamera(position, coordinate_space)`, which can be called via `magnebot.move_camera(position, coordinate_space)` or `magnebot_controller.move_camera(position, coordinate_space)`.
