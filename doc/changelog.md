@@ -3,6 +3,7 @@
 ## 2.2.1
 
 - Fixed: `controllers/examples/magnebot/multi_magnebot.py` doesn't work.
+- Fixed: `util.get_data()` references `Robot` output data, which is obsolete.
 
 ## 2.2.0
 
