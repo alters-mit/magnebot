@@ -187,7 +187,7 @@ c.communicate({"$type": "terminate"})
 
 **`Magnebot()`**
 
-**`Magnebot(robot_id=0, position=None, rotation=None, image_frequency=ImageFrequency.once, parent_camera_to_torso=True, visual_camera_mesh=False, check_version=True)`**
+**`Magnebot(robot_id=0, position=None, rotation=None, image_frequency=ImageFrequency.once, parent_camera_to_torso=True, visual_camera_mesh=False, visual_camera_scale=None, check_version=True)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -197,6 +197,7 @@ c.communicate({"$type": "terminate"})
 | image_frequency |  ImageFrequency  | ImageFrequency.once | [The frequency of image capture.](image_frequency.md) |
 | parent_camera_to_torso |  bool  | True | If True, the camera will be parented to the Magnebot's torso. If False, the camera will be parented to the Magnebot's column. |
 | visual_camera_mesh |  bool  | False | If True, the camera will receive a visual mesh. The mesh won't have colliders and won't respond to physics. If False, the camera won't have a visual mesh. |
+| visual_camera_scale |  Dict[str, float] | None | The scale of the visual camera mesh as an x, y, z dictionary. If None, defaults to `{"x": 1, "y": 1, "z": 1}`. Ignored if `visual_camera_mesh == False`. |
 | check_version |  bool  | True | If True, check whether an update to the Magnebot API or TDW API is available. |
 
 ***

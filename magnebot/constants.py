@@ -29,4 +29,4 @@ DEFAULT_CAMERA_POSITION_TORSO: Dict[str, float] = {"x": 0, "y": 0.053, "z": 0.18
 # The default camera position if the camera is parented to the column.
 DEFAULT_CAMERA_POSITION_COLUMN: Dict[str, float] = {"x": 0, "y": 0.6324, "z": 0.1838}
 # The required TDW version.
-TDW_VERSION: str = "1.10.8"
+TDW_VERSION: str = "1.11.0"

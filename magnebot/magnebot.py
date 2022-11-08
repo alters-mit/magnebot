@@ -176,7 +176,8 @@ class Magnebot(RobotBase):
 
     def __init__(self, robot_id: int = 0, position: Dict[str, float] = None, rotation: Dict[str, float] = None,
                  image_frequency: ImageFrequency = ImageFrequency.once, parent_camera_to_torso: bool = True,
-                 visual_camera_mesh: bool = False, check_version: bool = True):
+                 visual_camera_mesh: bool = False, visual_camera_scale: Dict[str, float] = None,
+                 check_version: bool = True):
         """
         :param robot_id: The ID of the robot.
         :param position: The position of the robot. If None, defaults to `{"x": 0, "y": 0, "z": 0}`.
@@ -184,6 +185,7 @@ class Magnebot(RobotBase):
         :param image_frequency: [The frequency of image capture.](image_frequency.md)
         :param parent_camera_to_torso: If True, the camera will be parented to the Magnebot's torso. If False, the camera will be parented to the Magnebot's column.
         :param visual_camera_mesh: If True, the camera will receive a visual mesh. The mesh won't have colliders and won't respond to physics. If False, the camera won't have a visual mesh.
+        :param visual_camera_scale: The scale of the visual camera mesh as an x, y, z dictionary. If None, defaults to `{"x": 1, "y": 1, "z": 1}`. Ignored if `visual_camera_mesh == False`.
         :param check_version: If True, check whether an update to the Magnebot API or TDW API is available.
         """
 
@@ -246,6 +248,10 @@ class Magnebot(RobotBase):
         self._check_version: bool = check_version
         self._parent_camera_to_torso: bool = parent_camera_to_torso
         self._visual_camera_mesh: bool = visual_camera_mesh
+        if visual_camera_scale is None:
+            self._visual_camera_scale: Dict[str, float] = {"x": 1, "y": 1, "z": 1}
+        else:
+            self._visual_camera_scale = visual_camera_scale
 
     def get_initialization_commands(self) -> List[dict]:
         """
@@ -555,7 +561,8 @@ class Magnebot(RobotBase):
         # Visualize the camera.
         if self._visual_camera_mesh:
             self.commands.append({"$type": "add_visual_camera_mesh",
-                                  "avatar_id": self.static.avatar_id})
+                                  "avatar_id": self.static.avatar_id,
+                                  "scale": self._visual_camera_scale})
 
     def _set_dynamic_data(self, resp: List[bytes]) -> None:
         """

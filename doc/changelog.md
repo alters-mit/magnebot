@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.2
+
+- Added optional parameter `visual_camera_mesh_scale` to the Magnebot constructor.
+- Required version of TDW is now >=1.11.0.0
+
 ## 2.2.1
 
 - Fixed: `controllers/examples/magnebot/multi_magnebot.py` doesn't work.
