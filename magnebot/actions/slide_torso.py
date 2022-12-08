@@ -50,10 +50,13 @@ class SlideTorso(Action):
     def get_end_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
                          image_frequency: ImageFrequency) -> List[dict]:
         commands = super().get_end_commands(resp=resp, static=static, dynamic=dynamic, image_frequency=image_frequency)
+        """
+        Remove because the torso does not need to drop after moved
+        """
         # Stop moving the torso.
-        joint_id = static.arm_joints[ArmJoint.torso]
-        commands.append({"$type": "set_prismatic_target",
-                         "joint_id": joint_id,
-                         "target": float(np.radians(dynamic.joints[joint_id].angles)),
-                         "id": static.robot_id})
+        #joint_id = static.arm_joints[ArmJoint.torso]
+        #commands.append({"$type": "set_prismatic_target",
+        #                 "joint_id": joint_id,
+        #                 "target": float(np.radians(dynamic.joints[joint_id].angles)),
+        #                 "id": static.robot_id})
         return commands

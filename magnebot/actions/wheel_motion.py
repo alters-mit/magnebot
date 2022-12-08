@@ -57,14 +57,16 @@ class WheelMotion(Action, ABC):
                                                                    static=static, dynamic=dynamic)
         # Make the robot moveable.
         if dynamic.immovable:
-            self._resetting = True
+            self._resetting = True                        
             commands.extend([{"$type": "set_immovable",
                               "id": static.robot_id,
                               "immovable": False},
-                             {"$type": "set_prismatic_target",
-                              "joint_id": static.arm_joints[ArmJoint.torso],
-                              "target": 1,
-                              "id": static.robot_id},
+                             # Prevent the torso from moving when move_by is called
+                             # it by removing the following
+                             #{"$type": "set_prismatic_target",
+                             # "joint_id": static.arm_joints[ArmJoint.torso],
+                             # "target": 1,
+                             # "id": static.robot_id},
                              {"$type": "set_revolute_target",
                               "joint_id": static.arm_joints[ArmJoint.column],
                               "target": 0,
