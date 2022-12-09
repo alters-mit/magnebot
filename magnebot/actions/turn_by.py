@@ -12,19 +12,20 @@ class TurnBy(Turn):
     While turning, the left wheels will turn one way and the right wheels in the opposite way, allowing the Magnebot to turn in place.
     """
 
-    def __init__(self, angle: float, dynamic: MagnebotDynamic, collision_detection: CollisionDetection,
+    def __init__(self, angle: float, dynamic: MagnebotDynamic, collision_detection: CollisionDetection, set_torso: bool,
                  aligned_at: float = 1, previous: Action = None):
         """
         :param angle: The target angle in degrees. Positive value = clockwise turn.
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
         :param collision_detection: [The collision detection rules.](../collision_detection.md)
+        :param set_torso: If True, slide the torso to its default position when the wheel motion begins.
         :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
         :param previous: The previous action, if any.
         """
 
         self.__angle: float = angle
         super().__init__(aligned_at=aligned_at, dynamic=dynamic, collision_detection=collision_detection,
-                         previous=previous)
+                         set_torso=set_torso, previous=previous)
 
     def _get_angle(self, dynamic: MagnebotDynamic) -> float:
         return self.__angle

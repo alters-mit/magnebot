@@ -16,20 +16,21 @@ class ReachFor(IKMotion):
     The Magnebot may try to reach for the target multiple times, trying different IK orientations each time, or no times, if it knows the action will fail.
     """
 
-    def __init__(self, target: np.array, absolute: bool, arm: Arm, orientation_mode: OrientationMode,
+    def __init__(self, target: np.array, absolute: bool, arm: Arm, set_torso: bool, orientation_mode: OrientationMode,
                  target_orientation: TargetOrientation, dynamic: MagnebotDynamic, arrived_at: float = 0.125):
         """
         :param target: The target position.
         :param absolute: If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot.
         :param arrived_at: If the magnet is this distance or less from `target`, then the action is successful.
         :param arm: [The arm used for this action.](../arm.md)
+        :param set_torso: If True, stop sliding the torso when the arms stop moving at the end of the action.
         :param orientation_mode: [The orientation mode.](../ik/orientation_mode.md)
         :param target_orientation: [The target orientation.](../ik/target_orientation.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
         """
 
-        super().__init__(arm=arm, orientation_mode=orientation_mode, target_orientation=target_orientation,
-                         dynamic=dynamic)
+        super().__init__(arm=arm, set_torso=set_torso, orientation_mode=orientation_mode,
+                         target_orientation=target_orientation, dynamic=dynamic)
         if absolute:
             target = self._absolute_to_relative(position=target, dynamic=dynamic)
         self._target_arr: np.array = target

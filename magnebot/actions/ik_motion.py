@@ -37,11 +37,11 @@ class IKMotion(ArmMotion, ABC):
     # When sliding the torso first (i.e. to reach an object above the Magnebot's shoulder height), slide it slightly higher than the target.
     _EXTRA_TORSO_HEIGHT: float = 0.05
 
-    def __init__(self, arm: Arm, set_torso_at_end: bool,  orientation_mode: OrientationMode,
+    def __init__(self, arm: Arm, set_torso: bool, orientation_mode: OrientationMode,
                  target_orientation: TargetOrientation, dynamic: MagnebotDynamic):
         """
         :param arm: [The arm used for this action.](../arm.md)
-        :param set_torso_at_end: If True, set the position of the torso when the arms stop moving at the end of the action.
+        :param set_torso: If True, stop sliding the torso when the arms stop moving at the end of the action.
         :param orientation_mode: [The orientation mode.](../ik/orientation_mode.md)
         :param target_orientation: [The target orientation.](../ik/target_orientation.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
@@ -52,7 +52,7 @@ class IKMotion(ArmMotion, ABC):
             IKMotion._IK_CHAINS = {Arm.left: Chain(name=Arm.left.name, links=IKMotion._get_ik_links(Arm.left)),
                                    Arm.right: Chain(name=Arm.right.name, links=IKMotion._get_ik_links(Arm.right))}
 
-        super().__init__(arm=arm, set_torso_at_end=set_torso_at_end)
+        super().__init__(arm=arm, set_torso=set_torso)
         # The action immediately ends if the Magnebot is tipping.
         has_tipped, is_tipping = self._is_tipping(dynamic=dynamic)
         if has_tipped or is_tipping:

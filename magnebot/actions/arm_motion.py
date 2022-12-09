@@ -13,16 +13,16 @@ class ArmMotion(Action, ABC):
     Abstract base class for arm motions.
     """
 
-    def __init__(self, arm: Arm, set_torso_at_end: bool):
+    def __init__(self, arm: Arm, set_torso: bool):
         """
         :param arm: [The arm used for this action.](../arm.md)
-        :param set_torso_at_end: If True, set the position of the torso when the arms stop moving at the end of the action.
+        :param set_torso: If True, stop sliding the torso when the arms stop moving at the end of the action.
         """
 
         super().__init__()
         # The arm used for the action.
         self._arm: Arm = arm
-        self._set_torso_at_end: bool = set_torso_at_end
+        self._set_torso: bool = set_torso
 
     def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
                                     image_frequency: ImageFrequency) -> List[dict]:
@@ -39,7 +39,7 @@ class ArmMotion(Action, ABC):
                          image_frequency: ImageFrequency) -> List[dict]:
         commands = super().get_end_commands(resp=resp, static=static, dynamic=dynamic, image_frequency=image_frequency)
         commands.extend(self._get_stop_arm_commands(arm=self._arm, static=static, dynamic=dynamic,
-                                                    set_torso=self._set_torso_at_end))
+                                                    set_torso=self._set_torso))
         return commands
 
     @final

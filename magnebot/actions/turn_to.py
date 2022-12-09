@@ -16,13 +16,15 @@ class TurnTo(Turn):
     """
 
     def __init__(self, target: Union[int, Dict[str, float], np.array], resp: List[bytes], dynamic: MagnebotDynamic,
-                 collision_detection: CollisionDetection, aligned_at: float = 1, previous: Action = None):
+                 collision_detection: CollisionDetection, set_torso: bool, aligned_at: float = 1,
+                 previous: Action = None):
         """
         :param target: The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array.
         :param resp: The response from the build.
         :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
         :param collision_detection: [The collision detection rules.](../collision_detection.md)
+        :param set_torso: If True, slide the torso to its default position when the wheel motion begins.
         :param previous: The previous action, if any.
         """
 
@@ -52,7 +54,7 @@ class TurnTo(Turn):
         else:
             raise Exception(f"Invalid target: {target}")
         super().__init__(aligned_at=aligned_at, dynamic=dynamic, collision_detection=collision_detection,
-                         previous=previous)
+                         set_torso=set_torso, previous=previous)
 
     def _get_angle(self, dynamic: MagnebotDynamic) -> float:
         return TDWUtils.get_angle_between(v1=dynamic.transform.forward,
