@@ -126,6 +126,10 @@ ActionStatus.collision
 ActionStatus.success
 ```
 
+## Resetting the torso
+
+By default, all wheel motion actions (`move_by`, `move_to`, `turn_by`, and `turn_to`) will reset the Magnebot's torso to its default position and the Magenbot's column to its default rotation before moving. In some cases, you might want to keep the Magnebot's  torso at its current position, in which case you can set `set_torso=False`. For example: `magnebot.move_by(distance=2, set_torso=False)`. The Magnebot's column always resets to its default rotation, regardless of the `set_torso` value.
+
 ## Tipping over
 
 While moving or turning, the Magnebot might start to tip over. This  can happen if the Magnebot is holding a heavy object, or if its wheels roll over a ramp-like surface, etc. If this happens, the action will  immediately halt and set its status to `ActionStatus.tipping`.

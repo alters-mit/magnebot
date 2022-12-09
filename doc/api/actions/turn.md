@@ -26,15 +26,16 @@ Abstract base class for a turn action.
 
 #### \_\_init\_\_
 
-**`Turn(dynamic, collision_detection)`**
+**`Turn(dynamic, collision_detection, set_torso)`**
 
-**`Turn(aligned_at=1, dynamic, collision_detection, previous=None)`**
+**`Turn(aligned_at=1, dynamic, collision_detection, set_torso, previous=None)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | aligned_at |  float  | 1 | If the difference between the current angle and the target angle is less than this value, then the action is successful. |
 | dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |
 | collision_detection |  CollisionDetection |  | [The collision detection rules.](../collision_detection.md) |
+| set_torso |  bool |  | If True, slide the torso to its default position when the wheel motion begins. |
 | previous |  Action  | None | The previous action, if any. |
 
 #### get_initialization_commands

@@ -26,14 +26,15 @@ Abstract base class for a motion action involving the Magnebot's wheels.
 
 #### \_\_init\_\_
 
-**`WheelMotion(dynamic, collision_detection)`**
+**`WheelMotion(dynamic, collision_detection, set_torso)`**
 
-**`WheelMotion(dynamic, collision_detection, previous=None)`**
+**`WheelMotion(dynamic, collision_detection, set_torso, previous=None)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |
 | collision_detection |  CollisionDetection |  | [The collision detection rules.](../collision_detection.md) |
+| set_torso |  bool |  | If True, slide the torso to its default position when the wheel motion begins. |
 | previous |  Action  | None | The previous action, if any. |
 
 #### get_initialization_commands

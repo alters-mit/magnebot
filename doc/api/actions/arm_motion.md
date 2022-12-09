@@ -26,11 +26,12 @@ Abstract base class for arm motions.
 
 #### \_\_init\_\_
 
-**`ArmMotion(arm)`**
+**`ArmMotion(arm, set_torso)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | arm |  Arm |  | [The arm used for this action.](../arm.md) |
+| set_torso |  bool |  | If True, stop sliding the torso when the arms stop moving at the end of the action. |
 
 #### get_initialization_commands
 

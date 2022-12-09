@@ -28,9 +28,9 @@ Move the Magnebot forward or backward by a given distance.
 
 #### \_\_init\_\_
 
-**`MoveBy(distance, dynamic, collision_detection)`**
+**`MoveBy(distance, dynamic, collision_detection, set_torso)`**
 
-**`MoveBy(distance, arrived_at=0.1, dynamic, collision_detection, previous=None)`**
+**`MoveBy(distance, arrived_at=0.1, dynamic, collision_detection, set_torso, previous=None)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -38,6 +38,7 @@ Move the Magnebot forward or backward by a given distance.
 | arrived_at |  float  | 0.1 | If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
 | dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |
 | collision_detection |  CollisionDetection |  | [The collision detection rules.](../collision_detection.md) |
+| set_torso |  bool |  | If True, slide the torso to its default position when the wheel motion begins. |
 | previous |  Action  | None | The previous action, if any. |
 
 #### get_initialization_commands

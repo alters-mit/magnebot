@@ -51,9 +51,13 @@ magnebot
 object
 ```
 
-### Automatic IK orientation solver
+## Automatic IK orientation solver
 
 Like `reach_for(target, arm)`, `grasp(target, arm)` has optional `target_orientation` and `orientation_mode` parameters. [Read this for more information.](arm_articulation.md)
+
+## Resetting the torso
+
+By default, the Magnebot's torso target position is set to its current position at the end of the action. Due to a 1-frame delay in the output data, this sometimes causes the torso to drop slightly. To prevent this, set `set_torso=False`. For example: `magnebot.grasp(target=1, arm=Arm.right, set_torso=False)`.
 
 ***
 

@@ -32,11 +32,12 @@ Abstract base class for arm motions that utilize IK.
 
 #### \_\_init\_\_
 
-**`IKMotion(arm, orientation_mode, target_orientation, dynamic)`**
+**`IKMotion(arm, set_torso, orientation_mode, target_orientation, dynamic)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | arm |  Arm |  | [The arm used for this action.](../arm.md) |
+| set_torso |  bool |  | If True, stop sliding the torso when the arms stop moving at the end of the action. |
 | orientation_mode |  OrientationMode |  | [The orientation mode.](../ik/orientation_mode.md) |
 | target_orientation |  TargetOrientation |  | [The target orientation.](../ik/target_orientation.md) |
 | dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |

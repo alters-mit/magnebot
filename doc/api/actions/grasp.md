@@ -33,12 +33,13 @@ The action ends when either the Magnebot grasps the object, can't grasp it, or f
 
 #### \_\_init\_\_
 
-**`Grasp(target, arm, orientation_mode, target_orientation, dynamic)`**
+**`Grasp(target, arm, set_torso, orientation_mode, target_orientation, dynamic)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | target |  int |  | The ID of the target object. |
 | arm |  Arm |  | [The arm used for this action.](../arm.md) |
+| set_torso |  bool |  | If True, stop sliding the torso when the arms stop moving at the end of the action. |
 | orientation_mode |  OrientationMode |  | [The orientation mode.](../ik/orientation_mode.md) |
 | target_orientation |  TargetOrientation |  | [The target orientation.](../ik/target_orientation.md) |
 | dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |

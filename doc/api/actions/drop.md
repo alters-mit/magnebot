@@ -32,12 +32,13 @@ Drop an object held by a magnet.
 
 #### \_\_init\_\_
 
-**`Drop(target, arm, wait_for_object, dynamic)`**
+**`Drop(target, arm, set_torso, wait_for_object, dynamic)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | target |  int |  | The ID of the object currently held by the magnet. |
 | arm |  Arm |  | [The arm used for this action.](../arm.md) |
+| set_torso |  bool |  | If True, stop sliding the torso when the arms stop moving at the end of the action. |
 | wait_for_object |  bool |  | If True, the action will continue until the object has finished falling. If False, the action advances the simulation by exactly 1 frame. |
 | dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |
 
