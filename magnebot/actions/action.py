@@ -11,7 +11,7 @@ from magnebot.action_status import ActionStatus
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.image_frequency import ImageFrequency
-from magnebot.constants import TORSO_MAX_Y, TORSO_MIN_Y, DEFAULT_TORSO_Y
+from magnebot.constants import TORSO_MAX_Y, TORSO_MIN_Y
 
 
 class Action(ABC):
@@ -203,11 +203,12 @@ class Action(ABC):
         return np.radians(initial_angles)
 
     @staticmethod
-    def _get_stop_arm_commands(arm: Arm, static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
+    def _get_stop_arm_commands(arm: Arm, static: MagnebotStatic, dynamic: MagnebotDynamic, set_torso: bool) -> List[dict]:
         """
         :param arm: The arm.
         :param static: [The static Magnebot data.](../magnebot_static.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+        :param set_torso: If True, set the torso at its current position.
 
         :return: A list of commands to stop the arm's joints.
         """
@@ -226,15 +227,11 @@ class Action(ABC):
                                  "target": float(angles[0]),
                                  "id": static.robot_id})
             # Convert the current prismatic "angle" back into "radians".
-            elif joint_type == JointType.prismatic:
-                """
-                Removed because we don't want to drop the torso when drop() is called
-                """
-                continue
-                #commands.append({"$type": "set_prismatic_target",
-                #                 "joint_id": joint_id,
-                #                 "target": float(np.radians(angles[0])),
-                #                 "id": static.robot_id})
+            elif joint_type == JointType.prismatic and set_torso:
+                commands.append({"$type": "set_prismatic_target",
+                                 "joint_id": joint_id,
+                                 "target": float(np.radians(angles[0])),
+                                 "id": static.robot_id})
             # Set each spherical drive axis.
             elif joint_type == JointType.spherical:
                 commands.append({"$type": "set_spherical_target",
@@ -253,6 +250,7 @@ class Action(ABC):
 
         :return: A list of commands to reset the arm.
         """
+
         commands = [{"$type": "set_prismatic_target",
                      "joint_id": static.arm_joints[ArmJoint.torso],
                      "target": 1,

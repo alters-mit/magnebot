@@ -18,7 +18,7 @@ class Stop(Action):
                                                        image_frequency=image_frequency)
         commands.extend(self._get_stop_wheels_commands(static=static, dynamic=dynamic))
         for arm in [Arm.left, Arm.right]:
-            commands.extend(self._get_stop_arm_commands(arm=arm, static=static, dynamic=dynamic))
+            commands.extend(self._get_stop_arm_commands(arm=arm, static=static, dynamic=dynamic, set_torso=True))
         # Make the Magnebot immovable.
         if not dynamic.immovable:
             commands.append({"$type": "set_immovable",

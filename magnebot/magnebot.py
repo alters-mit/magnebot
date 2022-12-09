@@ -407,7 +407,7 @@ class Magnebot(RobotBase):
                                target_orientation=target_orientation, arrived_at=arrived_at, dynamic=self.dynamic)
 
     def grasp(self, target: int, arm: Arm, orientation_mode: OrientationMode = OrientationMode.auto,
-              target_orientation: TargetOrientation = TargetOrientation.auto) -> None:
+              target_orientation: TargetOrientation = TargetOrientation.auto, set_torso_at_end: bool = True) -> None:
         """
         Try to grasp a target object.
         The action ends when either the Magnebot grasps the object, can't grasp it, or fails arm articulation.
@@ -416,30 +416,35 @@ class Magnebot(RobotBase):
         :param arm: [The arm that will reach for and grasp the target.](arm.md)
         :param orientation_mode: [The orientation mode.](ik/orientation_mode.md)
         :param target_orientation: [The target orientation.](ik/target_orientation.md)
+        :param set_torso_at_end: If True, set the position of the torso when the arms stop moving at the end of the action.
         """
 
         self.action = Grasp(target=target, arm=arm, orientation_mode=orientation_mode,
-                            target_orientation=target_orientation, dynamic=self.dynamic)
+                            target_orientation=target_orientation, dynamic=self.dynamic,
+                            set_torso_at_end=set_torso_at_end)
 
-    def drop(self, target: int, arm: Arm, wait_for_object: bool = True) -> None:
+    def drop(self, target: int, arm: Arm, wait_for_object: bool = True, set_torso_at_end: bool = True) -> None:
         """
         Drop an object held by a magnet.
 
         :param target: The ID of the object currently held by the magnet.
         :param arm: [The arm of the magnet holding the object.](arm.md)
         :param wait_for_object: If True, the action will continue until the object has finished falling. If False, the action advances the simulation by exactly 1 frame.
+        :param set_torso_at_end: If True, set the position of the torso when the arms stop moving at the end of the action.
         """
 
-        self.action = Drop(arm=arm, target=target, wait_for_object=wait_for_object, dynamic=self.dynamic)
+        self.action = Drop(arm=arm, target=target, wait_for_object=wait_for_object, dynamic=self.dynamic,
+                           set_torso_at_end=set_torso_at_end)
 
-    def reset_arm(self, arm: Arm) -> None:
+    def reset_arm(self, arm: Arm, set_torso_at_end: bool = True) -> None:
         """
         Reset an arm to its neutral position.
 
         :param arm: [The arm to reset.](arm.md)
+        :param set_torso_at_end: If True, set the position of the torso when the arms stop moving at the end of the action.
         """
 
-        self.action = ResetArm(arm=arm)
+        self.action = ResetArm(arm=arm, set_torso_at_end=set_torso_at_end)
 
     def reset_position(self) -> None:
         """

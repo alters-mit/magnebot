@@ -34,18 +34,19 @@ class Grasp(IKMotion):
     # The order of bounds sides. The values in `_CONVEX_SIDES` correspond to indices in this list.
     _BOUNDS_SIDES: List[str] = ["left", "right", "front", "back", "top", "bottom"]
 
-    def __init__(self, target: int, arm: Arm, orientation_mode: OrientationMode, target_orientation: TargetOrientation,
-                 dynamic: MagnebotDynamic):
+    def __init__(self, target: int, arm: Arm, set_torso_at_end: bool, orientation_mode: OrientationMode,
+                 target_orientation: TargetOrientation, dynamic: MagnebotDynamic):
         """
         :param target: The ID of the target object.
         :param arm: [The arm used for this action.](../arm.md)
+        :param set_torso_at_end: If True, set the position of the torso when the arms stop moving at the end of the action.
         :param orientation_mode: [The orientation mode.](../ik/orientation_mode.md)
         :param target_orientation: [The target orientation.](../ik/target_orientation.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
         """
 
-        super().__init__(arm=arm, orientation_mode=orientation_mode, target_orientation=target_orientation,
-                         dynamic=dynamic)
+        super().__init__(arm=arm, set_torso_at_end=set_torso_at_end, orientation_mode=orientation_mode,
+                         target_orientation=target_orientation, dynamic=dynamic)
         self._target: int = target
         self._grasp_status: _GraspStatus = _GraspStatus.getting_bounds
         self._target_bounds: Dict[str, np.array] = dict()
