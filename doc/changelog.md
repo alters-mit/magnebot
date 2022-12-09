@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.2.3
+
+- In `Magnebot`, added optional parameter `set_torso` to `drop()`, `grasp()`, `reach_for()`, and `reset_arm()`. The default value is True. If False, the torso won't be set at the *end* of the action.
+- In `Magnebot`, added optional parameter `set_torso` to `move_by()`, `move_to()`, `turn_by()`, and `turn_to()`. The default value is True. If False the torso won't slide to its default position at the *start* of the action.
+- `magnebot.slide_torso()` no longer sets the torso position at the end of the action.
+- Updated documentation to explain the `set_torso` parameter:
+  - `manual/magnebot/arm_articulation.md`
+  - `manual/magnebot/grasp.md`
+  - `manual/magnebot/movement.md`
+
 ## 2.2.2
 
 - Added optional parameter `visual_camera_mesh_scale` to the Magnebot constructor.
