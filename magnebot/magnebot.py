@@ -325,7 +325,7 @@ class Magnebot(RobotBase):
                 # Remember the previous action.
                 self._previous_action = deepcopy(self.action)
 
-    def turn_by(self, angle: float, aligned_at: float = 1) -> None:
+    def turn_by(self, angle: float, aligned_at: float = 1, set_torso: bool = True) -> None:
         """
         Turn the Magnebot by an angle.
 
@@ -333,12 +333,14 @@ class Magnebot(RobotBase):
 
         :param angle: The target angle in degrees. Positive value = clockwise turn.
         :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
+        :param set_torso: If True, slide the torso to its default position when the wheel motion begins.
         """
 
         self.action = TurnBy(angle=angle, aligned_at=aligned_at, collision_detection=self.collision_detection,
-                             previous=self._previous_action, dynamic=self.dynamic)
+                             previous=self._previous_action, dynamic=self.dynamic, set_torso=set_torso)
 
-    def turn_to(self, target: Union[int, Dict[str, float], np.ndarray], aligned_at: float = 1) -> None:
+    def turn_to(self, target: Union[int, Dict[str, float], np.ndarray], aligned_at: float = 1,
+                set_torso: bool = True) -> None:
         """
         Turn the Magnebot to face a target object or position.
 
@@ -346,25 +348,27 @@ class Magnebot(RobotBase):
 
         :param target: The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array.
         :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
+        :param set_torso: If True, slide the torso to its default position when the wheel motion begins.
         """
 
         self.action = TurnTo(target=target, resp=self._previous_resp, aligned_at=aligned_at,
                              collision_detection=self.collision_detection, previous=self._previous_action,
-                             dynamic=self.dynamic)
+                             dynamic=self.dynamic, set_torso=set_torso)
 
-    def move_by(self, distance: float, arrived_at: float = 0.1) -> None:
+    def move_by(self, distance: float, arrived_at: float = 0.1, set_torso: bool = True) -> None:
         """
         Move the Magnebot forward or backward by a given distance.
 
         :param distance: The target distance. If less than zero, the Magnebot will move backwards.
         :param arrived_at: If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
+        :param set_torso: If True, slide the torso to its default position when the wheel motion begins.
         """
 
         self.action = MoveBy(distance=distance, arrived_at=arrived_at, collision_detection=self.collision_detection,
-                             previous=self._previous_action, dynamic=self.dynamic)
+                             previous=self._previous_action, dynamic=self.dynamic, set_torso=set_torso)
 
     def move_to(self, target: Union[int, Dict[str, float], np.ndarray], arrived_at: float = 0.1, aligned_at: float = 1,
-                arrived_offset: float = 0) -> None:
+                arrived_offset: float = 0, set_torso: bool = True) -> None:
         """
         Move to a target object or position. This combines turn_to() followed by move_by().
 
@@ -372,11 +376,12 @@ class Magnebot(RobotBase):
         :param arrived_at: If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
         :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
         :param arrived_offset: Offset the arrival position by this value. This can be useful if the Magnebot needs to move to an object but shouldn't try to move to the object's centroid. This is distinct from `arrived_at` because it won't affect the Magnebot's braking solution.
+        :param set_torso: If True, slide the torso to its default position when the wheel motion begins.
         """
 
         self.action = MoveTo(target=target, resp=self._previous_resp, dynamic=self.dynamic,
                              collision_detection=self.collision_detection, arrived_at=arrived_at, aligned_at=aligned_at,
-                             arrived_offset=arrived_offset, previous=self._previous_action)
+                             arrived_offset=arrived_offset, previous=self._previous_action, set_torso=set_torso)
 
     def stop(self) -> None:
         """
@@ -387,7 +392,8 @@ class Magnebot(RobotBase):
 
     def reach_for(self, target: Union[Dict[str, float], np.ndarray], arm: Arm, absolute: bool = True,
                   orientation_mode: OrientationMode = OrientationMode.auto,
-                  target_orientation: TargetOrientation = TargetOrientation.auto, arrived_at: float = 0.125) -> None:
+                  target_orientation: TargetOrientation = TargetOrientation.auto, arrived_at: float = 0.125,
+                  set_torso: bool = True) -> None:
         """
         Reach for a target position. The action ends when the magnet is at or near the target position, or if it fails to reach the target.
         The Magnebot may try to reach for the target multiple times, trying different IK orientations each time, or no times, if it knows the action will fail.
@@ -398,16 +404,18 @@ class Magnebot(RobotBase):
         :param arrived_at: If the magnet is this distance or less from `target`, then the action is successful.
         :param orientation_mode: [The orientation mode.](ik/orientation_mode.md)
         :param target_orientation: [The target orientation.](ik/target_orientation.md)
+        :param set_torso: If True, stop sliding the torso when the arms stop moving at the end of the action.
         """
 
         if isinstance(target, dict):
             target = TDWUtils.vector3_to_array(target)
 
         self.action = ReachFor(target=target, arm=arm, absolute=absolute, orientation_mode=orientation_mode,
-                               target_orientation=target_orientation, arrived_at=arrived_at, dynamic=self.dynamic)
+                               target_orientation=target_orientation, arrived_at=arrived_at, dynamic=self.dynamic,
+                               set_torso=set_torso)
 
     def grasp(self, target: int, arm: Arm, orientation_mode: OrientationMode = OrientationMode.auto,
-              target_orientation: TargetOrientation = TargetOrientation.auto) -> None:
+              target_orientation: TargetOrientation = TargetOrientation.auto, set_torso: bool = True) -> None:
         """
         Try to grasp a target object.
         The action ends when either the Magnebot grasps the object, can't grasp it, or fails arm articulation.
@@ -416,30 +424,35 @@ class Magnebot(RobotBase):
         :param arm: [The arm that will reach for and grasp the target.](arm.md)
         :param orientation_mode: [The orientation mode.](ik/orientation_mode.md)
         :param target_orientation: [The target orientation.](ik/target_orientation.md)
+        :param set_torso: If True, stop sliding the torso when the arms stop moving at the end of the action.
         """
 
         self.action = Grasp(target=target, arm=arm, orientation_mode=orientation_mode,
-                            target_orientation=target_orientation, dynamic=self.dynamic)
+                            target_orientation=target_orientation, dynamic=self.dynamic,
+                            set_torso=set_torso)
 
-    def drop(self, target: int, arm: Arm, wait_for_object: bool = True) -> None:
+    def drop(self, target: int, arm: Arm, wait_for_object: bool = True, set_torso: bool = True) -> None:
         """
         Drop an object held by a magnet.
 
         :param target: The ID of the object currently held by the magnet.
         :param arm: [The arm of the magnet holding the object.](arm.md)
         :param wait_for_object: If True, the action will continue until the object has finished falling. If False, the action advances the simulation by exactly 1 frame.
+        :param set_torso: If True, stop sliding the torso when the arms stop moving at the end of the action.
         """
 
-        self.action = Drop(arm=arm, target=target, wait_for_object=wait_for_object, dynamic=self.dynamic)
+        self.action = Drop(arm=arm, target=target, wait_for_object=wait_for_object, dynamic=self.dynamic,
+                           set_torso=set_torso)
 
-    def reset_arm(self, arm: Arm) -> None:
+    def reset_arm(self, arm: Arm, set_torso: bool = True) -> None:
         """
         Reset an arm to its neutral position.
 
         :param arm: [The arm to reset.](arm.md)
+        :param set_torso: If True, stop sliding the torso when the arms stop moving at the end of the action.
         """
 
-        self.action = ResetArm(arm=arm)
+        self.action = ResetArm(arm=arm, set_torso=set_torso)
 
     def reset_position(self) -> None:
         """

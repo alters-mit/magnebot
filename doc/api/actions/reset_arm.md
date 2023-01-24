@@ -34,11 +34,12 @@ Reset an arm to its neutral position.
 
 \_\_init\_\_
 
-**`ResetArm(arm)`**
+**`ResetArm(arm, set_torso)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | arm |  Arm |  | [The arm used for this action.](../arm.md) |
+| set_torso |  bool |  | If True, stop sliding the torso when the arms stop moving at the end of the action. |
 
 #### get_initialization_commands
 

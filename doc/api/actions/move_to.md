@@ -28,9 +28,9 @@ This action has two "sub-actions": A [`TurnBy`](turn_by.md) and a [`MoveBy`](mov
 
 #### \_\_init\_\_
 
-**`MoveTo(target, resp, dynamic, collision_detection)`**
+**`MoveTo(target, resp, dynamic, collision_detection, set_torso)`**
 
-**`MoveTo(target, resp, arrived_at=0.1, aligned_at=1, arrived_offset=0, dynamic, collision_detection, previous=None)`**
+**`MoveTo(target, resp, arrived_at=0.1, aligned_at=1, arrived_offset=0, dynamic, collision_detection, set_torso, previous=None)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -41,6 +41,7 @@ This action has two "sub-actions": A [`TurnBy`](turn_by.md) and a [`MoveBy`](mov
 | arrived_offset |  float  | 0 | Offset the arrival position by this value. This can be useful if the Magnebot needs to move to an object but shouldn't try to move to the object's centroid. This is distinct from `arrived_at` because it won't affect the Magnebot's braking solution. |
 | dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |
 | collision_detection |  CollisionDetection |  | [The collision detection rules.](../collision_detection.md) |
+| set_torso |  bool |  | If True, slide the torso to its default position when the wheel motion begins. |
 | previous |  Action  | None | The previous action, if any. |
 
 #### get_initialization_commands

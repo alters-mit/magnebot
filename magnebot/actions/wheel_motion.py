@@ -17,10 +17,12 @@ class WheelMotion(Action, ABC):
     Abstract base class for a motion action involving the Magnebot's wheels.
     """
 
-    def __init__(self, dynamic: MagnebotDynamic, collision_detection: CollisionDetection, previous: Action = None):
+    def __init__(self, dynamic: MagnebotDynamic, collision_detection: CollisionDetection, set_torso: bool,
+                 previous: Action = None):
         """
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
         :param collision_detection: [The collision detection rules.](../collision_detection.md)
+        :param set_torso: If True, slide the torso to its default position when the wheel motion begins.
         :param previous: The previous action, if any.
         """
 
@@ -28,6 +30,7 @@ class WheelMotion(Action, ABC):
         # My collision detection rules.
         self._collision_detection: CollisionDetection = collision_detection
         self._resetting: bool = False
+        self._set_torso: bool = set_torso
         # Immediately end the action if we're currently tipping.
         has_tipped, is_tipping = self._is_tipping(dynamic=dynamic)
         if has_tipped:
@@ -58,17 +61,20 @@ class WheelMotion(Action, ABC):
         # Make the robot moveable.
         if dynamic.immovable:
             self._resetting = True
-            commands.extend([{"$type": "set_immovable",
+            commands.append({"$type": "set_immovable",
                               "id": static.robot_id,
-                              "immovable": False},
-                             {"$type": "set_prismatic_target",
-                              "joint_id": static.arm_joints[ArmJoint.torso],
-                              "target": 1,
-                              "id": static.robot_id},
-                             {"$type": "set_revolute_target",
-                              "joint_id": static.arm_joints[ArmJoint.column],
-                              "target": 0,
-                              "id": static.robot_id}])
+                              "immovable": False})
+            # Maybe reset the torso.
+            if self._set_torso:
+                commands.append({"$type": "set_prismatic_target",
+                                 "joint_id": static.arm_joints[ArmJoint.torso],
+                                 "target": 1,
+                                 "id": static.robot_id})
+            # Always reset the column.
+            commands.append({"$type": "set_revolute_target",
+                             "joint_id": static.arm_joints[ArmJoint.column],
+                             "target": 0,
+                             "id": static.robot_id})
         # Reset the drive values.
         for wheel_id in static.wheels.values():
             drive = static.joints[wheel_id].drives["x"]

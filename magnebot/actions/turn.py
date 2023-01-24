@@ -33,17 +33,19 @@ class Turn(WheelMotion, ABC):
                                                                outer_track=float(row["outer_track"]),
                                                                front=float(row["front"]))
 
-    def __init__(self, dynamic: MagnebotDynamic, collision_detection: CollisionDetection, aligned_at: float = 1,
-                 previous: Action = None):
+    def __init__(self, dynamic: MagnebotDynamic, collision_detection: CollisionDetection, set_torso: bool,
+                 aligned_at: float = 1, previous: Action = None):
         """
         :param aligned_at: If the difference between the current angle and the target angle is less than this value, then the action is successful.
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
         :param collision_detection: [The collision detection rules.](../collision_detection.md)
+        :param set_torso: If True, slide the torso to its default position when the wheel motion begins.
         :param previous: The previous action, if any.
         """
 
         self._angle = self._get_angle(dynamic=dynamic)
-        super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous)
+        super().__init__(dynamic=dynamic, collision_detection=collision_detection, set_torso=set_torso,
+                         previous=previous)
         self._clamp_angle()
         self._aligned_at: float = aligned_at
         self._max_attempts: int = int((np.abs(self._angle) + 1) / 2)

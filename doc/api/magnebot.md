@@ -210,7 +210,7 @@ These functions move or turn the Magnebot. [Read this for more information about
 
 **`self.turn_by(angle)`**
 
-**`self.turn_by(angle, aligned_at=1)`**
+**`self.turn_by(angle, aligned_at=1, set_torso=True)`**
 
 Turn the Magnebot by an angle.
 
@@ -220,12 +220,13 @@ While turning, the left wheels will turn one way and the right wheels in the opp
 | --- | --- | --- | --- |
 | angle |  float |  | The target angle in degrees. Positive value = clockwise turn. |
 | aligned_at |  float  | 1 | If the difference between the current angle and the target angle is less than this value, then the action is successful. |
+| set_torso |  bool  | True | If True, slide the torso to its default position when the wheel motion begins. |
 
 #### turn_to
 
 **`self.turn_to(target)`**
 
-**`self.turn_to(target, aligned_at=1)`**
+**`self.turn_to(target, aligned_at=1, set_torso=True)`**
 
 Turn the Magnebot to face a target object or position.
 
@@ -235,12 +236,13 @@ While turning, the left wheels will turn one way and the right wheels in the opp
 | --- | --- | --- | --- |
 | target |  Union[int, Dict[str, float] |  | The target. If int: An object ID. If dict: A position as an x, y, z dictionary. If numpy array: A position as an [x, y, z] numpy array. |
 | aligned_at |  float  | 1 | If the difference between the current angle and the target angle is less than this value, then the action is successful. |
+| set_torso |  bool  | True | If True, slide the torso to its default position when the wheel motion begins. |
 
 #### move_by
 
 **`self.move_by(distance)`**
 
-**`self.move_by(distance, arrived_at=0.1)`**
+**`self.move_by(distance, arrived_at=0.1, set_torso=True)`**
 
 Move the Magnebot forward or backward by a given distance.
 
@@ -248,12 +250,13 @@ Move the Magnebot forward or backward by a given distance.
 | --- | --- | --- | --- |
 | distance |  float |  | The target distance. If less than zero, the Magnebot will move backwards. |
 | arrived_at |  float  | 0.1 | If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
+| set_torso |  bool  | True | If True, slide the torso to its default position when the wheel motion begins. |
 
 #### move_to
 
 **`self.move_to(target)`**
 
-**`self.move_to(target, arrived_at=0.1, aligned_at=1, arrived_offset=0)`**
+**`self.move_to(target, arrived_at=0.1, aligned_at=1, arrived_offset=0, set_torso=True)`**
 
 Move to a target object or position. This combines turn_to() followed by move_by().
 
@@ -263,6 +266,7 @@ Move to a target object or position. This combines turn_to() followed by move_by
 | arrived_at |  float  | 0.1 | If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful. |
 | aligned_at |  float  | 1 | If the difference between the current angle and the target angle is less than this value, then the action is successful. |
 | arrived_offset |  float  | 0 | Offset the arrival position by this value. This can be useful if the Magnebot needs to move to an object but shouldn't try to move to the object's centroid. This is distinct from `arrived_at` because it won't affect the Magnebot's braking solution. |
+| set_torso |  bool  | True | If True, slide the torso to its default position when the wheel motion begins. |
 
 #### stop
 
@@ -295,7 +299,7 @@ For more information regarding how arm articulation works, [read this](../manual
 
 **`self.reach_for(target, arm)`**
 
-**`self.reach_for(target, arm, absolute=True, arrived_at=0.125, orientation_mode=OrientationMode.auto, target_orientation=TargetOrientation.auto)`**
+**`self.reach_for(target, arm, absolute=True, arrived_at=0.125, orientation_mode=OrientationMode.auto, target_orientation=TargetOrientation.auto, set_torso=True)`**
 
 Reach for a target position. The action ends when the magnet is at or near the target position, or if it fails to reach the target.
 The Magnebot may try to reach for the target multiple times, trying different IK orientations each time, or no times, if it knows the action will fail.
@@ -308,12 +312,13 @@ The Magnebot may try to reach for the target multiple times, trying different IK
 | arrived_at |  float  | 0.125 | If the magnet is this distance or less from `target`, then the action is successful. |
 | orientation_mode |  OrientationMode  | OrientationMode.auto | [The orientation mode.](ik/orientation_mode.md) |
 | target_orientation |  TargetOrientation  | TargetOrientation.auto | [The target orientation.](ik/target_orientation.md) |
+| set_torso |  bool  | True | If True, stop sliding the torso when the arms stop moving at the end of the action. |
 
 #### grasp
 
 **`self.grasp(target, arm)`**
 
-**`self.grasp(target, arm, orientation_mode=OrientationMode.auto, target_orientation=TargetOrientation.auto)`**
+**`self.grasp(target, arm, orientation_mode=OrientationMode.auto, target_orientation=TargetOrientation.auto, set_torso=True)`**
 
 Try to grasp a target object.
 The action ends when either the Magnebot grasps the object, can't grasp it, or fails arm articulation.
@@ -324,12 +329,13 @@ The action ends when either the Magnebot grasps the object, can't grasp it, or f
 | arm |  Arm |  | [The arm that will reach for and grasp the target.](arm.md) |
 | orientation_mode |  OrientationMode  | OrientationMode.auto | [The orientation mode.](ik/orientation_mode.md) |
 | target_orientation |  TargetOrientation  | TargetOrientation.auto | [The target orientation.](ik/target_orientation.md) |
+| set_torso |  bool  | True | If True, stop sliding the torso when the arms stop moving at the end of the action. |
 
 #### drop
 
 **`self.drop(target, arm)`**
 
-**`self.drop(target, arm, wait_for_object=True)`**
+**`self.drop(target, arm, wait_for_object=True, set_torso=True)`**
 
 Drop an object held by a magnet.
 
@@ -338,16 +344,20 @@ Drop an object held by a magnet.
 | target |  int |  | The ID of the object currently held by the magnet. |
 | arm |  Arm |  | [The arm of the magnet holding the object.](arm.md) |
 | wait_for_object |  bool  | True | If True, the action will continue until the object has finished falling. If False, the action advances the simulation by exactly 1 frame. |
+| set_torso |  bool  | True | If True, stop sliding the torso when the arms stop moving at the end of the action. |
 
 #### reset_arm
 
 **`self.reset_arm(arm)`**
+
+**`self.reset_arm(arm, set_torso=True)`**
 
 Reset an arm to its neutral position.
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | arm |  Arm |  | [The arm to reset.](arm.md) |
+| set_torso |  bool  | True | If True, stop sliding the torso when the arms stop moving at the end of the action. |
 
 ***
 

@@ -126,6 +126,10 @@ Some guidelines regarding the orientation parameters:
 
 The `arrived_at` parameter in the `reach_for()` action determines minimum distance from the magnet to the target. The action immediately stops if the magnet is within this distance. Increasing `arrived_at` therefore "improves" the success rate of an IK action.
 
+## Resetting the torso
+
+By default, the Magnebot's torso target position is set to its current position at the end of the action. Due to a 1-frame delay in the output data, this sometimes causes the torso to drop slightly. To prevent this, set `set_torso=False`. For example: `magnebot.reach_for(target=target, arm=Arm.right, set_torso=False)`.
+
 ***
 
 **Next: [Grasp action](grasp.md)**

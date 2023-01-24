@@ -45,9 +45,9 @@ The Magnebot may try to reach for the target multiple times, trying different IK
 
 #### \_\_init\_\_
 
-**`ReachFor(target, absolute, arm, orientation_mode, target_orientation, dynamic)`**
+**`ReachFor(target, absolute, arm, set_torso, orientation_mode, target_orientation, dynamic)`**
 
-**`ReachFor(target, absolute, arrived_at=0.125, arm, orientation_mode, target_orientation, dynamic)`**
+**`ReachFor(target, absolute, arrived_at=0.125, arm, set_torso, orientation_mode, target_orientation, dynamic)`**
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -55,6 +55,7 @@ The Magnebot may try to reach for the target multiple times, trying different IK
 | absolute |  bool |  | If True, `target` is in absolute world coordinates. If `False`, `target` is relative to the position and rotation of the Magnebot. |
 | arrived_at |  float  | 0.125 | If the magnet is this distance or less from `target`, then the action is successful. |
 | arm |  Arm |  | [The arm used for this action.](../arm.md) |
+| set_torso |  bool |  | If True, stop sliding the torso when the arms stop moving at the end of the action. |
 | orientation_mode |  OrientationMode |  | [The orientation mode.](../ik/orientation_mode.md) |
 | target_orientation |  TargetOrientation |  | [The target orientation.](../ik/target_orientation.md) |
 | dynamic |  MagnebotDynamic |  | [The dynamic Magnebot data.](../magnebot_dynamic.md) |

@@ -203,11 +203,12 @@ class Action(ABC):
         return np.radians(initial_angles)
 
     @staticmethod
-    def _get_stop_arm_commands(arm: Arm, static: MagnebotStatic, dynamic: MagnebotDynamic) -> List[dict]:
+    def _get_stop_arm_commands(arm: Arm, static: MagnebotStatic, dynamic: MagnebotDynamic, set_torso: bool) -> List[dict]:
         """
         :param arm: The arm.
         :param static: [The static Magnebot data.](../magnebot_static.md)
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
+        :param set_torso: If True, set the torso at its current position.
 
         :return: A list of commands to stop the arm's joints.
         """
@@ -226,7 +227,7 @@ class Action(ABC):
                                  "target": float(angles[0]),
                                  "id": static.robot_id})
             # Convert the current prismatic "angle" back into "radians".
-            elif joint_type == JointType.prismatic:
+            elif joint_type == JointType.prismatic and set_torso:
                 commands.append({"$type": "set_prismatic_target",
                                  "joint_id": joint_id,
                                  "target": float(np.radians(angles[0])),

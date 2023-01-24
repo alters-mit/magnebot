@@ -19,12 +19,13 @@ class MoveBy(WheelMotion):
     _BRAKE_DISTANCE: float = 0.1
 
     def __init__(self, distance: float, dynamic: MagnebotDynamic, collision_detection: CollisionDetection,
-                 arrived_at: float = 0.1, previous: Action = None):
+                 set_torso: bool, arrived_at: float = 0.1, previous: Action = None):
         """
         :param distance: The target distance.
         :param arrived_at: If at any point during the action the difference between the target distance and distance traversed is less than this, then the action is successful.
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
         :param collision_detection: [The collision detection rules.](../collision_detection.md)
+        :param set_torso: If True, slide the torso to its default position when the wheel motion begins.
         :param previous: The previous action, if any.
         """
 
@@ -33,7 +34,7 @@ class MoveBy(WheelMotion):
         """
         self.distance: float = distance
         self._arrived_at: float = arrived_at
-        super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous)
+        super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous, set_torso=set_torso)
         # Get the initial state.
         self._initial_position_arr: np.array = np.array(dynamic.transform.position[:])
         self._initial_position_v3: Dict[str, float] = TDWUtils.array_to_vector3(self._initial_position_arr)

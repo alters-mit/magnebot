@@ -15,15 +15,16 @@ class Drop(ArmMotion):
     Drop an object held by a magnet.
     """
 
-    def __init__(self, target: int, arm: Arm, wait_for_object: bool, dynamic: MagnebotDynamic):
+    def __init__(self, target: int, arm: Arm, set_torso: bool, wait_for_object: bool, dynamic: MagnebotDynamic):
         """
         :param target: The ID of the object currently held by the magnet.
         :param arm: [The arm used for this action.](../arm.md)
+        :param set_torso: If True, stop sliding the torso when the arms stop moving at the end of the action.
         :param wait_for_object: If True, the action will continue until the object has finished falling. If False, the action advances the simulation by exactly 1 frame.
         :param dynamic: [The dynamic Magnebot data.](../magnebot_dynamic.md)
         """
 
-        super().__init__(arm=arm)
+        super().__init__(arm=arm, set_torso=set_torso)
         self._target: int = int(target)
         self._wait_for_object: bool = wait_for_object
         self._object_position: np.array = np.array([0, 0, 0])

@@ -416,7 +416,7 @@ The base `Action` class includes various hidden functions that are used by its s
 | `_get_stop_wheels_commands(static: MagnebotStatic, dynamic: MagnebotDynamic)` | Returns a list of commands that will stop the wheels at their present angles. |
 | `_y_position_to_torso_position(y_position: float)`           | Static function. Converts a `y` worldspace coordinate value to a torso prismatic joint position. |
 | `_get_initial_angles(arm: Arm, static: MagnebotStatic, dynamic: MagnebotDynamic)` | Static function. Returns a numpy array of the current angles of the joints in the given arm in radians. |
-| `_get_stop_arm_commands(arm: Arm, static: MagnebotStatic, dynamic: MagnebotDynamic)` | Static function. Returns a list of commands to stop the arm's joints at their present angles (including the column and the prismatic torso joint). |
+| `_get_stop_arm_commands(arm: Arm, static: MagnebotStatic, dynamic: MagnebotDynamic, set_torso: bool)` | Static function. Returns a list of commands to stop the arm's joints at their present angles (including the column and the prismatic torso joint). |
 | `_get_reset_arm_commands(arm: Arm, static: MagnebotStatic)`  | Static function. Returns a list of commands to reset the arm to its neutral position. |
 
 ***
