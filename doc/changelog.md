@@ -9,6 +9,7 @@
   - `manual/magnebot/arm_articulation.md`
   - `manual/magnebot/grasp.md`
   - `manual/magnebot/movement.md`
+- Required version of TDW is now >=1.11.3.0
 
 ## 2.2.2
 
