@@ -46,7 +46,7 @@ class ResetPosition(Action):
         self._initial_frames: int = 0
         self._drop_frames: int = 0
         # Use an occupancy map to reset the position.
-        self._occupancy_map: OccupancyMap = OccupancyMap(cell_size=ResetPosition._CELL_SIZE)
+        self._occupancy_map: OccupancyMap = OccupancyMap()
         self._reset_position_status: _ResetPositionStatus = _ResetPositionStatus.waiting_for_objects
 
     def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
@@ -126,10 +126,9 @@ class ResetPosition(Action):
             return self._occupancy_map.get_initialization_commands()
         # Generate the occupancy map but ignore this Magnebot.
         elif self._reset_position_status == _ResetPositionStatus.generating_occupancy_map:
-            # This will set the scene bounds.
+            # This will request occupancy map output data.
+            self._occupancy_map.generate(ignore_objects=static.body_parts, cell_size=ResetPosition._CELL_SIZE)
             self._occupancy_map.on_send(resp=resp)
-            # Return commands to generate the occupancy map.
-            self._occupancy_map.generate(ignore_objects=static.body_parts)
             self._reset_position_status = _ResetPositionStatus.getting_position
             return self._occupancy_map.commands
         # Get a position to reset to.
@@ -146,13 +145,12 @@ class ResetPosition(Action):
                 # Ignore non-free positions or positions at the edges of the scene.
                 if self._occupancy_map.occupancy_map[ix][iy] != 0:
                     continue
-                x = self._occupancy_map.scene_bounds.x_min + (ix * ResetPosition._CELL_SIZE)
-                z = self._occupancy_map.scene_bounds.z_min + (iy * ResetPosition._CELL_SIZE)
-                p = np.array([x, 0, z])
-                d = np.linalg.norm(position - p)
+                p2 = self._occupancy_map.positions[ix][iy]
+                p3 = np.array([p2[0], 0, p2[1]])
+                d = np.linalg.norm(position - p3)
                 if d < closest_distance:
                     closest_distance = d
-                    closest = p
+                    closest = p3
             self.status = ActionStatus.success
             # Teleport the robot and make it immovable.
             return [{"$type": "teleport_robot",
