@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.4
+
+- Updated occupancy map API in the `ResetPosition` action.
+- Required version of TDW is now >=1.11.4.0
+
 ## 2.2.3
 
 - In `Magnebot`, added optional parameter `set_torso` to `drop()`, `grasp()`, `reach_for()`, and `reset_arm()`. The default value is True. If False, the torso won't be set at the *end* of the action.
