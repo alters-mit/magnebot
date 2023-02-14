@@ -15,7 +15,7 @@ setup(
     long_description=readme,
     long_description_content_type='text/markdown',
     url='https://github.com/alters-mit/magnebot',
-    author='Seth Alter',
+    author='Esther Alter',
     author_email="alters@mit.edu",
     license='MIT',
     classifiers=[
