@@ -529,7 +529,6 @@ class Magnebot(RobotBase):
         self.camera_rpy: np.array = np.array([0, 0, 0])
         self.collision_detection = CollisionDetection()
         self._previous_resp.clear()
-        self.commands.append(self._get_parent_avatar_command())
 
     def slide_torso(self, height: float) -> None:
         """

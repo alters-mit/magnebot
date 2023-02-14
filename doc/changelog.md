@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.5
+
+- Fixed: Crash when calling `magnebot.reset()`.
+
 ## 2.2.4
 
 - Updated occupancy map API in the `ResetPosition` action.
