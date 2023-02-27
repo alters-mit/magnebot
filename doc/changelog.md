@@ -7,7 +7,7 @@
 ## 2.2.4
 
 - Updated occupancy map API in the `ResetPosition` action.
-- Required version of TDW is now >=1.11.4.0
+- Required version of TDW is now >=1.11.6.0
 
 ## 2.2.3
 
