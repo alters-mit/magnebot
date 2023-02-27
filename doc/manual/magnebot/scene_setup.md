@@ -126,7 +126,8 @@ When resetting a scene, be sure to call `magnebot.reset(position, rotation)`. If
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.object_manager import ObjectManager
-from magnebot import Magnebot
+from magnebot import Magnebot, ActionStatus
+
 
 class ResetScene(Controller):
     def __init__(self, port: int = 1071, check_version: bool = True, launch_build: bool = True):
@@ -137,13 +138,28 @@ class ResetScene(Controller):
                                            rotation=self.rotation)
         self.object_manager: ObjectManager = ObjectManager()
         self.add_ons.extend([self.magnebot, self.object_manager])
-    
+
     def init_scene(self):
         self.magnebot.reset(position=self.position, rotation=self.rotation)
         self.object_manager.initialized = False
         self.communicate([{"$type": "load_scene",
                            "scene_name": "ProcGenScene"},
                           TDWUtils.create_empty_room(12, 12)])
+
+
+if __name__ == "__main__":
+    c = ResetScene()
+    c.init_scene()
+    c.magnebot.move_by(2)
+    while c.magnebot.action.status == ActionStatus.ongoing:
+        c.communicate([])
+    c.communicate([])
+    c.init_scene()
+    c.magnebot.move_by(1)
+    while c.magnebot.action.status == ActionStatus.ongoing:
+        c.communicate([])
+    c.communicate([])
+    c.communicate({"$type": "terminate"})
 ```
 
 ***

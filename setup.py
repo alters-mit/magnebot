@@ -10,12 +10,12 @@ readme = re.sub(r'\[(.*?)\]\(doc/(.*?)\)', r'[\1][https://github.com/alters-mit/
 
 setup(
     name='magnebot',
-    version="2.2.4",
+    version="2.2.5",
     description='High-level API for the Magnebot in TDW.',
     long_description=readme,
     long_description_content_type='text/markdown',
     url='https://github.com/alters-mit/magnebot',
-    author='Seth Alter',
+    author='Esther Alter',
     author_email="alters@mit.edu",
     license='MIT',
     classifiers=[

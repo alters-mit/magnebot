@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.5
+
+- Fixed: Crash when calling `magnebot.reset()`.
+- Required version of TDW is now >=1.11.6.0
+
 ## 2.2.4
 
 - Updated occupancy map API in the `ResetPosition` action.
