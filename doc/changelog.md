@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.6
+
+- Required version of TDW is now >=1.11.22.0
+
 ## 2.2.5
 
 - Fixed: Crash when calling `magnebot.reset()`.

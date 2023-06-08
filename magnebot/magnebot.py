@@ -554,7 +554,6 @@ class Magnebot(RobotBase):
             PyPi.required_tdw_version_is_installed(required_version=TDW_VERSION, build_version=build_version,
                                                    comparison=">=")
         self.static = MagnebotStatic(robot_id=self.robot_id, resp=resp)
-        self._set_robot_joint_ids()
         # Wait for the joints to finish moving.
         self.action = Wait()
         # Add an avatar and set up its camera.
