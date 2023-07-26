@@ -43,7 +43,8 @@ class Push(IKMotion):
         super().__init__(arm=arm,
                          orientation_mode=OrientationMode.x,
                          target_orientation=TargetOrientation.up,
-                         dynamic=dynamic)
+                         dynamic=dynamic,
+                         set_torso=True)
 
     def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
                                     image_frequency: ImageFrequency) -> List[dict]:

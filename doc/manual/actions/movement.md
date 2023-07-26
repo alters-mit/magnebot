@@ -79,7 +79,7 @@ from magnebot.actions.action import Action
 
 class ApplyForceToWheels(WheelMotion):
     def __init__(self, force: float, dynamic: MagnebotDynamic, collision_detection: CollisionDetection, previous: Action = None):
-        super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous)
+        super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous, set_torso=True)
         self.force: float = force
 ```
 
@@ -97,7 +97,7 @@ from magnebot.actions.move_by import MoveBy
 
 class ApplyForceToWheels(WheelMotion):
     def __init__(self, force: float, dynamic: MagnebotDynamic, collision_detection: CollisionDetection, previous: Action = None):
-        super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous)
+        super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous, set_torso=True)
         self.force: float = force
         
     def _previous_was_same(self, previous: Action) -> bool:
@@ -123,7 +123,7 @@ from magnebot.actions.move_by import MoveBy
 
 class ApplyForceToWheels(WheelMotion):
     def __init__(self, force: float, dynamic: MagnebotDynamic, collision_detection: CollisionDetection, previous: Action = None):
-        super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous)
+        super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous, set_torso=True)
         self.force: float = force
 
     def _previous_was_same(self, previous: Action) -> bool:
@@ -159,7 +159,7 @@ from magnebot.actions.move_by import MoveBy
 
 class ApplyForceToWheels(WheelMotion):
     def __init__(self, force: float, dynamic: MagnebotDynamic, collision_detection: CollisionDetection, previous: Action = None):
-        super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous)
+        super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous, set_torso=True)
         self.force: float = force
 
     def _previous_was_same(self, previous: Action) -> bool:
@@ -205,7 +205,7 @@ from magnebot.util import get_default_post_processing_commands
 
 class ApplyForceToWheels(WheelMotion):
     def __init__(self, force: float, dynamic: MagnebotDynamic, collision_detection: CollisionDetection, previous: Action = None):
-        super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous)
+        super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous, set_torso=True)
         self.force: float = force
 
     def _previous_was_same(self, previous: Action) -> bool:
