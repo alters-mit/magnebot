@@ -4,6 +4,7 @@
 
 - Required version of TDW is now >=1.11.22.0
 - Fixed: Crash when running custom action example controllers because parameter `set_torso` is missing.
+- Fixed: `reach_high.py` example controller doesn't work due to obsolete commands.
 
 ## 2.2.5
 

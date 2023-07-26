@@ -23,9 +23,9 @@ class ReachHigh(MagnebotController):
                                                    object_id=self.target_id))
         scene = [TDWUtils.create_empty_room(12, 12),
                  self.get_add_material("parquet_long_horizontal_clean", library="materials_high.json"),
-                 {"$type": "set_proc_gen_floor_material",
+                 {"$type": "set_floor_material",
                   "name": "parquet_long_horizontal_clean"},
-                 {"$type": "set_proc_gen_floor_texture_scale",
+                 {"$type": "set_floor_texture_scale",
                   "scale": {"x": 8, "y": 8}}]
         self._init_scene(scene=scene,
                          objects=objects,
