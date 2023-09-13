@@ -10,7 +10,7 @@ readme = re.sub(r'\[(.*?)\]\(doc/(.*?)\)', r'[\1][https://github.com/alters-mit/
 
 setup(
     name='magnebot',
-    version="2.2.6",
+    version="2.2.7",
     description='High-level API for the Magnebot in TDW.',
     long_description=readme,
     long_description_content_type='text/markdown',
@@ -26,6 +26,9 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8'
+        'Programming Language :: Python :: 3.9'
+        'Programming Language :: Python :: 3.10'
+        'Programming Language :: Python :: 3.11'
     ],
     keywords='unity simulation tdw robotics',
     packages=find_packages(),

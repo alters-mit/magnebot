@@ -3,10 +3,10 @@ from abc import ABC, abstractmethod
 from overrides import final
 import numpy as np
 from scipy.spatial import cKDTree
-from ikpy.chain import Chain
 from ikpy.utils import geometry
 from tdw.robot_data.joint_type import JointType
 from magnebot.ikpy.link import OriginLink, URDFLink, Link
+from magnebot.ikpy.chain import Chain
 from magnebot.arm import Arm
 from magnebot.arm_joint import ArmJoint
 from magnebot.ik.orientation_mode import OrientationMode

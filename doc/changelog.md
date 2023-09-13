@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.7
+
+- Fixed: Magnebot can't be used with Python 3.10 or newer.
+  - (Backend) Added `ikpy/chain.py` with compatible numpy code.
+- Fixed some example controllers and documentation code snippets.
+
 ## 2.2.6
 
 - Required version of TDW is now >=1.11.22.0

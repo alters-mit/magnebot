@@ -54,7 +54,7 @@ class RaiseArm(ArmMotion):
 
 class MyMagnebot(Magnebot):
     def raise_arm(self, arm: Arm) -> None:
-        self.action = RaiseArm(arm=arm)
+        self.action = RaiseArm(arm=arm, set_torso=True)
 
 
 if __name__ == "__main__":

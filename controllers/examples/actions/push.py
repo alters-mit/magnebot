@@ -43,7 +43,8 @@ class Push(IKMotion):
         super().__init__(arm=arm,
                          orientation_mode=OrientationMode.x,
                          target_orientation=TargetOrientation.up,
-                         dynamic=dynamic)
+                         dynamic=dynamic,
+                         set_torso=False)
 
     def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
                                     image_frequency: ImageFrequency) -> List[dict]:
@@ -70,7 +71,7 @@ class Push(IKMotion):
                             break
             self.initial_object_position = self._get_object_position(resp=resp)
             # Slide the torso up and above the target object.
-            torso_position = self.initial_object_centroid[1] + 0.1
+            torso_position = float(self.initial_object_centroid[1]) + 0.1
             # Convert the torso position from meters to prismatic joint position.
             torso_position = self._y_position_to_torso_position(torso_position)
             # Start sliding the torso.

@@ -18,7 +18,7 @@ Define a custom ApplyForceToWheels and use it in a controller.
 
 class ApplyForceToWheels(WheelMotion):
     def __init__(self, force: float, dynamic: MagnebotDynamic, collision_detection: CollisionDetection, previous: Action = None):
-        super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous)
+        super().__init__(dynamic=dynamic, collision_detection=collision_detection, previous=previous, set_torso=True)
         self.force: float = force
 
     def _previous_was_same(self, previous: Action) -> bool:

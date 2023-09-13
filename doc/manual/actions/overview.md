@@ -69,7 +69,8 @@ magnebot.action = ReachFor(target=np.array([0.3, 0.5, 0.4]),
                            absolute=True,
                            dynamic=magnebot.dynamic,
                            orientation_mode=OrientationMode.auto,
-                           target_orientation=TargetOrientation.auto)
+                           target_orientation=TargetOrientation.auto,
+                           set_torso=True)
 while magnebot.action.status == ActionStatus.ongoing:
     c.communicate([])
 c.communicate([])
