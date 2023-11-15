@@ -1,10 +1,10 @@
+from packaging import version
 from typing import List, Optional, Dict, Union
 from copy import deepcopy
 import numpy as np
 from tdw.add_ons.robot_base import RobotBase
 from tdw.output_data import Version
 from tdw.tdw_utils import TDWUtils
-from tdw.release.pypi import PyPi
 from magnebot.util import get_data, check_version
 from magnebot.arm import Arm
 from magnebot.ik.orientation_mode import OrientationMode
@@ -551,8 +551,8 @@ class Magnebot(RobotBase):
             check_version()
             version_data = get_data(resp=resp, d_type=Version)
             build_version = version_data.get_tdw_version()
-            PyPi.required_tdw_version_is_installed(required_version=TDW_VERSION, build_version=build_version,
-                                                   comparison=">=")
+            if version.parse(TDW_VERSION) < version.parse(build_version):
+                print(f"WARNING! You have tdw {build_version} but you need tdw {TDW_VERSION}.")
         self.static = MagnebotStatic(robot_id=self.robot_id, resp=resp)
         # Wait for the joints to finish moving.
         self.action = Wait()
