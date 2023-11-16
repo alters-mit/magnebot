@@ -58,7 +58,7 @@
     },
     "RobotBase": {
       "description": "These functions are inherited from the `RobotBase` parent class.",
-      "functions": ["reset", "joints_are_moving", "get_initialization_commands", "on_send", "before_send"]
+      "functions": ["reset", "get_initialization_commands", "on_send"]
     }
   }
 }

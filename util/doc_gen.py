@@ -28,10 +28,11 @@ if __name__ == "__main__":
         tdw_dst = f"magnebot/{tdw_file}"
         copy(src=tdw_src, dst=tdw_dst)
         # Generate the document.
-        ClassInheritance.get_from_directory(input_directory="magnebot",
-                                            output_directory="doc/api",
-                                            import_path="magnebot",
-                                            includes=[f"{magnebot_class}.py", tdw_file])
+        c = ClassInheritance()
+        c.get_from_directory(input_directory=Path("magnebot"),
+                             output_directory="doc/api",
+                             import_path="magnebot",
+                             includes=[f"{magnebot_class}.py", tdw_file])
         # Remove the TDW file.
         remove(tdw_dst)
         # Remove the TDW document.
@@ -49,12 +50,13 @@ if __name__ == "__main__":
                                                     "ik/orientation_mode.py",
                                                     "ik/target_orientation.py"])
     md.get_docs(output_directory="doc/api/ik")
-    ClassInheritance.get_from_directory(input_directory="magnebot/actions",
-                                        output_directory="doc/api/actions",
-                                        import_path="magnebot.actions",
-                                        import_prefix="from magnebot.actions",
-                                        overrides={"IkMotion": "IKMotion",
-                                                   "i_k_motion": "ik_motion"})
+    c = ClassInheritance()
+    c.get_from_directory(input_directory=Path("magnebot/actions"),
+                         output_directory="doc/api/actions",
+                         import_path="magnebot.actions",
+                         import_prefix="from magnebot.actions",
+                         overrides={"IkMotion": "IKMotion",
+                                    "i_k_motion": "ik_motion"})
     # Fix inherited links.
     for magnebot_class in ["magnebot_dynamic", "magnebot_static"]:
         doc_path = Path(f"doc/api/{magnebot_class}.md")

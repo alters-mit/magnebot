@@ -451,20 +451,6 @@ _Returns:_  An `ActionStatus` (always success).
 
 These are utility functions that won't advance the simulation by any frames.
 
-#### get_visible_objects
-
-**`self.get_visible_objects()`**
-
-Get all objects visible to the Magnebot.
-
-_Returns:_  A list of IDs of visible objects.
-
-#### end
-
-**`self.end()`**
-
-End the simulation. Terminate the build process.
-
 #### get_occupancy_position
 
 **`self.get_occupancy_position(i, j)`**
@@ -480,6 +466,20 @@ This only works if you've loaded an occupancy map via `self.init_floorplan_scene
 | j |  int |  | The j coordinate in the occupancy map. |
 
 _Returns:_  Tuple: (x coordinate; z coordinate) of the corresponding worldspace position.
+
+#### get_visible_objects
+
+**`self.get_visible_objects()`**
+
+Get all objects visible to the Magnebot.
+
+_Returns:_  A list of IDs of visible objects.
+
+#### end
+
+**`self.end()`**
+
+End the simulation. Terminate the build process.
 
 ***
 

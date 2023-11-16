@@ -3,6 +3,7 @@
 ## 2.2.8
 
 - Fixed: Magnebot crashes on version check.
+- Fixed: The Magnebot can't turn when no frames are skipped. If no frames are skipped, the Magnebot's wheels have slightly greater force limits.
 - Required version of TDW is now >=1.12.16.0
 
 ## 2.2.7

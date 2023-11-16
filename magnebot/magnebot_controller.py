@@ -55,6 +55,7 @@ class MagnebotController(Controller):
         :param check_pypi_version: If True, compare the locally installed version of TDW and Magnebot to the most recent versions on PyPi.
         """
 
+        Magnebot.SKIP_FRAMES = skip_frames
         super().__init__(port=port, launch_build=launch_build, check_version=False)
         """:field
         A numpy array of an occupancy map. This is set after calling `self.init_floorplan_scene()`.
