@@ -96,6 +96,93 @@ c.communicate({"$type": "terminate"})
 
 The types `Dict`, `Union`, and `List` are in the [`typing` module](https://docs.python.org/3/library/typing.html).
 
+#### Dict[str, float]
+
+Parameters of type `Dict[str, float]` are Vector3 dictionaries formatted like this:
+
+```json
+{"x": -0.2, "y": 0.21, "z": 0.385}
+```
+
+`y` is the up direction.
+
+To convert from or to a numpy array:
+
+```python
+from tdw.tdw_utils import TDWUtils
+
+target = {"x": 1, "y": 0, "z": 0}
+target = TDWUtils.vector3_to_array(target)
+print(target) # [1 0 0]
+target = TDWUtils.array_to_vector3(target)
+print(target) # {'x': 1.0, 'y': 0.0, 'z': 0.0}
+```
+
+#### Union[int, Dict[str, float], np.ndarray]
+
+Parameters of type `Union[int, Dict[str, float], np.ndarray]` can be either a Vector3, an [x, y, z] numpy array, or an integer (an object ID).
+
+#### Arm
+
+All parameters of type `Arm` require you to import the [Arm enum class](arm.md):
+
+```python
+from magnebot import Arm
+
+print(Arm.left)
+```
+
+***
+
+***
+
+## Fields
+
+- `static` [Cached static data for the Magnebot](magnebot_static.md) such as the IDs and segmentation colors of each joint:
+
+```python
+from tdw.controller import Controller
+from tdw.tdw_utils import TDWUtils
+from magnebot.magnebot import Magnebot
+
+m = Magnebot()
+c = Controller()
+c.add_ons.append(m)
+c.communicate(TDWUtils.create_empty_room(12, 12))
+for arm_joint in m.static.arm_joints:
+    joint_id = m.static.arm_joints[arm_joint]
+    segmentation_color = m.static.joints[joint_id].segmentation_color
+    print(arm_joint, joint_id, segmentation_color)
+c.communicate({"$type": "terminate"})
+```
+
+- `dynamic` [Per-frame dynamic data for the Magnebot](magnebot_dynamic.md) such as its position and images:
+
+```python
+from tdw.controller import Controller
+from tdw.tdw_utils import TDWUtils
+from magnebot.magnebot import Magnebot
+
+m = Magnebot()
+c = Controller()
+c.add_ons.append(m)
+c.communicate(TDWUtils.create_empty_room(12, 12))
+print(m.dynamic.transform.position)
+c.communicate({"$type": "terminate"})
+```
+
+- `action` The Magnebot's current [action](actions/action.md). Can be None (no ongoing action).
+
+- `image_frequency` This sets [how often images are captured](image_frequency.md).
+
+- `collision_detection` [The collision detection rules.](collision_detection.md) This determines whether the Magnebot will immediately stop moving or turning when it collides with something.
+
+- `camera_rpy` The current (roll, pitch, yaw) angles of the Magnebot's camera in degrees as a numpy array. This is handled outside of `self.state` because it isn't calculated using output data from the build. See: `magnebot.actions.RotateCamera.CAMERA_RPY_CONSTRAINTS` and `self.rotate_camera()`
+
+***
+
+## Functions
+
 #### \_\_init\_\_
 
 **`Magnebot()`**
@@ -181,6 +268,12 @@ Move to a target object or position. This combines turn_to() followed by move_by
 | arrived_offset |  float  | 0 | Offset the arrival position by this value. This can be useful if the Magnebot needs to move to an object but shouldn't try to move to the object's centroid. This is distinct from `arrived_at` because it won't affect the Magnebot's braking solution. |
 | set_torso |  bool  | True | If True, slide the torso to its default position when the wheel motion begins. |
 
+#### stop
+
+**`self.stop()`**
+
+Stop the Magnebot's wheels at their current positions.
+
 #### reset_position
 
 **`self.reset_position()`**
@@ -191,12 +284,6 @@ It will also drop any held objects.
 
 This will be interpreted by the physics engine as a _very_ sudden and fast movement.
 This action should only be called if the Magnebot is a position that will prevent the simulation from continuing (for example, if the Magnebot fell over).
-
-#### stop
-
-**`self.stop()`**
-
-Stop the Magnebot's wheels at their current positions.
 
 ***
 
@@ -361,10 +448,6 @@ Reset the rotation of the Magnebot's camera to its default angles and/or its def
 
 These functions are inherited from the `RobotBase` parent class.
 
-#### reset
-
-**`self.reset()`**
-
 #### get_initialization_commands
 
 **`self.get_initialization_commands()`**
@@ -384,6 +467,10 @@ This function is called automatically by the controller; you don't need to call 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | resp |  List[bytes] |  | The response from the build. |
+
+#### reset
+
+**`self.reset()`**
 
 ***
 
