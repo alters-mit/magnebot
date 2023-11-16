@@ -1,10 +1,10 @@
+from packaging import version
 from typing import List, Optional, Dict, Union
 from copy import deepcopy
 import numpy as np
 from tdw.add_ons.robot_base import RobotBase
 from tdw.output_data import Version
 from tdw.tdw_utils import TDWUtils
-from tdw.release.pypi import PyPi
 from magnebot.util import get_data, check_version
 from magnebot.arm import Arm
 from magnebot.ik.orientation_mode import OrientationMode
@@ -173,6 +173,14 @@ class Magnebot(RobotBase):
 
     # If True, we've already checked the version.
     _CHECKED_VERSION: bool = False
+    """:class_var
+    The number of frames being skipped per `communicate()` call. This is set by `MagnebotController` and affects wheel force values.
+    """
+    SKIP_FRAMES: int = 0
+    """:class_var
+    If zero frames are skipped per `communicate()` call, multiple the wheels' force limits by this factor.
+    """
+    ZERO_SKIP_FRAMES_WHEEL_FORCE_LIMIT_FACTOR: float = 1.15
 
     def __init__(self, robot_id: int = 0, position: Dict[str, float] = None, rotation: Dict[str, float] = None,
                  image_frequency: ImageFrequency = ImageFrequency.once, parent_camera_to_torso: bool = True,
@@ -262,6 +270,7 @@ class Magnebot(RobotBase):
 
         MagnebotDynamic.FRAME_COUNT = 0
         commands = super().get_initialization_commands()
+        # Send output data.
         commands.extend([{"$type": "send_magnebots",
                          "frequency": "always"},
                          {"$type": "send_transforms",
@@ -551,8 +560,8 @@ class Magnebot(RobotBase):
             check_version()
             version_data = get_data(resp=resp, d_type=Version)
             build_version = version_data.get_tdw_version()
-            PyPi.required_tdw_version_is_installed(required_version=TDW_VERSION, build_version=build_version,
-                                                   comparison=">=")
+            if version.parse(TDW_VERSION) < version.parse(build_version):
+                print(f"WARNING! You have tdw {build_version} but you need tdw {TDW_VERSION}.")
         self.static = MagnebotStatic(robot_id=self.robot_id, resp=resp)
         # Wait for the joints to finish moving.
         self.action = Wait()
@@ -574,6 +583,18 @@ class Magnebot(RobotBase):
             self.commands.append({"$type": "add_visual_camera_mesh",
                                   "avatar_id": self.static.avatar_id,
                                   "scale": self._visual_camera_scale})
+        # Set joint drives.
+        if Magnebot.SKIP_FRAMES == 0:
+            for wheel_id in self.static.wheels.values():
+                drive = self.static.joints[wheel_id].drives["x"]
+                force_limit = drive.force_limit * Magnebot.ZERO_SKIP_FRAMES_WHEEL_FORCE_LIMIT_FACTOR
+                self.commands.append({"$type": "set_robot_joint_drive",
+                                      "joint_id": wheel_id,
+                                      "force_limit": force_limit,
+                                      "stiffness": drive.stiffness,
+                                      "damping": drive.damping,
+                                      "id": self.static.robot_id})
+                self.static.joints[wheel_id].drives["x"].force_limit = force_limit
 
     def _set_dynamic_data(self, resp: List[bytes]) -> None:
         """

@@ -139,7 +139,6 @@ class Turn(WheelMotion, ABC):
         if self._delta_angle < 9.25:
             commands.extend(self._set_brake_wheel_drives(static=static))
             self._minimum_friction = BRAKE_FRICTION
-        pass
         # Get the nearest turn constants.
         da = int(np.abs(self._delta_angle))
         if da >= 179:
