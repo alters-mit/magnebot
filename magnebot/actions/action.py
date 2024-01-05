@@ -227,11 +227,12 @@ class Action(ABC):
                                  "target": float(angles[0]),
                                  "id": static.robot_id})
             # Convert the current prismatic "angle" back into "radians".
-            elif joint_type == JointType.prismatic and set_torso:
-                commands.append({"$type": "set_prismatic_target",
-                                 "joint_id": joint_id,
-                                 "target": float(np.radians(angles[0])),
-                                 "id": static.robot_id})
+            elif joint_type == JointType.prismatic:
+                if set_torso:
+                    commands.append({"$type": "set_prismatic_target",
+                                     "joint_id": joint_id,
+                                     "target": float(np.radians(angles[0])),
+                                     "id": static.robot_id})
             # Set each spherical drive axis.
             elif joint_type == JointType.spherical:
                 commands.append({"$type": "set_spherical_target",
