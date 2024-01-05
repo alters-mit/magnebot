@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.9
+
+- Fixed: Crash in various actions if `set_torso=False`
+
 ## 2.2.8
 
 - Fixed: Magnebot crashes on version check.
