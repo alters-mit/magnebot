@@ -117,7 +117,7 @@ class Grasp(IKMotion):
                     return [{"$type": "send_spherecast",
                              "radius": 0.2,
                              "origin": TDWUtils.array_to_vector3(dynamic.joints[static.magnets[self._arm]].position),
-                             "destination": TDWUtils.array_to_vector3(bounds.get_center(0)),
+                             "destination": TDWUtils.array_to_vector3(bounds.get_center(i)),
                              "id": static.robot_id}]
             raise Exception(f"No bounds data: {resp}")
         elif self._grasp_status == _GraspStatus.spherecasting:

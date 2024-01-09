@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.10
+
+- Fixed: Spherecast in `grasp` always targets the object at index 0 instead of the target object.
+
 ## 2.2.9
 
 - Fixed: Crash in various actions if `set_torso=False`
