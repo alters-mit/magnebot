@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.11
+
+- Fixed: The Magnebot fails to move or turn when its torso is higher than the default height. `WheelMotion` now sets force limits based on the height of the torso if `set_torso=False`. 
+
 ## 2.2.10
 
 - Fixed: Spherecast in `grasp` always targets the object at index 0 instead of the target object.

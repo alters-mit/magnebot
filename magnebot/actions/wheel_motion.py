@@ -9,13 +9,17 @@ from magnebot.image_frequency import ImageFrequency
 from magnebot.magnebot_static import MagnebotStatic
 from magnebot.magnebot_dynamic import MagnebotDynamic
 from magnebot.collision_detection import CollisionDetection
-from magnebot.constants import DEFAULT_WHEEL_FRICTION
+from magnebot.wheel import Wheel
+from magnebot.constants import DEFAULT_WHEEL_FRICTION, COLUMN_Y
 
 
 class WheelMotion(Action, ABC):
     """
     Abstract base class for a motion action involving the Magnebot's wheels.
     """
+
+    # If `set_torso=False`, use these force limits (element 1), depending on the height of the torso (element 0).
+    TORSO_FORCE_LIMITS: List[List[int]] = [[0.6, 1.02], [0.7, 1.04], [0.8, 1.05], [0.9, 1.07], [1.0, 1.06]]
 
     def __init__(self, dynamic: MagnebotDynamic, collision_detection: CollisionDetection, set_torso: bool,
                  previous: Action = None):
@@ -43,6 +47,8 @@ class WheelMotion(Action, ABC):
                 self.status = ActionStatus.collision
             elif previous.status == ActionStatus.tipping:
                 self.status = ActionStatus.tipping
+        self._default_wheel_force_limit: float = -1
+        self._wheel_force_limit: float = -1
 
     @final
     def get_initialization_commands(self, resp: List[bytes], static: MagnebotStatic, dynamic: MagnebotDynamic,
@@ -58,12 +64,37 @@ class WheelMotion(Action, ABC):
 
         commands: List[dict] = super().get_initialization_commands(resp=resp, image_frequency=image_frequency,
                                                                    static=static, dynamic=dynamic)
-        # Make the robot moveable.
+        # Set force limits based on the height of the torso.
+        if not self._set_torso:
+            torso_y = round(float(dynamic.joints[static.arm_joints[ArmJoint.torso]].position[1]) + COLUMN_Y, 1)
+            # For heights below this value, the default force limit will work.
+            if torso_y >= WheelMotion.TORSO_FORCE_LIMITS[0][0]:
+                force_limit = 0
+                # Read the list of torso heights.
+                if torso_y < 1:
+                    for forces in WheelMotion.TORSO_FORCE_LIMITS:
+                        if abs(forces[0] - torso_y) < 0.1:
+                            force_limit = forces[1]
+                            break
+                # If the torso height is above 1, this value will always work.
+                else:
+                    force_limit = WheelMotion.TORSO_FORCE_LIMITS[-1][1]
+                self._default_wheel_force_limit = static.joints[static.wheels[Wheel.wheel_left_front]].drives["x"].force_limit
+                self._wheel_force_limit = self._default_wheel_force_limit * force_limit
+                for wheel in static.wheels:
+                    drive = static.joints[static.wheels[wheel]].drives["x"]
+                    commands.append({"$type": "set_robot_joint_drive",
+                                     "joint_id": static.wheels[wheel],
+                                     "force_limit": self._wheel_force_limit,
+                                     "stiffness": drive.stiffness,
+                                     "damping": drive.damping,
+                                     "id": static.robot_id})
+        # Make the robot movable.
         if dynamic.immovable:
             self._resetting = True
             commands.append({"$type": "set_immovable",
-                              "id": static.robot_id,
-                              "immovable": False})
+                             "id": static.robot_id,
+                             "immovable": False})
             # Maybe reset the torso.
             if self._set_torso:
                 commands.append({"$type": "set_prismatic_target",
@@ -78,9 +109,13 @@ class WheelMotion(Action, ABC):
         # Reset the drive values.
         for wheel_id in static.wheels.values():
             drive = static.joints[wheel_id].drives["x"]
+            if self._set_torso:
+                force_limit = drive.force_limit
+            else:
+                force_limit = self._wheel_force_limit
             commands.extend([{"$type": "set_robot_joint_drive",
                               "joint_id": wheel_id,
-                              "force_limit": drive.force_limit,
+                              "force_limit": force_limit,
                               "stiffness": drive.stiffness,
                               "damping": drive.damping,
                               "id": static.robot_id},
@@ -127,6 +162,16 @@ class WheelMotion(Action, ABC):
         commands = self._get_stop_wheels_commands(static=static, dynamic=dynamic)
         commands.extend(super().get_end_commands(resp=resp, static=static, dynamic=dynamic,
                                                  image_frequency=image_frequency))
+        # Reset the force limits.
+        if not self._set_torso:
+            for wheel_id in static.wheels.values():
+                drive = static.joints[wheel_id].drives["x"]
+                commands.extend([{"$type": "set_robot_joint_drive",
+                                  "joint_id": wheel_id,
+                                  "force_limit": self._default_wheel_force_limit,
+                                  "stiffness": drive.stiffness,
+                                  "damping": drive.damping,
+                                  "id": static.robot_id}])
         return commands
 
     @abstractmethod
